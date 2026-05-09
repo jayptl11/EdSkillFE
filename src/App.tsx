@@ -168,10 +168,10 @@ function LoginPage() {
           <div className="input-shell">
             <FieldIcon type="user" />
             <input
-              autoComplete="username"
+              autoComplete="off"
               value={identifier}
               onChange={(event) => setIdentifier(event.target.value)}
-              placeholder="nguoidung@example.com"
+
             />
           </div>
         </label>
@@ -180,11 +180,10 @@ function LoginPage() {
           <div className="input-shell">
             <FieldIcon type="password" />
             <input
-              autoComplete="current-password"
+              autoComplete="off"
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="MatKhau123"
             />
           </div>
         </label>
@@ -285,10 +284,10 @@ function RegisterPage() {
             <div className="input-shell">
               <FieldIcon type="user" />
               <input
-                autoComplete="given-name"
+                autoComplete="off"
                 value={form.firstName}
                 onChange={(event) => updateField('firstName', event.target.value)}
-                placeholder="An"
+
               />
             </div>
           </label>
@@ -297,10 +296,9 @@ function RegisterPage() {
             <div className="input-shell">
               <FieldIcon type="user" />
               <input
-                autoComplete="family-name"
+                autoComplete="off"
                 value={form.lastName}
                 onChange={(event) => updateField('lastName', event.target.value)}
-                placeholder="Nguyễn"
               />
             </div>
           </label>
@@ -310,11 +308,11 @@ function RegisterPage() {
           <div className="input-shell">
             <FieldIcon type="email" />
             <input
-              autoComplete="email"
+              autoComplete="off"
               type="email"
               value={form.email}
               onChange={(event) => updateField('email', event.target.value)}
-              placeholder="nguoidung@example.com"
+
             />
           </div>
         </label>
@@ -323,10 +321,9 @@ function RegisterPage() {
           <div className="input-shell">
             <FieldIcon type="user" />
             <input
-              autoComplete="username"
+              autoComplete="off"
               value={form.username}
               onChange={(event) => updateField('username', event.target.value)}
-              placeholder="nguoidung01"
             />
           </div>
         </label>
@@ -335,11 +332,11 @@ function RegisterPage() {
           <div className="input-shell">
             <FieldIcon type="password" />
             <input
-              autoComplete="new-password"
+              autoComplete="off"
               type="password"
               value={form.password}
               onChange={(event) => updateField('password', event.target.value)}
-              placeholder="MatKhau123"
+
             />
           </div>
         </label>
@@ -468,11 +465,11 @@ function VerifyOtpPage() {
           <div className="input-shell">
             <FieldIcon type="email" />
             <input
-              autoComplete="email"
+              autoComplete="off"
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="nguoidung@example.com"
+
             />
           </div>
         </label>
@@ -482,12 +479,13 @@ function VerifyOtpPage() {
           <div className="input-shell">
             <FieldIcon type="token" />
             <input
+              autoComplete="off"
               className="otp-input"
               inputMode="numeric"
               maxLength={6}
               value={otp}
               onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="123456"
+
             />
           </div>
         </label>
@@ -565,11 +563,11 @@ function ForgotPasswordPage() {
           <div className="input-shell">
             <FieldIcon type="email" />
             <input
-              autoComplete="email"
+              autoComplete="off"
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="nguoidung@example.com"
+
             />
           </div>
         </label>
@@ -648,7 +646,7 @@ function ResetPasswordPage() {
             <textarea
               value={resetToken}
               onChange={(event) => setResetToken(event.target.value)}
-              placeholder="Mã đặt lại từ OTP"
+
               rows={3}
             />
           </div>
@@ -658,11 +656,10 @@ function ResetPasswordPage() {
           <div className="input-shell">
             <FieldIcon type="password" />
             <input
-              autoComplete="new-password"
+              autoComplete="off"
               type="password"
               value={newPassword}
               onChange={(event) => setNewPassword(event.target.value)}
-              placeholder="MatKhauMoi123"
             />
           </div>
         </label>

@@ -16,6 +16,7 @@
     "motion": "^12.38.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "react-parallax-tilt": "^1.7.327",
     "react-router-dom": "^7.15.0",
     "zustand": "^5.0.13"
   },
