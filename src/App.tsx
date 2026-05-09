@@ -346,15 +346,15 @@ function RegisterPage() {
         <div className="role-options" aria-label="Chọn vai trò">
           <RoleOption
             active={roles.includes('learner')}
-            label="Người học"
-            description="Học kỹ năng và đi theo lộ trình được gợi ý."
+            label="Learner"
+            description="Học kỹ năng bạn cần với Companion phù hợp và lộ trình gợi ý."
             Icon={GraduationCap}
             onClick={() => toggleRole('learner')}
           />
           <RoleOption
             active={roles.includes('companion')}
-            label="Người đồng hành"
-            description="Hướng dẫn người học bằng kinh nghiệm thực tế."
+            label="Companion"
+            description="Chia sẻ kỹ năng, hướng dẫn người học bằng kinh nghiệm thực tế."
             Icon={UsersRound}
             onClick={() => toggleRole('companion')}
           />
