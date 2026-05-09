@@ -481,8 +481,9 @@
   flex-direction: column;
   padding: clamp(26px, 4.6vw, 52px);
   background:
-    radial-gradient(circle at 85% 18%, rgba(255, 212, 90, 0.34), transparent 30%),
-    linear-gradient(145deg, rgba(6, 69, 143, 0.94), rgba(36, 147, 245, 0.92));
+    radial-gradient(circle at 84% 16%, rgba(255, 212, 90, 0.38), transparent 30%),
+    radial-gradient(circle at 16% 10%, rgba(125, 211, 252, 0.36), transparent 28%),
+    linear-gradient(145deg, #0878d8 0%, #19a7ff 58%, #3dc7ff 100%);
   color: white;
   overflow: hidden;
   position: relative;
