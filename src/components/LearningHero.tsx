@@ -11,7 +11,6 @@ import {
   Mic2,
   Music2,
   PenTool,
-  ShieldCheck,
   Sparkles,
   Target,
   UsersRound,
@@ -19,7 +18,6 @@ import {
 } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import landingLogo from '../assets/landing-logo-source.jpg'
-import panelLearning from '../assets/panel-learning.png'
 import personalOne from '../assets/landing-personal-1.jpg'
 import personalTwo from '../assets/landing-personal-2.jpg'
 import personalThree from '../assets/landing-personal-3.jpg'
