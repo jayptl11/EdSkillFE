@@ -1,0 +1,74 @@
+<svg width="720" height="480" viewBox="0 0 720 480" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">EdSkill learning community illustration</title>
+  <desc id="desc">Two illustrated learners standing around a globe.</desc>
+  <g filter="url(#softShadow)">
+    <ellipse cx="360" cy="424" rx="240" ry="28" fill="#002D72" fill-opacity="0.12"/>
+  </g>
+  <g>
+    <circle cx="360" cy="214" r="126" fill="url(#globeFill)"/>
+    <path d="M248 194C283 209 323 208 348 187C375 164 416 158 472 175" stroke="#1E88E5" stroke-width="11" stroke-linecap="round"/>
+    <path d="M260 263C304 243 332 252 358 276C390 307 430 294 456 260C472 239 492 231 510 233" stroke="#1E88E5" stroke-width="11" stroke-linecap="round"/>
+    <path d="M359 89C330 126 315 169 316 216C317 264 335 305 368 340" stroke="#1E88E5" stroke-width="8" stroke-linecap="round" opacity="0.72"/>
+    <path d="M390 91C421 132 435 180 429 230C424 273 404 310 372 339" stroke="#1E88E5" stroke-width="8" stroke-linecap="round" opacity="0.72"/>
+    <path d="M238 216H482" stroke="#1E88E5" stroke-width="8" stroke-linecap="round" opacity="0.56"/>
+    <path d="M276 133C326 157 386 158 444 133" stroke="#1E88E5" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+    <path d="M276 296C327 270 392 271 444 298" stroke="#1E88E5" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+    <circle cx="360" cy="214" r="126" stroke="#1070F0" stroke-width="12"/>
+    <path d="M360 340V386" stroke="#1070F0" stroke-width="15" stroke-linecap="round"/>
+    <path d="M291 386H429" stroke="#1070F0" stroke-width="16" stroke-linecap="round"/>
+    <path d="M323 386C327 363 344 350 360 350C377 350 393 363 398 386" stroke="#1070F0" stroke-width="12" stroke-linecap="round"/>
+  </g>
+  <g>
+    <path d="M142 361L121 421" stroke="#0E4FA3" stroke-width="16" stroke-linecap="round"/>
+    <path d="M194 360L212 421" stroke="#0E4FA3" stroke-width="16" stroke-linecap="round"/>
+    <path d="M135 421H102" stroke="#1070F0" stroke-width="15" stroke-linecap="round"/>
+    <path d="M225 421H192" stroke="#1070F0" stroke-width="15" stroke-linecap="round"/>
+    <path d="M128 211C146 186 188 187 205 212C218 232 216 270 204 305L196 363H138L129 304C118 266 114 231 128 211Z" fill="url(#leftBody)"/>
+    <path d="M138 219C149 248 169 263 199 268" stroke="#0E4FA3" stroke-width="12" stroke-linecap="round"/>
+    <path d="M199 267L257 244" stroke="#0E4FA3" stroke-width="12" stroke-linecap="round"/>
+    <path d="M131 266L93 302" stroke="#0E4FA3" stroke-width="12" stroke-linecap="round"/>
+    <path d="M93 302L131 316" stroke="#F9A825" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="167" cy="164" r="35" fill="url(#skin)"/>
+    <path d="M129 155C135 118 178 109 202 134C217 150 218 174 209 191C191 186 181 172 178 151C166 171 148 181 128 179C125 170 126 162 129 155Z" fill="#002D72"/>
+    <rect x="151" y="262" width="66" height="74" rx="8" transform="rotate(-7 151 262)" fill="#FFF8E1" stroke="#F9A825" stroke-width="8"/>
+    <path d="M164 288H203" stroke="#F9A825" stroke-width="7" stroke-linecap="round"/>
+    <path d="M168 309H194" stroke="#F9A825" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <g>
+    <path d="M542 362L520 421" stroke="#0E4FA3" stroke-width="16" stroke-linecap="round"/>
+    <path d="M592 360L611 421" stroke="#0E4FA3" stroke-width="16" stroke-linecap="round"/>
+    <path d="M533 421H501" stroke="#1070F0" stroke-width="15" stroke-linecap="round"/>
+    <path d="M624 421H591" stroke="#1070F0" stroke-width="15" stroke-linecap="round"/>
+    <path d="M515 219C533 190 579 186 601 214C617 234 616 274 603 311L594 364H535L524 308C510 270 501 242 515 219Z" fill="url(#rightBody)"/>
+    <path d="M596 232C584 257 562 271 528 276" stroke="#0E4FA3" stroke-width="12" stroke-linecap="round"/>
+    <path d="M528 276L467 247" stroke="#0E4FA3" stroke-width="12" stroke-linecap="round"/>
+    <path d="M604 270L637 302" stroke="#0E4FA3" stroke-width="12" stroke-linecap="round"/>
+    <path d="M637 302L601 318" stroke="#F9A825" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="562" cy="164" r="35" fill="url(#skin)"/>
+    <path d="M529 153C534 122 568 112 592 128C614 143 615 172 602 193C585 185 576 171 575 150C565 171 548 179 529 176C526 168 526 160 529 153Z" fill="#002D72"/>
+    <rect x="508" y="267" width="72" height="76" rx="8" transform="rotate(7 508 267)" fill="#FFF8E1" stroke="#F9A825" stroke-width="8"/>
+    <path d="M525 294H566" stroke="#F9A825" stroke-width="7" stroke-linecap="round"/>
+    <path d="M525 316H555" stroke="#F9A825" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <defs>
+    <linearGradient id="globeFill" x1="244" y1="92" x2="486" y2="340" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EAF8FF"/>
+      <stop offset="1" stop-color="#9CDBFF"/>
+    </linearGradient>
+    <linearGradient id="leftBody" x1="119" y1="193" x2="211" y2="362" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E88E5"/>
+      <stop offset="1" stop-color="#0E4FA3"/>
+    </linearGradient>
+    <linearGradient id="rightBody" x1="506" y1="196" x2="609" y2="364" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F9A825"/>
+      <stop offset="1" stop-color="#FFCB45"/>
+    </linearGradient>
+    <linearGradient id="skin" x1="135" y1="130" x2="197" y2="201" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE0A3"/>
+      <stop offset="1" stop-color="#FFB35D"/>
+    </linearGradient>
+    <filter id="softShadow" x="90" y="368" width="540" height="112" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#002D72" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+</svg>

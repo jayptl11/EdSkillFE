@@ -1,15 +1,35 @@
-import { create } from 'zustand';
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
-interface AppState {
-  theme: 'light' | 'dark';
-  toggleTheme: () => void;
-  user: { name: string; role: string } | null;
-  setUser: (user: { name: string; role: string } | null) => void;
+export type UserRole = 'learner' | 'companion' | 'admin'
+
+export interface AuthSession {
+  accessToken: string
+  refreshToken: string
+  userId: string
+  email: string
+  username: string
+  roles: UserRole[]
+  lastLogin: string | null
+  shouldPromptDailyReminderTime: boolean
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  theme: 'light',
-  toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
-  user: null,
-  setUser: (user) => set({ user }),
-}));
+interface AppState {
+  session: AuthSession | null
+  setSession: (session: AuthSession) => void
+  clearSession: () => void
+}
+
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      session: null,
+      setSession: (session) => set({ session }),
+      clearSession: () => set({ session: null }),
+    }),
+    {
+      name: 'edskill-auth-session',
+      version: 1,
+    },
+  ),
+)
