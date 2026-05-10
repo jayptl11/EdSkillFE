@@ -1768,3 +1768,383 @@
     transition: none;
   }
 }
+
+.dashboard-hero-links {
+  margin-top: 20px;
+}
+
+.profile-page {
+  display: grid;
+  align-content: start;
+  gap: 22px;
+}
+
+.profile-hero {
+  align-items: center;
+}
+
+.profile-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.profile-private-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  padding: 10px 14px;
+  color: white;
+  font-weight: 900;
+}
+
+.profile-layout,
+.public-profile-card,
+.profile-state-card {
+  width: min(1062px, 100%);
+  margin-inline: auto;
+  position: relative;
+  z-index: 2;
+}
+
+.profile-layout {
+  display: grid;
+  grid-template-columns: 0.92fr 1.5fr;
+  gap: 14px;
+}
+
+.profile-side-card,
+.profile-form-card,
+.public-profile-card,
+.profile-state-card,
+.profile-meta-card,
+.profile-skills-card {
+  border: 1px solid rgba(0, 45, 114, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow-soft);
+}
+
+.profile-side-card,
+.profile-form-card,
+.public-profile-card {
+  padding: 20px;
+}
+
+.profile-side-card {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.profile-avatar-shell {
+  display: grid;
+  gap: 13px;
+}
+
+.profile-avatar {
+  width: 128px;
+  height: 128px;
+  border-radius: 28px;
+  object-fit: cover;
+  border: 3px solid rgba(0, 45, 114, 0.08);
+  background: linear-gradient(145deg, rgba(11, 37, 69, 0.08), rgba(30, 136, 229, 0.14));
+}
+
+.profile-avatar.placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sapphire);
+}
+
+.profile-avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.profile-file-input {
+  display: none;
+}
+
+.button.secondary.ghost {
+  background: rgba(11, 37, 69, 0.04);
+}
+
+.profile-helper-copy,
+.profile-skills-head p,
+.profile-empty-copy,
+.profile-form-footnote,
+.profile-state-card p,
+.public-profile-head p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.profile-meta-card {
+  padding: 18px;
+}
+
+.profile-meta-card h2,
+.profile-meta-card h3,
+.profile-form-heading h2,
+.public-profile-head h2 {
+  margin: 0 0 8px;
+  color: var(--sapphire);
+  font-size: 24px;
+  font-weight: 1000;
+}
+
+.profile-role-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.profile-role-badge {
+  border-radius: 999px;
+  background: var(--soft-blue);
+  padding: 7px 12px;
+  color: var(--blue-dark);
+  font-size: 13px;
+  font-weight: 1000;
+}
+
+.profile-stats {
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.profile-stats div {
+  display: grid;
+  gap: 4px;
+}
+
+.profile-stats dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.profile-stats dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.profile-form-card {
+  display: grid;
+  gap: 18px;
+}
+
+.profile-form-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.profile-field {
+  display: grid;
+  gap: 8px;
+}
+
+.profile-field.full {
+  grid-column: 1 / -1;
+}
+
+.profile-field > span,
+.profile-skills-head h3 {
+  color: var(--sapphire);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.profile-field input,
+.profile-field textarea,
+.profile-field select,
+.profile-skill-entry input {
+  width: 100%;
+  border: 1px solid rgba(11, 37, 69, 0.14);
+  border-radius: 8px;
+  background: white;
+  padding: 12px 14px;
+  color: var(--ink);
+  font: inherit;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.profile-field input:focus,
+.profile-field textarea:focus,
+.profile-field select:focus,
+.profile-skill-entry input:focus {
+  outline: none;
+  border-color: rgba(30, 136, 229, 0.48);
+  box-shadow: 0 0 0 4px rgba(30, 136, 229, 0.12);
+}
+
+.profile-field textarea {
+  resize: vertical;
+  min-height: 116px;
+}
+
+.profile-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  font-weight: 800;
+}
+
+.profile-skills-grid,
+.public-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.public-profile-grid {
+  margin-top: 16px;
+}
+
+.public-profile-grid > :first-child {
+  grid-column: 1 / -1;
+}
+
+.profile-skills-card {
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.profile-skill-entry {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.profile-chip-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  background: rgba(255, 212, 90, 0.2);
+  padding: 8px 12px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.profile-chip button {
+  border: 0;
+  background: transparent;
+  color: var(--sapphire);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 1000;
+}
+
+.profile-field-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.profile-form-footnote {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.profile-state-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.profile-state-card h2 {
+  margin: 0 0 6px;
+  color: var(--sapphire);
+  font-size: 20px;
+  font-weight: 1000;
+}
+
+.profile-state-card.error {
+  border-color: rgba(180, 35, 24, 0.18);
+}
+
+.public-profile-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 18px;
+  align-items: center;
+}
+
+.spin {
+  animation: profile-spin 1s linear infinite;
+}
+
+@keyframes profile-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1040px) {
+  .profile-layout,
+  .profile-skills-grid,
+  .public-profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .profile-form-grid,
+  .profile-skill-entry,
+  .public-profile-head {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-form-heading,
+  .profile-hero-actions,
+  .profile-avatar-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .profile-side-card,
+  .profile-form-card,
+  .public-profile-card {
+    padding: 18px;
+  }
+}

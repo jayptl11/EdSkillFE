@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { CalendarCheck2, Clock3, LogOut, Sparkles, type LucideIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { SiteHeader } from './Brand'
@@ -12,6 +13,7 @@ export function DashboardShell({
   dailyReminderNeeded,
   primaryRole,
   onLogout,
+  profileHref,
   getCardCopy,
 }: {
   username: string
@@ -20,6 +22,7 @@ export function DashboardShell({
   dailyReminderNeeded: boolean
   primaryRole: string
   onLogout: () => void
+  profileHref: string
   getCardCopy: (card: string, role: string) => string
 }) {
   return (
@@ -33,13 +36,18 @@ export function DashboardShell({
           </span>
           <h1>Xin chào, {username || email}</h1>
           <p>
-            Không gian EdSkill của bạn đã sẵn sàng. Chọn bước tiếp theo, giữ nhịp học
-            và chuẩn bị cho các công cụ theo từng vai trò.
+            Không gian EdSkill của bạn đã sẵn sàng. Chọn bước tiếp theo, giữ nhịp học và chuẩn bị
+            cho các công cụ theo từng vai trò.
           </p>
           <div className="role-chip-row">
             {roles.map((role) => (
               <span key={role}>{getRoleLabel(role)}</span>
             ))}
+          </div>
+          <div className="dashboard-hero-links">
+            <Link className="button secondary" to={profileHref}>
+              Cập nhật hồ sơ
+            </Link>
           </div>
         </div>
         <motion.button

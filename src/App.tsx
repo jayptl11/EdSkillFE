@@ -29,6 +29,7 @@ import { LearningHero } from './components/LearningHero'
 import { MotionPage } from './components/MotionPage'
 import { ToastViewport } from './components/Toast'
 import { showToast } from './components/toastEvents'
+import { OwnerProfilePage, PublicProfilePage } from './features/profile/ProfilePages'
 import { useAppStore, type UserRole } from './store/useAppStore'
 import './App.css'
 
@@ -64,6 +65,15 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/dashboard/profile"
+            element={
+              <ProtectedRoute>
+                <OwnerProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/profile/:userId" element={<PublicProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AnimatePresence>
@@ -706,6 +716,7 @@ function DashboardPage() {
       dailyReminderNeeded={session.shouldPromptDailyReminderTime}
       primaryRole={primaryRole}
       onLogout={handleLogout}
+      profileHref="/dashboard/profile"
       getCardCopy={getDashboardCopy}
     />
   )

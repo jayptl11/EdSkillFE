@@ -4,13 +4,7 @@ import edSkillLogo from '../assets/edskill-logo.png'
 import { useAppStore } from '../store/useAppStore'
 
 export function LogoImage({ size = 'default' }: { size?: 'default' | 'large' }) {
-  return (
-    <img
-      className={`brand-logo-image ${size}`}
-      src={edSkillLogo}
-      alt="EdSkill"
-    />
-  )
+  return <img className={`brand-logo-image ${size}`} src={edSkillLogo} alt="EdSkill" />
 }
 
 export function LogoLink() {
@@ -34,9 +28,14 @@ export function SiteHeader() {
       <LogoLink />
       <nav>
         {session ? (
-          <Link className="nav-link highlighted" to="/dashboard">
-            Bảng điều khiển
-          </Link>
+          <>
+            <Link className="nav-link" to="/dashboard/profile">
+              Hồ sơ
+            </Link>
+            <Link className="nav-link highlighted" to="/dashboard">
+              Bảng điều khiển
+            </Link>
+          </>
         ) : (
           <>
             <Link className="nav-link" to="/login">
