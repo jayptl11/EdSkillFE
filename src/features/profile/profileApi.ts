@@ -23,24 +23,45 @@ export const profileApi = {
     apiPost<AvatarUploadUrlDto>('/api/profile/me/avatar-upload-url', payload, { auth: true }),
 }
 
-export async function uploadAvatar(file: File): Promise<string> {
-  const meta = await profileApi.createAvatarUploadUrl({
+export function requestAvatarUploadUrl(file: File): Promise<AvatarUploadUrlDto> {
+  return profileApi.createAvatarUploadUrl({
     fileName: file.name,
     contentType: file.type as GenerateAvatarUploadUrlRequest['contentType'],
     fileSize: file.size,
   })
+}
 
-  const uploadResponse = await fetch(meta.uploadUrl, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': file.type,
-    },
-    body: file,
-  })
+export async function uploadFileToPresignedUrl(uploadUrl: string, file: File): Promise<void> {
+  let response: Response
 
-  if (!uploadResponse.ok) {
-    throw new Error('Avatar upload failed')
+  try {
+    response = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': file.type,
+      },
+      body: file,
+    })
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(
+        'Không thể tải avatar lên storage. Nếu request PUT tối giản này vẫn bị CORS thì đây là vấn đề cấu hình CORS của bucket R2, FE không tự xử lý hoàn toàn được.',
+        { cause: error },
+      )
+    }
+
+    throw new Error('Không thể tải avatar lên storage. Vui lòng thử lại.', { cause: error })
   }
 
-  return meta.publicUrl
+  if (!response.ok) {
+    throw new Error('Tải avatar lên storage thất bại. Vui lòng thử lại.')
+  }
+}
+
+export function saveAvatarUrl(publicUrl: string): Promise<ProfileDto> {
+  return profileApi.updateMyProfile({ avatarUrl: publicUrl })
+}
+
+export function clearSavedAvatar(): Promise<ProfileDto> {
+  return profileApi.updateMyProfile({ avatarUrl: null })
 }

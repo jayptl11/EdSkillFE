@@ -18,7 +18,14 @@ import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
 import { useAppStore } from '../../store/useAppStore'
-import { profileApi, profileKeys, uploadAvatar } from './profileApi'
+import {
+  clearSavedAvatar,
+  profileApi,
+  profileKeys,
+  requestAvatarUploadUrl,
+  saveAvatarUrl,
+  uploadFileToPresignedUrl,
+} from './profileApi'
 import {
   buildProfilePatch,
   extractProfileFieldErrors,
@@ -67,15 +74,7 @@ export function OwnerProfilePage() {
   const updateProfileMutation = useMutation({
     mutationFn: profileApi.updateMyProfile,
     onSuccess: (profile) => {
-      const nextValues = toProfileFormValues(profile)
-      queryClient.setQueryData(profileKeys.me(), profile)
-      queryClient.invalidateQueries({ queryKey: profileKeys.user(profile.userId) })
-      hasInitializedRef.current = true
-      setInitialValues(nextValues)
-      setFormValues(nextValues)
-      setFieldErrors({})
-      setAvatarPreviewUrl(profile.avatarUrl)
-      clearLocalPreview()
+      applyProfileSnapshot(profile)
       showToast({ kind: 'success', message: 'Hồ sơ đã được cập nhật.' })
     },
     onError: (error) => {
@@ -94,11 +93,14 @@ export function OwnerProfilePage() {
     }
 
     const nextValues = toProfileFormValues(profile)
+    queryClient.setQueryData(profileKeys.me(), profile)
+    queryClient.invalidateQueries({ queryKey: profileKeys.user(profile.userId) })
     hasInitializedRef.current = true
     setInitialValues(nextValues)
     setFormValues(nextValues)
+    setFieldErrors({})
     setAvatarPreviewUrl(profile.avatarUrl)
-  }, [profileQuery.data])
+  }, [profileQuery.data, queryClient])
 
   useEffect(
     () => () => {
@@ -143,6 +145,18 @@ export function OwnerProfilePage() {
     }
   }
 
+  function applyProfileSnapshot(profile: ProfileDto) {
+    const nextValues = toProfileFormValues(profile)
+    queryClient.setQueryData(profileKeys.me(), profile)
+    queryClient.invalidateQueries({ queryKey: profileKeys.user(profile.userId) })
+    hasInitializedRef.current = true
+    setInitialValues(nextValues)
+    setFormValues(nextValues)
+    setFieldErrors({})
+    setAvatarPreviewUrl(profile.avatarUrl)
+    clearLocalPreview()
+  }
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
@@ -161,45 +175,69 @@ export function OwnerProfilePage() {
     updateProfileMutation.mutate(patchPayload)
   }
 
-  const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) {
-      return
+  async function handleAvatarChange(file: File) {
+    const validationMessage = validateAvatarFile(file)
+    if (validationMessage) {
+      throw new Error(validationMessage)
     }
 
-    const validationMessage = validateAvatarFile(file)
+    const uploadMeta = await requestAvatarUploadUrl(file)
+    await uploadFileToPresignedUrl(uploadMeta.uploadUrl, file)
+
+    setFormValues((current) => ({ ...current, avatarUrl: uploadMeta.publicUrl }))
+
+    const profile = await saveAvatarUrl(uploadMeta.publicUrl)
+    applyProfileSnapshot(profile)
+  }
+
+  const handleAvatarInputChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     event.target.value = ''
 
-    if (validationMessage) {
-      showToast({ kind: 'error', message: validationMessage })
+    if (!file) {
       return
     }
 
     const previousAvatarUrl = formValues.avatarUrl
     const nextPreviewUrl = URL.createObjectURL(file)
+
     setIsUploadingAvatar(true)
     setAvatarPreviewUrl(nextPreviewUrl)
     replaceLocalPreview(nextPreviewUrl)
     clearFieldError('avatarUrl')
 
     try {
-      const publicUrl = await uploadAvatar(file)
-      setFormValues((current) => ({ ...current, avatarUrl: publicUrl }))
-      showToast({ kind: 'success', message: 'Avatar đã được tải lên. Hãy bấm lưu để cập nhật hồ sơ.' })
-    } catch {
+      await handleAvatarChange(file)
+      showToast({ kind: 'success', message: 'Avatar đã được cập nhật thành công.' })
+    } catch (error) {
       setAvatarPreviewUrl(previousAvatarUrl)
+      setFormValues((current) => ({ ...current, avatarUrl: previousAvatarUrl }))
       clearLocalPreview()
-      showToast({ kind: 'error', message: 'Tải avatar thất bại. Hồ sơ hiện tại chưa bị thay đổi.' })
+      showToast({
+        kind: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Tải avatar thất bại. Hồ sơ hiện tại chưa bị thay đổi.',
+      })
     } finally {
       setIsUploadingAvatar(false)
     }
   }
 
-  const handleRemoveAvatar = () => {
-    clearLocalPreview()
-    setAvatarPreviewUrl(null)
-    setFormValues((current) => ({ ...current, avatarUrl: null }))
+  const handleRemoveAvatar = async () => {
+    setIsUploadingAvatar(true)
     clearFieldError('avatarUrl')
+
+    try {
+      const profile = await clearSavedAvatar()
+      applyProfileSnapshot(profile)
+      showToast({ kind: 'success', message: 'Avatar đã được xóa khỏi hồ sơ.' })
+    } catch (error) {
+      showToast({ kind: 'error', message: getErrorMessage(error) })
+    } finally {
+      setIsUploadingAvatar(false)
+    }
   }
 
   const addSkill = (field: 'skillsToTeach' | 'skillsToLearn', draft: string) => {
@@ -312,7 +350,7 @@ export function OwnerProfilePage() {
                 <input
                   accept="image/jpeg,image/png,image/webp"
                   className="profile-file-input"
-                  onChange={handleAvatarChange}
+                  onChange={handleAvatarInputChange}
                   ref={fileInputRef}
                   type="file"
                 />
@@ -327,8 +365,10 @@ export function OwnerProfilePage() {
                 </button>
                 <button
                   className="button secondary ghost"
-                  disabled={!avatarPreviewUrl && !formValues.avatarUrl}
-                  onClick={handleRemoveAvatar}
+                  disabled={(!avatarPreviewUrl && !formValues.avatarUrl) || isUploadingAvatar}
+                  onClick={() => {
+                    void handleRemoveAvatar()
+                  }}
                   type="button"
                 >
                   <Trash2 size={18} />
@@ -543,7 +583,6 @@ export function OwnerProfilePage() {
                 />
               </div>
             </section>
-
           </form>
         </section>
       ) : null}
