@@ -32,9 +32,7 @@
 }
 
 .site-header {
-  width: min(1062px, 100%);
   min-height: 63px;
-  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -115,9 +113,7 @@
 }
 
 .hero-section {
-  width: min(1062px, 100%);
   min-height: calc(100svh - 101px);
-  margin: 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 0.92fr) minmax(468px, 1.08fr);
   gap: clamp(25px, 4.5vw, 67px);
@@ -981,8 +977,6 @@
 }
 
 .dashboard-hero {
-  width: min(1062px, 100%);
-  margin: 0 auto;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -1042,8 +1036,6 @@
 .dashboard-grid,
 .learning-summary,
 .dashboard-page > .status-message {
-  width: min(1062px, 100%);
-  margin-inline: auto;
   position: relative;
   z-index: 2;
 }
@@ -1202,8 +1194,6 @@
 
 .landing-hero,
 .landing-section {
-  width: min(1062px, 100%);
-  margin: 0 auto;
   position: relative;
   z-index: 2;
 }
@@ -1805,8 +1795,6 @@
 .profile-layout,
 .public-profile-card,
 .profile-state-card {
-  width: min(1062px, 100%);
-  margin-inline: auto;
   position: relative;
   z-index: 2;
 }
@@ -2519,8 +2507,6 @@
 }
 
 .admin-skills-layout {
-  width: min(1062px, 100%);
-  margin-inline: auto;
   display: grid;
   grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.15fr);
   gap: 18px;
