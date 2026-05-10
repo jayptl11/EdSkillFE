@@ -15,9 +15,11 @@ import {
 } from 'lucide-react'
 import { getErrorMessage, isApiError } from '../../api/client'
 import { SiteHeader } from '../../components/Brand'
+import { CustomSelect } from '../../components/CustomSelect'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
 import { useAppStore } from '../../store/useAppStore'
+import { SkillAutocomplete } from '../skills/SkillAutocomplete'
 import {
   clearSavedAvatar,
   profileApi,
@@ -31,7 +33,6 @@ import {
   extractProfileFieldErrors,
   formatLastActive,
   getRoleBadgeLabel,
-  normalizeSkills,
   toProfileFormValues,
   validateAvatarFile,
   validateProfileForm,
@@ -61,8 +62,6 @@ export function OwnerProfilePage() {
   const [initialValues, setInitialValues] = useState<ProfileFormValues>(emptyForm)
   const [fieldErrors, setFieldErrors] = useState<ProfileFieldErrors>({})
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
-  const [teachDraft, setTeachDraft] = useState('')
-  const [learnDraft, setLearnDraft] = useState('')
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 
   const profileQuery = useQuery({
@@ -240,13 +239,10 @@ export function OwnerProfilePage() {
     }
   }
 
-  const addSkill = (field: 'skillsToTeach' | 'skillsToLearn', draft: string) => {
-    const normalized = draft.trim()
-    if (!normalized) {
-      return
-    }
-
+  const selectSkill = (field: 'skillsToTeach' | 'skillsToLearn', skillName: string) => {
+    const normalized = skillName.trim()
     const currentList = formValues[field]
+
     if (currentList.some((skill) => skill.trim().toLowerCase() === normalized.toLowerCase())) {
       showToast({ kind: 'info', message: 'Kỹ năng này đã có trong danh sách.' })
       return
@@ -527,22 +523,18 @@ export function OwnerProfilePage() {
                   helper="Có thể để trống nếu bạn chưa muốn hiển thị."
                   label="Năm học"
                 >
-                  <select
-                    onChange={(event) =>
-                      handleChange(
-                        'yearOfStudy',
-                        event.target.value ? Number(event.target.value) : null,
-                      )
-                    }
+                  <CustomSelect
+                    onChange={(val) => handleChange('yearOfStudy', val)}
+                    options={[
+                      { label: 'Chưa cập nhật', value: '' },
+                      ...[1, 2, 3, 4, 5, 6].map((year) => ({
+                        label: `Năm ${year}`,
+                        value: year,
+                      })),
+                    ]}
+                    placeholder="Chưa cập nhật"
                     value={formValues.yearOfStudy ?? ''}
-                  >
-                    <option value="">Chưa cập nhật</option>
-                    {[1, 2, 3, 4, 5, 6].map((year) => (
-                      <option key={year} value={year}>
-                        Năm {year}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </Field>
               </div>
             </section>
@@ -555,31 +547,21 @@ export function OwnerProfilePage() {
               </div>
 
               <div className="profile-skills-grid">
-                <SkillInput
-                  draft={teachDraft}
+                <SkillAutocomplete
                   error={fieldErrors.skillsToTeach}
                   label="Kỹ năng muốn dạy"
-                  onAdd={() => {
-                    addSkill('skillsToTeach', teachDraft)
-                    setTeachDraft('')
-                  }}
-                  onChange={setTeachDraft}
                   onRemove={(skill) => removeSkill('skillsToTeach', skill)}
-                  placeholder="Ví dụ: React, SQL, Guitar"
-                  skills={formValues.skillsToTeach}
+                  onSelect={(skill) => selectSkill('skillsToTeach', skill)}
+                  placeholder="Tìm kỹ năng muốn dạy"
+                  selectedSkills={formValues.skillsToTeach}
                 />
-                <SkillInput
-                  draft={learnDraft}
+                <SkillAutocomplete
                   error={fieldErrors.skillsToLearn}
                   label="Kỹ năng muốn học"
-                  onAdd={() => {
-                    addSkill('skillsToLearn', learnDraft)
-                    setLearnDraft('')
-                  }}
-                  onChange={setLearnDraft}
                   onRemove={(skill) => removeSkill('skillsToLearn', skill)}
-                  placeholder="Ví dụ: Docker, Public speaking"
-                  skills={formValues.skillsToLearn}
+                  onSelect={(skill) => selectSkill('skillsToLearn', skill)}
+                  placeholder="Tìm kỹ năng muốn học"
+                  selectedSkills={formValues.skillsToLearn}
                 />
               </div>
             </section>
@@ -747,55 +729,6 @@ function PublicProfileCard({ profile }: { profile: ProfileDto }) {
         </div>
       </div>
     </section>
-  )
-}
-
-function SkillInput({
-  draft,
-  error,
-  label,
-  onAdd,
-  onChange,
-  onRemove,
-  placeholder,
-  skills,
-}: {
-  draft: string
-  error?: string
-  label: string
-  onAdd: () => void
-  onChange: (value: string) => void
-  onRemove: (skill: string) => void
-  placeholder: string
-  skills: string[]
-}) {
-  return (
-    <div className="profile-skills-card">
-      <div className="profile-skills-head">
-        <div>
-          <h3>{label}</h3>
-          <p>Tối đa 20 kỹ năng, mỗi kỹ năng tối đa 50 ký tự.</p>
-        </div>
-      </div>
-      <div className="profile-skill-entry">
-        <input
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault()
-              onAdd()
-            }
-          }}
-          placeholder={placeholder}
-          value={draft}
-        />
-        <button className="button secondary profile-add-skill-button" onClick={onAdd} type="button">
-          Thêm
-        </button>
-      </div>
-      {error ? <p className="profile-field-error">{error}</p> : null}
-      <SkillChips emptyLabel="Chưa có kỹ năng nào." onRemove={onRemove} skills={normalizeSkills(skills)} />
-    </div>
   )
 }
 

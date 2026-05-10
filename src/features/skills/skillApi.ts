@@ -1,0 +1,43 @@
+import { apiGet, apiPatch, apiPost } from '../../api/client'
+import type {
+  AdminSkill,
+  CreateAdminSkillPayload,
+  GetAdminSkillsParams,
+  SearchSkillsParams,
+  SkillOption,
+  UpdateAdminSkillPayload,
+} from './types'
+
+export const skillKeys = {
+  search: (params: SearchSkillsParams) => ['skills', 'search', params] as const,
+  adminList: (params: GetAdminSkillsParams) => ['skills', 'admin', params] as const,
+}
+
+export const skillApi = {
+  search: (params: SearchSkillsParams) =>
+    apiGet<SkillOption[]>(`/api/skills${toQueryString(params)}`),
+
+  getAdminSkills: (params: GetAdminSkillsParams) =>
+    apiGet<AdminSkill[]>(`/api/admin/skills${toQueryString(params)}`, { auth: true }),
+
+  createAdminSkill: (payload: CreateAdminSkillPayload) =>
+    apiPost<AdminSkill>('/api/admin/skills', payload, { auth: true }),
+
+  updateAdminSkill: (skillId: string, payload: UpdateAdminSkillPayload) =>
+    apiPatch<AdminSkill>(`/api/admin/skills/${skillId}`, payload, { auth: true }),
+}
+
+function toQueryString(params: object) {
+  const searchParams = new URLSearchParams()
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === '') {
+      continue
+    }
+
+    searchParams.set(key, String(value))
+  }
+
+  const query = searchParams.toString()
+  return query ? `?${query}` : ''
+}

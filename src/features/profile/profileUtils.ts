@@ -149,7 +149,25 @@ export function validateAvatarFile(file: File) {
 }
 
 export function normalizeSkills(skills: string[]) {
-  return skills.map((skill) => skill.trim()).filter(Boolean)
+  const uniqueSkills = new Set<string>()
+  const normalizedSkills: string[] = []
+
+  for (const skill of skills) {
+    const normalized = skill.trim()
+    if (!normalized) {
+      continue
+    }
+
+    const key = normalized.toLowerCase()
+    if (uniqueSkills.has(key)) {
+      continue
+    }
+
+    uniqueSkills.add(key)
+    normalizedSkills.push(normalized)
+  }
+
+  return normalizedSkills
 }
 
 export function getRoleBadgeLabel(role: string) {
@@ -205,22 +223,10 @@ function validateSkills(skills: string[], action: 'dạy' | 'học') {
     return `Tối đa ${MAX_SKILLS_PER_LIST} kỹ năng muốn ${action}.`
   }
 
-  const uniqueSkills = new Set<string>()
   for (const skill of normalized) {
-    if (!skill) {
-      return `Vui lòng nhập kỹ năng muốn ${action} hợp lệ.`
+    if (!skill || skill.length > MAX_SKILL_LENGTH) {
+      return `Danh sách kỹ năng muốn ${action} không hợp lệ.`
     }
-
-    if (skill.length > MAX_SKILL_LENGTH) {
-      return `Mỗi kỹ năng tối đa ${MAX_SKILL_LENGTH} ký tự.`
-    }
-
-    const lower = skill.toLowerCase()
-    if (uniqueSkills.has(lower)) {
-      return `Danh sách kỹ năng muốn ${action} không được trùng lặp.`
-    }
-
-    uniqueSkills.add(lower)
   }
 
   return ''

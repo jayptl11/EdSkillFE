@@ -48,6 +48,11 @@ export function DashboardShell({
             <Link className="button secondary" to={profileHref}>
               Cập nhật hồ sơ
             </Link>
+            {roles.includes('admin') ? (
+              <Link className="button secondary" to="/dashboard/admin/skills">
+                Quản lý skills
+              </Link>
+            ) : null}
           </div>
         </div>
         <motion.button

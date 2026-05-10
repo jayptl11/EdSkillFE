@@ -30,6 +30,7 @@ import { MotionPage } from './components/MotionPage'
 import { ToastViewport } from './components/Toast'
 import { showToast } from './components/toastEvents'
 import { OwnerProfilePage, PublicProfilePage } from './features/profile/ProfilePages'
+import { AdminSkillsPage } from './features/skills/AdminSkillsPage'
 import { useAppStore, type UserRole } from './store/useAppStore'
 import './App.css'
 
@@ -70,6 +71,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <OwnerProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/admin/skills"
+            element={
+              <ProtectedRoute>
+                <AdminSkillsPage />
               </ProtectedRoute>
             }
           />
