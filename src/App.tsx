@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import {
@@ -13,6 +14,7 @@ import {
   authExpiredEventName,
   forgotPassword,
   getErrorMessage,
+  isApiError,
   login,
   logout,
   normalizeSession,
@@ -30,6 +32,15 @@ import { MotionPage } from './components/MotionPage'
 import { ToastViewport } from './components/Toast'
 import { showToast } from './components/toastEvents'
 import { OwnerProfilePage, PublicProfilePage } from './features/profile/ProfilePages'
+import { PolicyConsentGate } from './features/policies/PolicyConsentGate'
+import { PoliciesPage, PolicyDetailPage } from './features/policies/PolicyPages'
+import { policyApi, policyKeys } from './features/policies/policyApi'
+import {
+  buildAcceptedPolicies,
+  getPolicyLabel,
+  getRequiredSignupPolicies,
+  requiredSignupPolicyTypes,
+} from './features/policies/policyUtils'
 import { AdminSkillsPage } from './features/skills/AdminSkillsPage'
 import { useAppStore, type UserRole } from './store/useAppStore'
 import './App.css'
@@ -55,6 +66,8 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/policies" element={<PoliciesPage />} />
+          <Route path="/policies/:slug" element={<PolicyDetailPage />} />
           <Route path="/verify-otp" element={<VerifyOtpPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -115,7 +128,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/login" replace state={{ message: 'Vui lòng đăng nhập để tiếp tục.' }} />
   }
 
-  return children
+  return <PolicyConsentGate>{children}</PolicyConsentGate>
 }
 
 function useRouteToast(message?: string) {
@@ -237,7 +250,15 @@ function RegisterPage() {
     password: '',
   })
   const [roles, setRoles] = useState<PublicRegisterRole[]>(['learner'])
+  const [hasAcceptedPolicies, setHasAcceptedPolicies] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const policiesQuery = useQuery({
+    queryKey: policyKeys.catalog(),
+    queryFn: policyApi.getPolicies,
+    staleTime: 5 * 60 * 1000,
+  })
+  const requiredPolicies = getRequiredSignupPolicies(policiesQuery.data ?? [])
+  const hasRequiredPolicyCatalog = requiredPolicies.length === requiredSignupPolicyTypes.length
 
   const updateField = (field: keyof typeof form, value: string) => {
     setForm((current) => ({ ...current, [field]: value }))
@@ -258,6 +279,27 @@ function RegisterPage() {
       return
     }
 
+    if (policiesQuery.isLoading) {
+      showToast({ kind: 'info', message: 'Đang tải chính sách bắt buộc. Vui lòng thử lại sau giây lát.' })
+      return
+    }
+
+    if (policiesQuery.isError || !hasRequiredPolicyCatalog) {
+      showToast({
+        kind: 'error',
+        message: 'Hiện không thể tải chính sách của hệ thống. Vui lòng thử lại sau.',
+      })
+      return
+    }
+
+    if (!hasAcceptedPolicies) {
+      showToast({
+        kind: 'error',
+        message: 'Vui lòng đọc và đồng ý với các chính sách bắt buộc trước khi tạo tài khoản.',
+      })
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -268,6 +310,7 @@ function RegisterPage() {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         roles,
+        acceptedPolicies: buildAcceptedPolicies(requiredPolicies),
       })
       navigate('/verify-otp', {
         state: {
@@ -277,7 +320,18 @@ function RegisterPage() {
         },
       })
     } catch (error) {
-      showToast({ kind: 'error', message: getErrorMessage(error) })
+      if (isApiError(error) && error.code === 'POLICY_VERSION_INVALID') {
+        setHasAcceptedPolicies(false)
+        await policiesQuery.refetch()
+        showToast({
+          kind: 'error',
+          message:
+            'Chính sách đã được cập nhật. Vui lòng đọc và xác nhận lại trước khi tiếp tục.',
+        })
+      } else {
+        showToast({ kind: 'error', message: getErrorMessage(error) })
+      }
+
     } finally {
       setIsSubmitting(false)
     }
@@ -375,9 +429,59 @@ function RegisterPage() {
             onClick={() => toggleRole('companion')}
           />
         </div>
+        <div className="policy-signup-panel">
+          <div className="policy-signup-head">
+            <h3>Chính sách bắt buộc khi đăng ký</h3>
+            <p>
+              EdSkill cần ghi nhận đồng ý với Điều khoản sử dụng, Chính sách riêng tư và Chính sách
+              Points/Tokens tại thời điểm tạo tài khoản.
+            </p>
+          </div>
+          {policiesQuery.isLoading ? (
+            <p className="status-message info">Đang tải các chính sách bắt buộc...</p>
+          ) : null}
+          {policiesQuery.isError ? (
+            <p className="status-message error">
+              Hiện không thể tải chính sách của hệ thống. Vui lòng thử lại sau.
+            </p>
+          ) : null}
+          {!policiesQuery.isLoading && !policiesQuery.isError && !hasRequiredPolicyCatalog ? (
+            <p className="status-message error">
+              Hệ thống đang thiếu policy bắt buộc để đăng ký. Vui lòng thử lại sau.
+            </p>
+          ) : null}
+          {!policiesQuery.isLoading && hasRequiredPolicyCatalog ? (
+            <>
+              <div className="policy-inline-links">
+                {requiredPolicies.map((policy) => (
+                  <Link
+                    className="policy-inline-link"
+                    key={policy.slug}
+                    rel="noreferrer"
+                    target="_blank"
+                    to={`/policies/${policy.slug}`}
+                  >
+                    {getPolicyLabel(policy.slug, policy.title)}
+                  </Link>
+                ))}
+              </div>
+              <label className="policy-consent-checkbox signup">
+                <input
+                  checked={hasAcceptedPolicies}
+                  onChange={(event) => setHasAcceptedPolicies(event.target.checked)}
+                  type="checkbox"
+                />
+                <span>
+                  Tôi đồng ý với Điều khoản sử dụng, Chính sách riêng tư và Chính sách
+                  Points/Tokens của EdSkill.
+                </span>
+              </label>
+            </>
+          ) : null}
+        </div>
         <motion.button
           className="button primary full"
-          disabled={isSubmitting}
+          disabled={isSubmitting || policiesQuery.isLoading}
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.98 }}
         >

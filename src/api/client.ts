@@ -197,6 +197,11 @@ const translateApiError = (code: string, fallback: string) => {
     INVALID_USERNAME: 'Tên đăng nhập không hợp lệ.',
     INVALID_PASSWORD: 'Mật khẩu không hợp lệ.',
     INVALID_ROLE: 'Vai trò không hợp lệ.',
+    POLICY_VERSION_INVALID:
+      'Chính sách đã được cập nhật. Vui lòng tải lại và xác nhận phiên bản mới nhất.',
+    POLICY_DOCUMENT_NOT_FOUND:
+      'Hiện không thể tải chính sách của hệ thống. Vui lòng thử lại sau.',
+    UNSUPPORTED_POLICY_TYPE: 'Đã xảy ra lỗi tích hợp chính sách. Vui lòng thử lại sau.',
     OTP_RATE_LIMITED: 'Bạn đã yêu cầu OTP quá nhiều lần. Vui lòng thử lại sau.',
     RESEND_RATE_LIMITED: 'Bạn đã gửi lại OTP quá nhiều lần. Vui lòng thử lại sau.',
     INVALID_OTP: 'Mã OTP không đúng hoặc đã hết hạn.',

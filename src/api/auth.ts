@@ -1,6 +1,7 @@
 import { useAppStore } from '../store/useAppStore'
 import { apiPost } from './client'
 import type { LoginResponse } from './session'
+import type { AcceptedPolicyInput } from '../features/policies/types'
 
 export {
   authExpiredEventName,
@@ -20,6 +21,7 @@ export interface RegisterRequest {
   lastName: string
   password: string
   roles: PublicRegisterRole[]
+  acceptedPolicies: AcceptedPolicyInput[]
 }
 
 export interface LoginRequest {

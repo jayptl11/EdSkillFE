@@ -27,6 +27,9 @@ export function SiteHeader() {
     >
       <LogoLink />
       <nav>
+        <Link className="nav-link" to="/policies">
+          Chính sách
+        </Link>
         {session ? (
           <>
             <Link className="nav-link" to="/dashboard/profile">
