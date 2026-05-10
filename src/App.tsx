@@ -361,7 +361,7 @@ function RegisterPage() {
           <RoleOption
             active={roles.includes('companion')}
             label="Companion"
-            description="Chia sẻ kỹ năng, hướng dẫn người học bằng kinh nghiệm thực tế."
+            description="Chia sẻ kỹ năng, hướng dẫn Learner bằng kinh nghiệm thực tế."
             Icon={UsersRound}
             onClick={() => toggleRole('companion')}
           />
@@ -782,11 +782,11 @@ const getPrimaryRole = (roles: UserRole[]) => {
 
 const getDashboardCopy = (card: string, role: string) => {
   if (card === 'Phiên đồng hành' && role === 'companion') {
-    return 'Chuẩn bị lịch đồng hành và các yêu cầu hỗ trợ từ người học.'
+    return 'Chuẩn bị lịch đồng hành và các yêu cầu hỗ trợ từ Learner.'
   }
 
   if (card === 'Phiên đồng hành') {
-    return 'Kết nối với người đồng hành khi module ghép cặp sẵn sàng.'
+    return 'Kết nối với Companion khi module ghép cặp sẵn sàng.'
   }
 
   if (card === 'Nhắc học hằng ngày') {

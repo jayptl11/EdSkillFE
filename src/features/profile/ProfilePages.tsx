@@ -616,7 +616,7 @@ export function PublicProfilePage() {
             Hồ sơ công khai
           </span>
           <h1>Thông tin hiển thị của thành viên EdSkill.</h1>
-          <p>Trang này chỉ hiển thị dữ liệu public được backend cho phép truy cập.</p>
+
         </div>
         <Link className="button secondary" to="/dashboard">
           Về dashboard

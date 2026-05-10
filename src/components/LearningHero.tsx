@@ -78,7 +78,7 @@ const skillCards: SkillCard[] = [
 const modelCards = [
   {
     title: 'Học qua dự án ngắn hạn',
-    copy: 'Người học đi từ vấn đề thực tế đến sản phẩm đầu ra rõ ràng.',
+    copy: 'Learner đi từ vấn đề thực tế đến sản phẩm đầu ra rõ ràng.',
   },
   {
     title: 'Lộ trình cá nhân hóa',
@@ -146,7 +146,7 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
           <h1>Học kỹ năng theo cách hiện đại, thực tế và truyền cảm hứng.</h1>
           <p>
             EdSkill kết nối kỹ năng sở thích, học thuật và bổ trợ công việc trong một
-            hệ sinh thái học tập có lộ trình, thực hành và người đồng hành.
+            hệ sinh thái học tập có lộ trình, thực hành và Companion.
           </p>
           <div className="hero-actions">
             <motion.div whileHover={{ y: -3 }} whileTap={{ scale: 0.98 }}>
@@ -198,7 +198,7 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
         <SectionHeading
           eyebrow="Nhóm kỹ năng nổi bật"
           title="Kỹ năng được chia thành 3 nhóm phù hợp cho nhiều mục tiêu phát triển."
-          copy="Từ sở thích cá nhân, năng lực học thuật đến kỹ năng hỗ trợ công việc, EdSkill giúp người học bắt đầu dễ dàng và tiến bộ bền vững."
+          copy="Từ sở thích cá nhân, năng lực học thuật đến kỹ năng hỗ trợ công việc, EdSkill giúp Learner bắt đầu dễ dàng và tiến bộ bền vững."
         />
         <motion.div
           className="landing-card-grid skills-grid"
@@ -233,7 +233,7 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
       <FeatureSection
         eyebrow="Mô hình học đổi mới"
         title="Nội dung thực tế, lộ trình linh hoạt và đầu ra rõ ràng."
-        copy="Các bài học được thiết kế để người học hiểu nhanh, thực hành sớm và nhìn thấy tiến bộ sau từng chặng."
+        copy="Các bài học được thiết kế để Learner hiểu nhanh, thực hành sớm và nhìn thấy tiến bộ sau từng chặng."
         image="/hero-2.jpg"
         imageAlt="Minh họa cộng đồng học tập EdSkill"
         cards={modelCards}
@@ -252,7 +252,7 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
       <section className="landing-section">
         <SectionHeading
           eyebrow="Bạn đồng hành"
-          title="Phản hồi từ người học và cộng đồng đã đồng hành cùng EdSkill."
+          title="Phản hồi từ Learner và cộng đồng đã đồng hành cùng EdSkill."
           copy="Các câu chuyện tập trung vào trải nghiệm học, khả năng ứng dụng và sự tự tin sau quá trình luyện tập."
         />
         <div className="landing-card-grid testimonial-grid">
@@ -272,13 +272,13 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
       <section className="landing-section landing-overview" id="overview">
         <SectionHeading
           eyebrow="Tổng quan EdSkill"
-          title="Một hệ sinh thái học tập giúp người học phát triển toàn diện và có giá trị cho xã hội."
+          title="Một hệ sinh thái học tập giúp Learner phát triển toàn diện và có giá trị cho xã hội."
         />
         <div className="landing-overview-grid">
           <OverviewCard
             Icon={Target}
             title="Mission"
-            copy="Giúp người học tiếp cận kỹ năng theo cách hiện đại, ứng dụng được và tạo ra thay đổi tích cực."
+            copy="Giúp Learner tiếp cận kỹ năng theo cách hiện đại, ứng dụng được và tạo ra thay đổi tích cực."
           />
           <OverviewCard
             Icon={BookOpen}

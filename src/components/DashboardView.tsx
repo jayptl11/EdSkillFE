@@ -117,14 +117,14 @@ export function DashboardShell({
 
 const getRoleLabel = (role: string) => {
   if (role === 'admin') {
-    return 'Quản trị'
+    return 'Admin'
   }
 
   if (role === 'companion') {
-    return 'Người đồng hành'
+    return 'Companion'
   }
 
-  return 'Người học'
+  return 'Learner'
 }
 
 function DashboardCard({
