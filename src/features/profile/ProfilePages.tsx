@@ -4,9 +4,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
   Camera,
-  Eye,
   EyeOff,
   Globe2,
+  Info,
   LoaderCircle,
   Save,
   Trash2,
@@ -222,13 +222,10 @@ export function OwnerProfilePage() {
       return
     }
 
-    setFormValues((current) => {
-      const list = current[field]
-      return {
-        ...current,
-        [field]: [...list, normalized],
-      }
-    })
+    setFormValues((current) => ({
+      ...current,
+      [field]: [...current[field], normalized],
+    }))
     clearFieldError(field)
   }
 
@@ -292,14 +289,25 @@ export function OwnerProfilePage() {
       {profileQuery.data ? (
         <section className="profile-layout">
           <aside className="profile-side-card">
-            <div className="profile-avatar-shell">
-              {avatarPreviewUrl ? (
-                <img className="profile-avatar" src={avatarPreviewUrl} alt={formValues.displayName} />
-              ) : (
-                <div className="profile-avatar placeholder">
-                  <UserRound size={44} />
+            <div className="profile-avatar-shell profile-panel">
+              <div className="profile-avatar-header">
+                {avatarPreviewUrl ? (
+                  <img className="profile-avatar" src={avatarPreviewUrl} alt={formValues.displayName} />
+                ) : (
+                  <div className="profile-avatar placeholder">
+                    <UserRound size={44} />
+                  </div>
+                )}
+                <div className="profile-avatar-copy">
+                  <span className="profile-mini-label">Hồ sơ cá nhân</span>
+                  <h2>{formValues.displayName || 'Chưa có tên hiển thị'}</h2>
+                  <p>
+                    Hoàn thiện avatar, vai trò và trạng thái hiển thị để hồ sơ của bạn rõ ràng hơn
+                    khi xuất hiện công khai.
+                  </p>
                 </div>
-              )}
+              </div>
+
               <div className="profile-avatar-actions">
                 <input
                   accept="image/jpeg,image/png,image/webp"
@@ -331,7 +339,7 @@ export function OwnerProfilePage() {
               {fieldErrors.avatarUrl ? <p className="profile-field-error">{fieldErrors.avatarUrl}</p> : null}
             </div>
 
-            <div className="profile-meta-card">
+            <div className="profile-meta-card profile-panel">
               <h2>Vai trò & hoạt động</h2>
               <div className="profile-role-row">
                 {profileQuery.data.roles.map((role) => (
@@ -340,7 +348,7 @@ export function OwnerProfilePage() {
                   </span>
                 ))}
               </div>
-              <dl className="profile-stats">
+              <dl className="profile-stats profile-stats-tiles">
                 <div>
                   <dt>Total sessions</dt>
                   <dd>{profileQuery.data.totalSessions}</dd>
@@ -366,117 +374,176 @@ export function OwnerProfilePage() {
                 </span>
                 <h2>Thông tin hiển thị</h2>
               </div>
-              <button
-                className="button primary"
-                disabled={!isDirty || updateProfileMutation.isPending || isUploadingAvatar}
-                type="submit"
-              >
-                {updateProfileMutation.isPending ? (
-                  <LoaderCircle className="spin" size={18} />
-                ) : (
-                  <Save size={18} />
-                )}
-                Lưu hồ sơ
-              </button>
-            </div>
-
-            <div className="profile-form-grid">
-              <Field error={fieldErrors.displayName} label="Tên hiển thị" required>
-                <input
-                  onChange={(event) => handleChange('displayName', event.target.value)}
-                  value={formValues.displayName}
-                />
-              </Field>
-
-              <Field error={fieldErrors.isPublic} label="Chế độ hồ sơ">
-                <label className="profile-switch">
-                  <input
-                    checked={formValues.isPublic}
-                    onChange={(event) => handleChange('isPublic', event.target.checked)}
-                    type="checkbox"
-                  />
-                  <span>{formValues.isPublic ? 'Public profile' : 'Private profile'}</span>
-                </label>
-              </Field>
-
-              <Field className="full" error={fieldErrors.bio} label="Tiểu sử">
-                <textarea
-                  onChange={(event) => handleChange('bio', event.target.value)}
-                  rows={4}
-                  value={formValues.bio}
-                />
-              </Field>
-
-              <Field error={fieldErrors.university} label="Trường">
-                <input
-                  onChange={(event) => handleChange('university', event.target.value)}
-                  value={formValues.university}
-                />
-              </Field>
-
-              <Field error={fieldErrors.faculty} label="Khoa / ngành">
-                <input
-                  onChange={(event) => handleChange('faculty', event.target.value)}
-                  value={formValues.faculty}
-                />
-              </Field>
-
-              <Field error={fieldErrors.yearOfStudy} label="Năm học">
-                <select
-                  onChange={(event) =>
-                    handleChange(
-                      'yearOfStudy',
-                      event.target.value ? Number(event.target.value) : null,
-                    )
-                  }
-                  value={formValues.yearOfStudy ?? ''}
+              <div className="profile-form-actions">
+                <button
+                  className="button primary"
+                  disabled={!isDirty || updateProfileMutation.isPending || isUploadingAvatar}
+                  type="submit"
                 >
-                  <option value="">Chưa cập nhật</option>
-                  {[1, 2, 3, 4, 5, 6].map((year) => (
-                    <option key={year} value={year}>
-                      Năm {year}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+                  {updateProfileMutation.isPending ? (
+                    <LoaderCircle className="spin" size={18} />
+                  ) : (
+                    <Save size={18} />
+                  )}
+                  Lưu hồ sơ
+                </button>
+              </div>
             </div>
 
-            <div className="profile-skills-grid">
-              <SkillInput
-                draft={teachDraft}
-                error={fieldErrors.skillsToTeach}
-                label="Kỹ năng muốn dạy"
-                onAdd={() => {
-                  addSkill('skillsToTeach', teachDraft)
-                  setTeachDraft('')
-                }}
-                onChange={setTeachDraft}
-                onRemove={(skill) => removeSkill('skillsToTeach', skill)}
-                placeholder="Ví dụ: React, SQL, Guitar"
-                skills={formValues.skillsToTeach}
-              />
-              <SkillInput
-                draft={learnDraft}
-                error={fieldErrors.skillsToLearn}
-                label="Kỹ năng muốn học"
-                onAdd={() => {
-                  addSkill('skillsToLearn', learnDraft)
-                  setLearnDraft('')
-                }}
-                onChange={setLearnDraft}
-                onRemove={(skill) => removeSkill('skillsToLearn', skill)}
-                placeholder="Ví dụ: Docker, Public speaking"
-                skills={formValues.skillsToLearn}
-              />
-            </div>
+            <section className="profile-section-card">
+              <div className="profile-section-heading">
+                <div>
+                  <h3>Nội dung chính</h3>
+                </div>
+              </div>
 
-            <div className="profile-form-footnote">
-              <Eye size={16} />
-              <span>
-                Chỉ các trường thay đổi mới được gửi lên backend. Danh sách kỹ năng sẽ được thay thế
-                toàn bộ nếu bạn chỉnh sửa.
-              </span>
-            </div>
+              <div className="profile-form-grid">
+                <Field
+                  error={fieldErrors.displayName}
+                  helper="Tên nên ngắn gọn, dễ nhớ và không dùng ký tự đặc biệt."
+                  label="Tên hiển thị"
+                  required
+                >
+                  <input
+                    onChange={(event) => handleChange('displayName', event.target.value)}
+                    value={formValues.displayName}
+                  />
+                </Field>
+
+                <Field
+                  className="profile-field-switch"
+                  error={fieldErrors.isPublic}
+                  helper="Bạn có thể đổi lại bất cứ lúc nào."
+                  label="Chế độ hồ sơ"
+                >
+                  <label className="profile-switch">
+                    <input
+                      className="profile-switch-input"
+                      checked={formValues.isPublic}
+                      onChange={(event) => handleChange('isPublic', event.target.checked)}
+                      type="checkbox"
+                    />
+                    <span className="profile-switch-track" aria-hidden="true">
+                      <span className="profile-switch-thumb" />
+                    </span>
+                    <span className="profile-switch-copy">
+                      <strong>{formValues.isPublic ? 'Public profile' : 'Private profile'}</strong>
+                      <small>
+                        {formValues.isPublic
+                          ? 'Người khác có thể xem hồ sơ công khai của bạn.'
+                          : 'Chỉ bạn mới xem được trang hồ sơ này.'}
+                      </small>
+                    </span>
+                  </label>
+                </Field>
+
+                <Field
+                  className="full"
+                  error={fieldErrors.bio}
+                  helper="Một đoạn giới thiệu ngắn về điều bạn đang học hoặc có thể chia sẻ."
+                  label="Tiểu sử"
+                >
+                  <textarea
+                    onChange={(event) => handleChange('bio', event.target.value)}
+                    rows={4}
+                    value={formValues.bio}
+                  />
+                </Field>
+              </div>
+            </section>
+
+            <section className="profile-section-card">
+              <div className="profile-section-heading">
+                <div>
+                  <h3>Thông tin học tập</h3>
+                </div>
+              </div>
+
+              <div className="profile-form-grid">
+                <Field
+                  error={fieldErrors.university}
+                  helper="Tên trường hoặc tổ chức bạn đang theo học."
+                  label="Trường"
+                >
+                  <input
+                    onChange={(event) => handleChange('university', event.target.value)}
+                    value={formValues.university}
+                  />
+                </Field>
+
+                <Field
+                  error={fieldErrors.faculty}
+                  helper="Khoa, ngành hoặc lĩnh vực học tập chính."
+                  label="Khoa / ngành"
+                >
+                  <input
+                    onChange={(event) => handleChange('faculty', event.target.value)}
+                    value={formValues.faculty}
+                  />
+                </Field>
+
+                <Field
+                  error={fieldErrors.yearOfStudy}
+                  helper="Có thể để trống nếu bạn chưa muốn hiển thị."
+                  label="Năm học"
+                >
+                  <select
+                    onChange={(event) =>
+                      handleChange(
+                        'yearOfStudy',
+                        event.target.value ? Number(event.target.value) : null,
+                      )
+                    }
+                    value={formValues.yearOfStudy ?? ''}
+                  >
+                    <option value="">Chưa cập nhật</option>
+                    {[1, 2, 3, 4, 5, 6].map((year) => (
+                      <option key={year} value={year}>
+                        Năm {year}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+            </section>
+
+            <section className="profile-section-card">
+              <div className="profile-section-heading">
+                <div>
+                  <h3>Kỹ năng</h3>
+                </div>
+              </div>
+
+              <div className="profile-skills-grid">
+                <SkillInput
+                  draft={teachDraft}
+                  error={fieldErrors.skillsToTeach}
+                  label="Kỹ năng muốn dạy"
+                  onAdd={() => {
+                    addSkill('skillsToTeach', teachDraft)
+                    setTeachDraft('')
+                  }}
+                  onChange={setTeachDraft}
+                  onRemove={(skill) => removeSkill('skillsToTeach', skill)}
+                  placeholder="Ví dụ: React, SQL, Guitar"
+                  skills={formValues.skillsToTeach}
+                />
+                <SkillInput
+                  draft={learnDraft}
+                  error={fieldErrors.skillsToLearn}
+                  label="Kỹ năng muốn học"
+                  onAdd={() => {
+                    addSkill('skillsToLearn', learnDraft)
+                    setLearnDraft('')
+                  }}
+                  onChange={setLearnDraft}
+                  onRemove={(skill) => removeSkill('skillsToLearn', skill)}
+                  placeholder="Ví dụ: Docker, Public speaking"
+                  skills={formValues.skillsToLearn}
+                />
+              </div>
+            </section>
+
           </form>
         </section>
       ) : null}
@@ -571,6 +638,7 @@ function PublicProfileCard({ profile }: { profile: ProfileDto }) {
           </div>
         )}
         <div>
+          <span className="profile-mini-label">Hồ sơ công khai</span>
           <div className="profile-role-row">
             {profile.roles.map((role) => (
               <span className="profile-role-badge" key={role}>
@@ -580,6 +648,25 @@ function PublicProfileCard({ profile }: { profile: ProfileDto }) {
           </div>
           <h2>{profile.displayName}</h2>
           <p>{profile.bio || 'Người dùng này chưa cập nhật tiểu sử.'}</p>
+        </div>
+      </div>
+
+      <div className="public-profile-summary">
+        <div className="public-profile-summary-card">
+          <span>Trường</span>
+          <strong>{profile.university || 'Chưa cập nhật'}</strong>
+        </div>
+        <div className="public-profile-summary-card">
+          <span>Năm học</span>
+          <strong>{profile.yearOfStudy ? `Năm ${profile.yearOfStudy}` : 'Chưa cập nhật'}</strong>
+        </div>
+        <div className="public-profile-summary-card">
+          <span>Hoạt động gần nhất</span>
+          <strong>{formatLastActive(profile.lastActiveAt)}</strong>
+        </div>
+        <div className="public-profile-summary-card">
+          <span>Total sessions</span>
+          <strong>{profile.totalSessions}</strong>
         </div>
       </div>
 
@@ -663,7 +750,7 @@ function SkillInput({
           placeholder={placeholder}
           value={draft}
         />
-        <button className="button secondary" onClick={onAdd} type="button">
+        <button className="button secondary profile-add-skill-button" onClick={onAdd} type="button">
           Thêm
         </button>
       </div>
@@ -706,21 +793,31 @@ function Field({
   children,
   className,
   error,
+  helper,
   label,
   required = false,
 }: {
   children: ReactNode
   className?: string
   error?: string
+  helper?: string
   label: string
   required?: boolean
 }) {
   return (
     <div className={`profile-field ${className ?? ''}`.trim()}>
-      <span>
-        {label}
-        {required ? ' *' : ''}
-      </span>
+      <div className="profile-label-row">
+        <span>
+          {label}
+          {required ? ' *' : ''}
+        </span>
+        {helper ? (
+          <span className="profile-hint" tabIndex={0}>
+            <Info size={14} />
+            <span className="profile-hint-bubble">{helper}</span>
+          </span>
+        ) : null}
+      </div>
       {children}
       {error ? <p className="profile-field-error">{error}</p> : null}
     </div>
