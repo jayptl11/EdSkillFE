@@ -3283,3 +3283,446 @@
     padding: 18px;
   }
 }
+
+.button.ghost {
+  background: transparent;
+}
+
+.button.danger {
+  border-color: rgba(180, 35, 24, 0.18);
+  color: #b42318;
+}
+
+.dashboard-quick-links {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  position: relative;
+  z-index: 2;
+}
+
+.dashboard-quick-link,
+.wallet-summary-card,
+.session-card,
+.session-empty-state,
+.session-board-shell,
+.session-guide-card,
+.admin-session-panel,
+.session-note-banner {
+  border: 1px solid rgba(0, 45, 114, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+}
+
+.dashboard-quick-link {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  color: inherit;
+}
+
+.dashboard-quick-link strong {
+  color: var(--sapphire);
+  font-size: 16px;
+}
+
+.dashboard-quick-link span,
+.session-board-toolbar p,
+.session-card p,
+.session-guide-card li,
+.wallet-transaction-note,
+.session-note-banner p,
+.admin-config-copy span,
+.admin-config-copy small {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.session-hub-page {
+  gap: 20px;
+}
+
+.wallet-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  position: relative;
+  z-index: 2;
+}
+
+.wallet-summary-card {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+}
+
+.wallet-summary-card span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.wallet-summary-card strong,
+.session-detail-points {
+  color: var(--sapphire);
+  font-size: 28px;
+  font-weight: 1000;
+}
+
+.wallet-board-shell,
+.session-board-shell {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  position: relative;
+  z-index: 2;
+}
+
+.session-board-toolbar,
+.session-filter-grid,
+.wallet-transaction-head,
+.session-card-top,
+.session-card-actions,
+.session-action-head,
+.admin-config-edit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.session-board-toolbar,
+.session-card-top,
+.wallet-transaction-head,
+.session-action-head {
+  justify-content: space-between;
+}
+
+.session-filter-grid {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.session-filter-field {
+  display: grid;
+  gap: 8px;
+  color: var(--sapphire);
+  font-weight: 900;
+}
+
+.session-filter-field input,
+.session-filter-field select,
+.admin-config-edit input {
+  min-height: 42px;
+  border: 1px solid rgba(11, 37, 69, 0.1);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #fbfdff, #f6faff);
+  padding: 0 14px;
+  color: var(--ink);
+  font: inherit;
+}
+
+.session-card-grid,
+.wallet-transaction-list,
+.session-action-stack,
+.admin-config-list,
+.admin-config-groups {
+  display: grid;
+  gap: 14px;
+}
+
+.session-card-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.session-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.session-card h3,
+.wallet-transaction-card h3,
+.session-guide-card h3 {
+  margin: 0;
+  color: var(--sapphire);
+  font-size: 20px;
+  font-weight: 1000;
+}
+
+.session-card p,
+.wallet-transaction-note,
+.session-detail-description {
+  margin: 0;
+}
+
+.session-card-meta,
+.wallet-transaction-grid,
+.session-detail-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.session-card-meta dt,
+.wallet-transaction-grid dt,
+.session-detail-grid dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.session-card-meta dd,
+.wallet-transaction-grid dd,
+.session-detail-grid dd {
+  margin: 6px 0 0;
+  color: var(--ink);
+  font-weight: 800;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.session-status-chip,
+.session-cost-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 1000;
+}
+
+.session-status-chip {
+  background: rgba(30, 136, 229, 0.08);
+  color: var(--blue-dark);
+}
+
+.session-status-chip.status-available,
+.session-status-chip.status-signupbonus,
+.session-status-chip.status-admingrant,
+.session-status-chip.status-sessionearning {
+  background: #eafaf3;
+  color: var(--success);
+}
+
+.session-status-chip.status-pending,
+.session-status-chip.status-confirmed,
+.session-status-chip.status-held,
+.session-status-chip.status-holdrelease {
+  background: rgba(30, 136, 229, 0.08);
+  color: var(--blue-dark);
+}
+
+.session-status-chip.status-inprogress,
+.session-status-chip.status-pendingreview,
+.session-status-chip.status-platformfee {
+  background: rgba(255, 212, 90, 0.22);
+  color: var(--ink);
+}
+
+.session-status-chip.status-cancelled,
+.session-status-chip.status-disputed,
+.session-status-chip.status-refund,
+.session-status-chip.status-sessionpayment,
+.session-status-chip.status-purchase {
+  background: #fff0ed;
+  color: #b42318;
+}
+
+.session-cost-chip {
+  background: rgba(0, 45, 114, 0.08);
+  color: var(--sapphire);
+}
+
+.session-empty-state {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 20px;
+}
+
+.session-empty-state h3,
+.wallet-transaction-card h3,
+.session-action-panel h3,
+.session-board-toolbar h2 {
+  margin: 0;
+  color: var(--sapphire);
+}
+
+.session-empty-state p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.session-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wallet-transaction-card {
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(0, 45, 114, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 16px;
+}
+
+.wallet-amount {
+  font-size: 20px;
+  font-weight: 1000;
+}
+
+.wallet-amount.positive {
+  color: var(--success);
+}
+
+.wallet-amount.negative {
+  color: #b42318;
+}
+
+.wallet-amount.neutral {
+  color: var(--sapphire);
+}
+
+.session-form-layout,
+.session-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  gap: 18px;
+  position: relative;
+  z-index: 2;
+}
+
+.session-create-card,
+.session-detail-card {
+  gap: 18px;
+}
+
+.session-guide-card,
+.session-side-stack {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  padding: 18px;
+}
+
+.session-guide-card ul,
+.session-action-panel ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.session-action-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.session-action-head {
+  align-items: flex-start;
+}
+
+.session-action-head h3 {
+  margin: 0;
+  color: var(--sapphire);
+}
+
+.session-action-head p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.session-detail-description {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.session-note-banner {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+}
+
+.session-note-banner strong {
+  color: var(--sapphire);
+}
+
+.session-note-banner.info {
+  background: var(--soft-blue);
+}
+
+.session-note-banner.danger {
+  background: #fff0ed;
+}
+
+.admin-session-wallet-layout {
+  align-items: start;
+}
+
+.admin-session-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-config-item {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(0, 45, 114, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 14px;
+}
+
+.admin-config-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-config-copy strong {
+  color: var(--sapphire);
+}
+
+.admin-config-edit {
+  justify-content: space-between;
+}
+
+.admin-config-edit input {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 1040px) {
+  .dashboard-quick-links,
+  .wallet-summary-grid,
+  .session-card-grid,
+  .session-form-layout,
+  .session-detail-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .session-board-toolbar,
+  .session-filter-grid,
+  .session-card-top,
+  .wallet-transaction-head,
+  .session-card-actions,
+  .session-action-head,
+  .session-pagination,
+  .admin-config-edit {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .session-card-meta,
+  .wallet-transaction-grid,
+  .session-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}

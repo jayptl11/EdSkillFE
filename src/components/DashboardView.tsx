@@ -32,12 +32,12 @@ export function DashboardShell({
         <div>
           <span className="eyebrow">
             <Sparkles size={15} />
-            Bảng điều khiển {getRoleLabel(primaryRole)}
+            Dashboard {getRoleLabel(primaryRole)}
           </span>
-          <h1>Xin chào, {username || email}</h1>
+          <h1>Xin chao, {username || email}</h1>
           <p>
-            Không gian EdSkill của bạn đã sẵn sàng. Chọn bước tiếp theo, giữ nhịp học và chuẩn bị
-            cho các công cụ theo từng vai trò.
+            Khong gian EdSkill cua ban da san sang. Chon buoc tiep theo, giu nhip hoc va mo cac
+            cong cu wallet, sessions va admin theo dung vai tro.
           </p>
           <div className="role-chip-row">
             {roles.map((role) => (
@@ -46,12 +46,38 @@ export function DashboardShell({
           </div>
           <div className="dashboard-hero-links">
             <Link className="button secondary" to={profileHref}>
-              Cập nhật hồ sơ
+              Cap nhat ho so
             </Link>
-            {roles.includes('admin') ? (
-              <Link className="button secondary" to="/dashboard/admin/skills">
-                Quản lý skills
+            <Link className="button secondary" to="/dashboard/wallet">
+              Wallet
+            </Link>
+            <Link className="button secondary" to="/dashboard/sessions/marketplace">
+              Marketplace
+            </Link>
+            {roles.includes('learner') ? (
+              <Link className="button secondary" to="/dashboard/sessions/learning">
+                Learning sessions
               </Link>
+            ) : null}
+            {roles.includes('companion') ? (
+              <>
+                <Link className="button secondary" to="/dashboard/sessions/teaching">
+                  Teaching sessions
+                </Link>
+                <Link className="button secondary" to="/dashboard/sessions/new">
+                  Tao offer
+                </Link>
+              </>
+            ) : null}
+            {roles.includes('admin') ? (
+              <>
+                <Link className="button secondary" to="/dashboard/admin/session-wallet">
+                  Session wallet admin
+                </Link>
+                <Link className="button secondary" to="/dashboard/admin/skills">
+                  Quan ly skills
+                </Link>
+              </>
             ) : null}
           </div>
         </div>
@@ -62,13 +88,13 @@ export function DashboardShell({
           whileTap={{ scale: 0.98 }}
         >
           <LogOut size={18} />
-          Đăng xuất
+          Dang xuat
         </motion.button>
       </section>
       <motion.section
+        animate="visible"
         className="dashboard-grid"
         initial="hidden"
-        animate="visible"
         variants={{
           hidden: {},
           visible: { transition: { staggerChildren: 0.08 } },
@@ -86,35 +112,57 @@ export function DashboardShell({
             <CalendarCheck2 size={22} />
           </span>
           <div>
-            <h2>Bước học tiếp theo</h2>
-            <p>Hoàn thiện hồ sơ và chuẩn bị module lộ trình kỹ năng đầu tiên.</p>
+            <h2>Buoc hoc tiep theo</h2>
+            <p>Hoan thien ho so, wallet va cac session flow dau tien cua ban.</p>
           </div>
           <span className="summary-progress">
             <span />
           </span>
         </div>
         <div className="session-panel">
-          <h2>Phiên đăng nhập</h2>
+          <h2>Phien dang nhap</h2>
           <dl>
             <div>
-              <dt>Địa chỉ email</dt>
+              <dt>Email</dt>
               <dd>{email}</dd>
             </div>
             <div>
-              <dt>Vai trò</dt>
+              <dt>Vai tro</dt>
               <dd>{roles.map(getRoleLabel).join(', ')}</dd>
             </div>
             <div>
-              <dt>Nhắc học</dt>
-              <dd>{dailyReminderNeeded ? 'Cần thiết lập' : 'Chưa cần'}</dd>
+              <dt>Nhac hoc</dt>
+              <dd>{dailyReminderNeeded ? 'Can thiet lap' : 'Chua can'}</dd>
             </div>
           </dl>
         </div>
         <div className="study-pulse">
           <Clock3 size={28} />
-          <strong>15 phút</strong>
-          <span>gợi ý cho phiên học đầu</span>
+          <strong>15 phut</strong>
+          <span>goi y cho phien hoc dau</span>
         </div>
+      </section>
+      <section className="dashboard-quick-links">
+        <Link className="dashboard-quick-link" to="/dashboard/wallet">
+          <strong>Wallet</strong>
+          <span>Theo doi balance, held points va transaction history.</span>
+        </Link>
+        <Link className="dashboard-quick-link" to="/dashboard/sessions/marketplace">
+          <strong>Marketplace</strong>
+          <span>Xem session Available, book nhanh va theo doi detail.</span>
+        </Link>
+        {roles.includes('learner') ? (
+          <Link className="dashboard-quick-link" to="/dashboard/sessions/learning">
+            <strong>My learning sessions</strong>
+            <span>Danh sach session ban da book trong vai tro learner.</span>
+          </Link>
+        ) : null}
+        {roles.includes('companion') ? (
+          <Link className="dashboard-quick-link" to="/dashboard/sessions/teaching">
+            <strong>My teaching sessions</strong>
+            <span>Quan ly offer, confirm, reject va theo doi pending review.</span>
+          </Link>
+        ) : null}
       </section>
     </MotionPage>
   )

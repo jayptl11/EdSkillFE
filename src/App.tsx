@@ -41,7 +41,16 @@ import {
   getRequiredSignupPolicies,
   requiredSignupPolicyTypes,
 } from './features/policies/policyUtils'
+import { AdminSessionWalletPage } from './features/admin-session-wallet/AdminSessionWalletPage'
 import { AdminSkillsPage } from './features/skills/AdminSkillsPage'
+import { SessionDetailPage } from './features/sessions/SessionDetailPage'
+import {
+  CreateSessionOfferPage,
+  LearningSessionsPage,
+  SessionMarketplacePage,
+  TeachingSessionsPage,
+} from './features/sessions/SessionPages'
+import { WalletPage } from './features/wallet/WalletPage'
 import { useAppStore, type UserRole } from './store/useAppStore'
 import './App.css'
 
@@ -92,6 +101,62 @@ function App() {
             element={
               <ProtectedRoute>
                 <AdminSkillsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/admin/session-wallet"
+            element={
+              <ProtectedRoute>
+                <AdminSessionWalletPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/wallet"
+            element={
+              <ProtectedRoute>
+                <WalletPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/sessions/marketplace"
+            element={
+              <ProtectedRoute>
+                <SessionMarketplacePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/sessions/learning"
+            element={
+              <ProtectedRoute>
+                <LearningSessionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/sessions/teaching"
+            element={
+              <ProtectedRoute>
+                <TeachingSessionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/sessions/new"
+            element={
+              <ProtectedRoute>
+                <CreateSessionOfferPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/sessions/:sessionId"
+            element={
+              <ProtectedRoute>
+                <SessionDetailPage />
               </ProtectedRoute>
             }
           />

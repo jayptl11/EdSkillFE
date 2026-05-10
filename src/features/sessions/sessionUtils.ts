@@ -1,0 +1,99 @@
+import type { QueryClient } from '@tanstack/react-query'
+import { walletKeys } from '../wallet/walletApi'
+import { sessionKeys } from './sessionsApi'
+import type { SessionActorRole, SessionDto, SessionStatus } from './types'
+
+const activePollingStatuses: SessionStatus[] = ['Pending', 'Confirmed', 'InProgress', 'PendingReview']
+
+export function formatSessionDateTime(value: string | null) {
+  if (!value) {
+    return 'Chua co'
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
+}
+
+export function formatSessionPoints(value: number) {
+  return `${new Intl.NumberFormat().format(value)} points`
+}
+
+export function getSessionStatusLabel(status: SessionStatus) {
+  return {
+    Available: 'Available',
+    Pending: 'Pending',
+    Confirmed: 'Confirmed',
+    InProgress: 'In progress',
+    PendingReview: 'Pending review',
+    Completed: 'Completed',
+    Cancelled: 'Cancelled',
+    Disputed: 'Disputed',
+  }[status]
+}
+
+export function getCurrentSessionRole(session: SessionDto, userId?: string | null): SessionActorRole {
+  if (!userId) {
+    return 'viewer'
+  }
+
+  if (session.companionId === userId) {
+    return 'companion'
+  }
+
+  if (session.learnerId === userId) {
+    return 'learner'
+  }
+
+  return 'viewer'
+}
+
+export function canBookSession(session: SessionDto, userId?: string | null) {
+  return session.status === 'Available' && Boolean(userId) && session.companionId !== userId
+}
+
+export function canCancelSession(session: SessionDto, actorRole: SessionActorRole) {
+  if (actorRole === 'viewer') {
+    return false
+  }
+
+  return session.status === 'Pending' || session.status === 'Confirmed'
+}
+
+export function shouldPollSessionStatus(status: SessionStatus | null | undefined) {
+  return status ? activePollingStatuses.includes(status) : false
+}
+
+export function buildJitsiUrl(roomId: string) {
+  const baseUrl = import.meta.env.VITE_JITSI_BASE_URL?.replace(/\/$/, '') ?? 'https://meet.jit.si'
+  return `${baseUrl}/${roomId}`
+}
+
+export function toDateTimeLocalValue(date: Date) {
+  const offset = date.getTimezoneOffset()
+  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16)
+}
+
+export async function invalidateWalletQueries(queryClient: QueryClient) {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: walletKeys.summary() }),
+    queryClient.invalidateQueries({ queryKey: walletKeys.transactionsRoot() }),
+  ])
+}
+
+export async function invalidateSessionQueries(queryClient: QueryClient, sessionId?: string) {
+  const tasks = [
+    queryClient.invalidateQueries({ queryKey: sessionKeys.lists() }),
+    queryClient.invalidateQueries({ queryKey: sessionKeys.statuses() }),
+  ]
+
+  if (sessionId) {
+    tasks.push(queryClient.invalidateQueries({ queryKey: sessionKeys.detail(sessionId) }))
+    tasks.push(queryClient.invalidateQueries({ queryKey: sessionKeys.status(sessionId) }))
+  } else {
+    tasks.push(queryClient.invalidateQueries({ queryKey: sessionKeys.details() }))
+  }
+
+  await Promise.all(tasks)
+}
