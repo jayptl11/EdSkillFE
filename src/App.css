@@ -233,9 +233,7 @@
 
 .button:focus-visible,
 .nav-link:focus-visible,
-.role-option:focus-visible,
-.auth-form input:focus-visible,
-.auth-form textarea:focus-visible {
+.role-option:focus-visible {
   outline: 3px solid rgba(249, 168, 37, 0.5);
   outline-offset: 3px;
 }
