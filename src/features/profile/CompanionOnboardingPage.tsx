@@ -20,13 +20,10 @@ import { useAppStore } from '../../store/useAppStore'
 import { SkillAutocomplete } from '../skills/SkillAutocomplete'
 import {
   clearSavedAvatar,
-  clearSavedDegree,
   profileApi,
   profileKeys,
   requestAvatarUploadUrl,
-  requestDegreeUploadUrl,
   saveAvatarUrl,
-  saveDegreeUrl,
   uploadFileToPresignedUrl,
 } from './profileApi'
 import {
@@ -36,7 +33,6 @@ import {
   getRoleBadgeLabel,
   toProfileFormValues,
   validateAvatarFile,
-  validateDegreeFile,
   type ProfileFieldErrors,
 } from './profileUtils'
 import type { ProfileDto, ProfileField, ProfileFormValues } from './types'
@@ -58,7 +54,6 @@ export function CompanionOnboardingPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const degreeFileInputRef = useRef<HTMLInputElement | null>(null)
   const previewUrlRef = useRef<string | null>(null)
   const hasInitializedRef = useRef(false)
   const [step, setStep] = useState<number>(1)
@@ -67,7 +62,6 @@ export function CompanionOnboardingPage() {
   const [fieldErrors, setFieldErrors] = useState<ProfileFieldErrors>({})
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
-  const [isUploadingDegree, setIsUploadingDegree] = useState(false)
 
   const profileQuery = useQuery({
     queryKey: profileKeys.me(),
@@ -210,57 +204,6 @@ export function CompanionOnboardingPage() {
       showToast({ kind: 'error', message: getErrorMessage(error) })
     } finally {
       setIsUploadingAvatar(false)
-    }
-  }
-
-  async function handleDegreeChange(file: File) {
-    const validationMessage = validateDegreeFile(file)
-    if (validationMessage) {
-      throw new Error(validationMessage)
-    }
-
-    const uploadMeta = await requestDegreeUploadUrl(file)
-    await uploadFileToPresignedUrl(uploadMeta.uploadUrl, file)
-    setFormValues((current) => ({ ...current, degreeUrl: uploadMeta.publicUrl }))
-    const updatedProfile = await saveDegreeUrl(uploadMeta.publicUrl)
-    applyProfileSnapshot(updatedProfile)
-  }
-
-  const handleDegreeInputChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-
-    if (!file) {
-      return
-    }
-
-    const previousDegreeUrl = formValues.degreeUrl
-
-    setIsUploadingDegree(true)
-    clearFieldError('degreeUrl')
-
-    try {
-      await handleDegreeChange(file)
-      showToast({ kind: 'success', message: 'Bằng cấp đã được tải lên.' })
-    } catch (error) {
-      setFormValues((current) => ({ ...current, degreeUrl: previousDegreeUrl }))
-      showToast({ kind: 'error', message: error instanceof Error ? error.message : getErrorMessage(error) })
-    } finally {
-      setIsUploadingDegree(false)
-    }
-  }
-
-  const handleRemoveDegree = async () => {
-    setIsUploadingDegree(true)
-
-    try {
-      const updatedProfile = await clearSavedDegree()
-      applyProfileSnapshot(updatedProfile)
-      showToast({ kind: 'success', message: 'Bằng cấp đã được xóa.' })
-    } catch (error) {
-      showToast({ kind: 'error', message: getErrorMessage(error) })
-    } finally {
-      setIsUploadingDegree(false)
     }
   }
 
