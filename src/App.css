@@ -1248,6 +1248,29 @@
   font-weight: 700;
 }
 
+.hero-promo-meta span {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border-radius: 999px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 1000;
+}
+
+.hero-promo-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hero-promo-meta span {
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--sapphire);
+  border: 1px solid rgba(0, 45, 114, 0.08);
+}
+
 .landing-hero-media {
   width: 100%;
 }
@@ -1528,6 +1551,62 @@
   margin-top: 30px;
 }
 
+.landing-topuni-promo {
+  padding-top: 0;
+  padding-bottom: 84px;
+}
+
+.landing-topuni-promo-card {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
+  gap: 22px;
+  align-items: center;
+  border: 1px solid rgba(0, 45, 114, 0.1);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 212, 90, 0.26), transparent 26%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(241, 249, 255, 0.95));
+  padding: clamp(20px, 3vw, 30px);
+  box-shadow: var(--shadow-soft);
+}
+
+.landing-topuni-promo-copy {
+  display: grid;
+  gap: 14px;
+}
+
+.landing-topuni-promo-copy h2 {
+  margin: 0;
+  color: var(--sapphire);
+  font-size: clamp(28px, 3.6vw, 40px);
+  font-weight: 1000;
+  line-height: 1.08;
+}
+
+.landing-topuni-promo-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.65;
+}
+
+.landing-topuni-promo-link {
+  width: fit-content;
+}
+
+.landing-topuni-promo-banner {
+  display: block;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 18px 32px rgba(211, 62, 26, 0.18);
+}
+
+.landing-topuni-promo-banner img {
+  width: 100%;
+  display: block;
+}
+
 @media (max-width: 1040px) {
   .hero-section,
   .auth-shell {
@@ -1549,7 +1628,8 @@
   }
 
   .landing-hero,
-  .landing-feature-grid {
+  .landing-feature-grid,
+  .landing-topuni-promo-card {
     grid-template-columns: 1fr;
   }
 
@@ -1604,7 +1684,8 @@
 
   .hero-actions,
   .hero-actions > div,
-  .hero-actions .button {
+  .hero-actions .button,
+  .landing-topuni-promo-link {
     width: 100%;
   }
 
@@ -1701,8 +1782,13 @@
   }
 
   .landing-hero-copy p,
-  .landing-section-heading p {
+  .landing-section-heading p,
+  .landing-topuni-promo-copy p {
     font-size: 15px;
+  }
+
+  .landing-topuni-promo-card {
+    padding: 18px;
   }
 
   .landing-photo-card {

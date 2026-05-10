@@ -126,6 +126,14 @@ const testimonials = [
   },
 ]
 
+const topUniPromo = {
+  href: 'https://topuni.hocmai.vn/luyenthidaihoc?utm_campaign=P_Topuni.All_QC1_Coccoc_search.cpa.CCAds_Others.TopUni.2k7_All.VN.18-54_Thongbao.Text&utm_medium=QC1&utm_source=coccoc_context&utm_term=dgnl%20empire&utm_content=44678587&ctm_event_id=2556935444',
+  title: 'Luyện thi đại học cùng TopUni by HOCMAI',
+  copy:
+    'Khám phá lộ trình ôn thi, luyện thi DGNL và bộ tài nguyên học tập dành cho học sinh đang tăng tốc vào đại học.',
+  highlights: ['Luyện thi đại học', 'DGNL', 'HOCMAI'],
+}
+
 export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
   const reduceMotion = useReducedMotion()
 
@@ -299,6 +307,43 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
           <Link className="button secondary" to="/login">
             Đăng nhập
           </Link>
+        </div>
+      </section>
+
+      <section className="landing-section landing-topuni-promo" id="topuni-promo">
+        <div className="landing-topuni-promo-card">
+          <div className="landing-topuni-promo-copy">
+            <span className="eyebrow">
+              <Sparkles size={15} />
+              Đề xuất ôn thi 2027
+            </span>
+            <h2>{topUniPromo.title}</h2>
+            <p>{topUniPromo.copy}</p>
+            <div className="hero-promo-meta">
+              {topUniPromo.highlights.map((highlight) => (
+                <span key={highlight}>{highlight}</span>
+              ))}
+            </div>
+            <motion.a
+              className="button primary landing-topuni-promo-link"
+              href={topUniPromo.href}
+              rel="noreferrer"
+              target="_blank"
+              whileHover={{ y: -3 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Xem trang TopUni
+              <ArrowRight size={18} />
+            </motion.a>
+          </div>
+          <a
+            className="landing-topuni-promo-banner"
+            href={topUniPromo.href}
+            rel="noreferrer"
+            target="_blank"
+          >
+            <img src="/QC.png" alt="Banner quảng cáo TopUni 2027" />
+          </a>
         </div>
       </section>
     </>
