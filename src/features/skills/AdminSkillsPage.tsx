@@ -10,6 +10,7 @@ import {
   Save,
   Search,
   Shield,
+  Trash2,
 } from 'lucide-react'
 import { Link, Navigate } from 'react-router-dom'
 import { getErrorMessage } from '../../api/client'
@@ -98,6 +99,18 @@ export function AdminSkillsPage() {
     },
   })
 
+  const deleteSkillMutation = useMutation({
+    mutationFn: (skillId: string) => skillApi.deleteAdminSkill(skillId),
+    onSuccess: () => {
+      showToast({ kind: 'success', message: 'Kỹ năng đã được xóa.' })
+      void refreshSkills()
+      resetForm()
+    },
+    onError: (error) => {
+      showToast({ kind: 'error', message: getErrorMessage(error) })
+    },
+  })
+
   if (!session?.accessToken) {
     return <Navigate replace state={{ message: 'Vui lòng đăng nhập để tiếp tục.' }} to="/login" />
   }
@@ -147,6 +160,15 @@ export function AdminSkillsPage() {
     setSelectedSkillId(skill.id)
     setFormValues(toFormValues(skill))
     setAliasDraft('')
+  }
+
+  const handleDelete = (skill: AdminSkill) => {
+    const confirmed = window.confirm(
+      `Bạn có chắc chắn muốn xóa kỹ năng "${skill.name}"? Người dùng sẽ không thể chọn kỹ năng này nữa.`,
+    )
+    if (confirmed) {
+      deleteSkillMutation.mutate(skill.id)
+    }
   }
 
   const handleAddAlias = () => {
@@ -294,6 +316,14 @@ export function AdminSkillsPage() {
                         >
                           {skill.isActive ? <EyeOff size={16} /> : <Eye size={16} />}
                           {skill.isActive ? 'Ẩn' : 'Hiện'}
+                        </button>
+                        <button
+                          className="button danger ghost"
+                          onClick={() => handleDelete(skill)}
+                          type="button"
+                        >
+                          <Trash2 size={16} />
+                          Xóa
                         </button>
                       </div>
                     </article>

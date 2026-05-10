@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiPost } from '../../api/client'
+import { apiDelete, apiGet, apiPatch, apiPost } from '../../api/client'
 import type {
   AdminSkill,
   CreateAdminSkillPayload,
@@ -25,6 +25,9 @@ export const skillApi = {
 
   updateAdminSkill: (skillId: string, payload: UpdateAdminSkillPayload) =>
     apiPatch<AdminSkill>(`/api/admin/skills/${skillId}`, payload, { auth: true }),
+
+  deleteAdminSkill: (skillId: string) =>
+    apiDelete(`/api/admin/skills/${skillId}`, { auth: true }),
 }
 
 function toQueryString(params: object) {

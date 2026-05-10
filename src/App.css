@@ -1908,6 +1908,15 @@
   background: rgba(11, 37, 69, 0.04);
 }
 
+.button.danger.ghost {
+  background: rgba(180, 35, 24, 0.06);
+  color: var(--danger);
+}
+
+.button.danger.ghost:hover {
+  background: rgba(180, 35, 24, 0.12);
+}
+
 .profile-helper-copy,
 .profile-skills-head p,
 .profile-empty-copy,
@@ -2517,12 +2526,12 @@
 .admin-skills-list-card {
   display: grid;
   align-content: start;
-  gap: 16px;
+  gap: 12px;
   border: 1px solid rgba(0, 45, 114, 0.08);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--shadow-soft);
-  padding: 22px;
+  padding: 16px;
 }
 
 .admin-skills-list-card .profile-state-card {
@@ -2546,14 +2555,14 @@
 }
 
 .admin-search-shell {
-  min-height: 46px;
+  min-height: 40px;
   flex: 1 1 280px;
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
   gap: 10px;
   border: 1px solid rgba(11, 37, 69, 0.1);
-  border-radius: 16px;
+  border-radius: 10px;
   background: linear-gradient(180deg, #fbfdff, #f6faff);
   padding: 0 14px;
   color: var(--blue-dark);
@@ -2563,7 +2572,7 @@
   width: 100%;
   border: 0;
   background: transparent;
-  padding: 13px 0;
+  padding: 10px 0;
   color: var(--ink);
   font: inherit;
 }
@@ -2588,22 +2597,25 @@
 .admin-skills-list-head h2 {
   margin: 0;
   color: var(--sapphire);
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 1000;
 }
 
 .admin-skill-list {
   display: grid;
-  gap: 12px;
+  gap: 8px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .admin-skill-item {
   display: grid;
-  gap: 10px;
+  gap: 6px;
   border: 1px solid rgba(0, 45, 114, 0.08);
-  border-radius: 22px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.72);
-  padding: 14px;
+  padding: 10px 14px;
 }
 
 .admin-skill-item.selected {
@@ -2629,7 +2641,7 @@
 
 .admin-skill-copy strong {
   color: var(--sapphire);
-  font-size: 17px;
+  font-size: 15px;
 }
 
 .admin-skill-copy span,
@@ -2662,17 +2674,23 @@
 }
 
 .admin-skill-empty {
-  min-height: 120px;
+  min-height: 80px;
   display: grid;
   place-items: center;
   border: 1px dashed rgba(0, 45, 114, 0.14);
-  border-radius: 22px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.48);
   padding: 16px;
 }
 
-.admin-skill-form-card {
-  min-height: 100%;
+.admin-skill-form-card .profile-section-card {
+  border-radius: 14px;
+  padding: 16px;
+  gap: 14px;
+}
+
+.admin-field-switch .profile-switch {
+  min-height: 72px;
 }
 
 .admin-field-switch {

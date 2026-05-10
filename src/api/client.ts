@@ -101,6 +101,9 @@ export const apiPatch = <T>(path: string, payload?: unknown, options: RequestOpt
     body: payload === undefined ? undefined : JSON.stringify(payload),
   })
 
+export const apiDelete = <T = void>(path: string, options: RequestOptions = {}) =>
+  apiRequest<T>(path, { ...options, method: 'DELETE' })
+
 export const apiRequest = async <T>(path: string, options: ApiRequestOptions): Promise<T> => {
   const response = await request(path, options)
 
