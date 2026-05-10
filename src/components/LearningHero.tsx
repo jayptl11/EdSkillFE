@@ -311,12 +311,12 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
       </section>
 
       <section className="landing-section landing-topuni-promo" id="topuni-promo">
+        <span className="eyebrow">
+          <Sparkles size={15} />
+          Đối tác phát triển
+        </span>
         <div className="landing-topuni-promo-card">
           <div className="landing-topuni-promo-copy">
-            <span className="eyebrow">
-              <Sparkles size={15} />
-              Đề xuất ôn thi 2027
-            </span>
             <h2>{topUniPromo.title}</h2>
             <p>{topUniPromo.copy}</p>
             <div className="hero-promo-meta">
