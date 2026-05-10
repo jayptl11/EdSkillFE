@@ -365,7 +365,7 @@ export function AdminSkillsPage() {
                 <span>Slug</span>
                 <input
                   onChange={(event) => setFormValues((current) => ({ ...current, slug: event.target.value }))}
-                  placeholder="Để trống để BE tự generate"
+                  placeholder="Để trống để hệ thống tự tạo"
                   value={formValues.slug}
                 />
               </label>
@@ -410,7 +410,7 @@ export function AdminSkillsPage() {
             <div className="profile-section-heading">
               <div>
                 <h3>Aliases</h3>
-                <p>Dùng cho tìm kiếm và resolve canonical skill từ BE.</p>
+                <p>Dùng cho tìm kiếm và tra cứu kỹ năng.</p>
               </div>
             </div>
 

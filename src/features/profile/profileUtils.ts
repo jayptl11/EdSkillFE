@@ -2,10 +2,13 @@ import type { ApiError } from '../../api/client'
 import type { ProfileDto, ProfileField, ProfileFormValues, UpdateMyProfilePayload } from './types'
 
 const DISPLAY_NAME_REGEX = /^[\p{L}\p{N} ]+$/u
+const PHONE_REGEX = /^[\d+\-() ]{8,20}$/
 const MAX_SKILLS_PER_LIST = 20
 const MAX_SKILL_LENGTH = 50
 const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
 const ALLOWED_AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const MAX_DEGREE_SIZE_BYTES = 10 * 1024 * 1024
+const ALLOWED_DEGREE_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
 
 export type ProfileFieldErrors = Partial<Record<ProfileField, string>>
 
@@ -13,9 +16,9 @@ export function toProfileFormValues(profile: ProfileDto): ProfileFormValues {
   return {
     displayName: profile.displayName ?? '',
     bio: profile.bio ?? '',
-    university: profile.university ?? '',
-    faculty: profile.faculty ?? '',
-    yearOfStudy: profile.yearOfStudy,
+    dateOfBirth: profile.dateOfBirth ?? '',
+    phone: profile.phone ?? '',
+    degreeUrl: profile.degreeUrl,
     skillsToTeach: profile.skillsToTeach ?? [],
     skillsToLearn: profile.skillsToLearn ?? [],
     isPublic: profile.isPublic,
@@ -23,58 +26,65 @@ export function toProfileFormValues(profile: ProfileDto): ProfileFormValues {
   }
 }
 
-export function buildProfilePatch(
+export function buildProfileUpdatePayload(
   current: ProfileFormValues,
   initial: ProfileFormValues,
 ): UpdateMyProfilePayload {
   const payload: UpdateMyProfilePayload = {}
+
   const currentDisplayName = current.displayName.trim()
   const initialDisplayName = initial.displayName.trim()
-  const currentBio = current.bio.trim()
-  const initialBio = initial.bio.trim()
-  const currentUniversity = current.university.trim()
-  const initialUniversity = initial.university.trim()
-  const currentFaculty = current.faculty.trim()
-  const initialFaculty = initial.faculty.trim()
-  const currentTeach = normalizeSkills(current.skillsToTeach)
-  const initialTeach = normalizeSkills(initial.skillsToTeach)
-  const currentLearn = normalizeSkills(current.skillsToLearn)
-  const initialLearn = normalizeSkills(initial.skillsToLearn)
-
   if (currentDisplayName !== initialDisplayName) {
     payload.displayName = currentDisplayName
+    payload.hasDisplayName = true
   }
 
+  const currentBio = current.bio.trim()
+  const initialBio = initial.bio.trim()
   if (currentBio !== initialBio) {
     payload.bio = currentBio || null
+    payload.hasBio = true
   }
 
-  if (currentUniversity !== initialUniversity) {
-    payload.university = currentUniversity || null
+  if (current.dateOfBirth !== initial.dateOfBirth) {
+    payload.dateOfBirth = current.dateOfBirth || null
+    payload.hasDateOfBirth = true
   }
 
-  if (currentFaculty !== initialFaculty) {
-    payload.faculty = currentFaculty || null
+  const currentPhone = current.phone.trim()
+  const initialPhone = initial.phone.trim()
+  if (currentPhone !== initialPhone) {
+    payload.phone = currentPhone || null
+    payload.hasPhone = true
   }
 
-  if (current.yearOfStudy !== initial.yearOfStudy) {
-    payload.yearOfStudy = current.yearOfStudy
+  if (current.degreeUrl !== initial.degreeUrl) {
+    payload.degreeUrl = current.degreeUrl
+    payload.hasDegreeUrl = true
   }
 
+  const currentTeach = normalizeSkills(current.skillsToTeach)
+  const initialTeach = normalizeSkills(initial.skillsToTeach)
   if (!areStringArraysEqual(currentTeach, initialTeach)) {
     payload.skillsToTeach = currentTeach
+    payload.hasSkillsToTeach = true
   }
 
+  const currentLearn = normalizeSkills(current.skillsToLearn)
+  const initialLearn = normalizeSkills(initial.skillsToLearn)
   if (!areStringArraysEqual(currentLearn, initialLearn)) {
     payload.skillsToLearn = currentLearn
+    payload.hasSkillsToLearn = true
   }
 
   if (current.isPublic !== initial.isPublic) {
     payload.isPublic = current.isPublic
+    payload.hasIsPublic = true
   }
 
   if (current.avatarUrl !== initial.avatarUrl) {
     payload.avatarUrl = current.avatarUrl
+    payload.hasAvatarUrl = true
   }
 
   return payload
@@ -96,16 +106,27 @@ export function validateProfileForm(values: ProfileFormValues): ProfileFieldErro
     errors.bio = 'Tiểu sử tối đa 500 ký tự.'
   }
 
-  if (values.university.length > 200) {
-    errors.university = 'Tên trường tối đa 200 ký tự.'
+  if (values.dateOfBirth) {
+    const date = new Date(values.dateOfBirth)
+    if (Number.isNaN(date.getTime())) {
+      errors.dateOfBirth = 'Ngày sinh không hợp lệ.'
+    } else {
+      const minDate = new Date('1900-01-01')
+      const today = new Date()
+      today.setHours(23, 59, 59, 999)
+      if (date < minDate || date > today) {
+        errors.dateOfBirth = 'Ngày sinh phải từ 01/01/1900 đến hôm nay.'
+      }
+    }
   }
 
-  if (values.faculty.length > 200) {
-    errors.faculty = 'Tên khoa/ngành tối đa 200 ký tự.'
-  }
-
-  if (values.yearOfStudy !== null && (values.yearOfStudy < 1 || values.yearOfStudy > 6)) {
-    errors.yearOfStudy = 'Năm học phải nằm trong khoảng 1 đến 6.'
+  if (values.phone) {
+    const phone = values.phone.trim()
+    if (phone.length < 8 || phone.length > 20) {
+      errors.phone = 'Số điện thoại phải có từ 8 đến 20 ký tự.'
+    } else if (!PHONE_REGEX.test(phone)) {
+      errors.phone = 'Số điện thoại chỉ được chứa chữ số, dấu +, -, () và dấu cách.'
+    }
   }
 
   const teachError = validateSkills(values.skillsToTeach, 'dạy')
@@ -148,6 +169,18 @@ export function validateAvatarFile(file: File) {
   return ''
 }
 
+export function validateDegreeFile(file: File) {
+  if (!ALLOWED_DEGREE_TYPES.has(file.type)) {
+    return 'Bằng cấp chỉ hỗ trợ định dạng PDF, JPG, PNG hoặc WEBP.'
+  }
+
+  if (file.size > MAX_DEGREE_SIZE_BYTES) {
+    return 'Tệp bằng cấp phải nhỏ hơn hoặc bằng 10 MB.'
+  }
+
+  return ''
+}
+
 export function normalizeSkills(skills: string[]) {
   const uniqueSkills = new Set<string>()
   const normalizedSkills: string[] = []
@@ -172,14 +205,14 @@ export function normalizeSkills(skills: string[]) {
 
 export function getRoleBadgeLabel(role: string) {
   if (role === 'admin') {
-    return 'Admin'
+    return 'Quản trị'
   }
 
   if (role === 'companion') {
-    return 'Companion'
+    return 'Người dạy'
   }
 
-  return 'Learner'
+  return 'Người học'
 }
 
 export function formatLastActive(value: string | null) {
@@ -236,9 +269,9 @@ function mapApiPropertyToField(property?: string): ProfileField | null {
   const mapping: Record<string, ProfileField> = {
     DisplayName: 'displayName',
     Bio: 'bio',
-    University: 'university',
-    Faculty: 'faculty',
-    YearOfStudy: 'yearOfStudy',
+    DateOfBirth: 'dateOfBirth',
+    Phone: 'phone',
+    DegreeUrl: 'degreeUrl',
     SkillsToTeach: 'skillsToTeach',
     SkillsToLearn: 'skillsToLearn',
     AvatarUrl: 'avatarUrl',

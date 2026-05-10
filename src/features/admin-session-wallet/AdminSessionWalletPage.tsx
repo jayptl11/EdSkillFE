@@ -33,7 +33,7 @@ export function AdminSessionWalletPage() {
   const grantMutation = useMutation({
     mutationFn: adminSessionWalletApi.grantPoints,
     onSuccess: (response) => {
-      showToast({ kind: 'success', message: `Da grant points cho ${response.granted} user.` })
+      showToast({ kind: 'success', message: `Đã cấp điểm cho ${response.granted} người dùng.` })
       setUserIdsInput('')
       setGrantNote('')
     },
@@ -46,7 +46,7 @@ export function AdminSessionWalletPage() {
     mutationFn: ({ key, value }: { key: string; value: string }) =>
       adminSessionWalletApi.patchConfig(key, value),
     onSuccess: async () => {
-      showToast({ kind: 'success', message: 'Config da duoc cap nhat.' })
+      showToast({ kind: 'success', message: 'Cấu hình đã được cập nhật.' })
       await queryClient.invalidateQueries({ queryKey: adminSessionWalletKeys.config() })
     },
     onError: (error) => {
@@ -55,7 +55,7 @@ export function AdminSessionWalletPage() {
   })
 
   if (!session?.accessToken) {
-    return <Navigate replace state={{ message: 'Vui long dang nhap de tiep tuc.' }} to="/login" />
+    return <Navigate replace state={{ message: 'Vui lòng đăng nhập để tiếp tục.' }} to="/login" />
   }
 
   if (!session.roles.includes('admin')) {
@@ -68,8 +68,8 @@ export function AdminSessionWalletPage() {
     relevantConfigs.map((item) => [item.key, draftOverrides[item.key] ?? item.value]),
   )
   const configGroups = [
-    { title: 'Point config', items: groupedConfigs.point },
-    { title: 'Session config', items: groupedConfigs.session },
+    { title: 'Cấu hình điểm', items: groupedConfigs.point },
+    { title: 'Cấu hình buổi học', items: groupedConfigs.session },
   ]
 
   const handleGrantSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -81,13 +81,13 @@ export function AdminSessionWalletPage() {
       .filter(Boolean)
 
     if (userIds.length === 0) {
-      showToast({ kind: 'error', message: 'Vui long nhap it nhat 1 userId.' })
+      showToast({ kind: 'error', message: 'Vui lòng nhập ít nhất 1 ID người dùng.' })
       return
     }
 
     const amount = Number(grantAmount)
     if (!Number.isFinite(amount) || amount <= 0) {
-      showToast({ kind: 'error', message: 'Amount phai lon hon 0.' })
+      showToast({ kind: 'error', message: 'Amount phải lớn hơn 0.' })
       return
     }
 
@@ -122,17 +122,16 @@ export function AdminSessionWalletPage() {
         <div>
           <span className="eyebrow">
             <Shield size={15} />
-            Admin points and sessions
+            Quản trị điểm và buổi học
           </span>
-          <h1>Grant points va quan ly config payout/session trong mot trang.</h1>
+          <h1>Cấp điểm và quản lý cấu hình thanh toán trong một trang.</h1>
           <p>
-            FE khong hardcode 80/20. Moi thay doi config o day se tro thanh source-of-truth cho cac
-            luong admin va dashboard admin.
+            Mọi thay đổi cấu hình tại đây sẽ được áp dụng cho toàn bộ hệ thống.
           </p>
         </div>
         <div className="profile-hero-actions">
           <Link className="button secondary" to="/dashboard">
-            Ve dashboard
+            Về dashboard
           </Link>
           <button
             className="button secondary"
@@ -142,7 +141,7 @@ export function AdminSessionWalletPage() {
             type="button"
           >
             <RefreshCcw size={18} />
-            Lam moi
+            Làm mới
           </button>
         </div>
       </section>
@@ -153,19 +152,19 @@ export function AdminSessionWalletPage() {
             <div>
               <span className="eyebrow">
                 <Coins size={15} />
-                Grant points
+                Cấp điểm
               </span>
-              <h2>Cap points hang loat cho user</h2>
+              <h2>Cấp điểm hàng loạt cho người dùng</h2>
             </div>
           </div>
 
           <section className="profile-section-card">
             <div className="profile-form-grid">
               <label className="profile-field full">
-                <span>User IDs</span>
+                <span>ID người dùng</span>
                 <textarea
                   onChange={(event) => setUserIdsInput(event.target.value)}
-                  placeholder="Nhap userId, co the tach bang dau phay hoac xuong dong"
+                  placeholder="Nhập ID người dùng, có thể tách bằng dấu phẩy hoặc xuống dòng"
                   rows={7}
                   value={userIdsInput}
                 />
@@ -195,7 +194,7 @@ export function AdminSessionWalletPage() {
           <div className="profile-form-actions">
             <button className="button primary" disabled={grantMutation.isPending} type="submit">
               {grantMutation.isPending ? <LoaderCircle className="spin" size={18} /> : <Coins size={18} />}
-              Grant points
+              Cấp điểm
             </button>
           </div>
         </form>
@@ -205,16 +204,16 @@ export function AdminSessionWalletPage() {
             <div>
               <span className="eyebrow">
                 <Settings2 size={15} />
-                Runtime config
+                Cấu hình hệ thống
               </span>
-              <h2>Config points + sessions</h2>
+              <h2>Cấu hình điểm và buổi học</h2>
             </div>
           </div>
 
           {configQuery.isLoading ? (
             <section className="profile-state-card">
               <LoaderCircle className="spin" size={20} />
-              <p>Dang tai admin config...</p>
+              <p>Đang tải cấu hình...</p>
             </section>
           ) : null}
 
@@ -231,7 +230,7 @@ export function AdminSessionWalletPage() {
                 <section className="profile-section-card" key={group.title}>
                   <div className="session-action-head">
                     <h3>{group.title}</h3>
-                    <p>Cac gia tri deu dang string o backend, nhung FE validate duoc nhung gi chac chan.</p>
+                    <p>Các giá trị được kiểm tra tính hợp lệ trước khi lưu.</p>
                   </div>
 
                   <div className="admin-config-list">
@@ -241,7 +240,7 @@ export function AdminSessionWalletPage() {
                           <strong>{getConfigLabel(item.key)}</strong>
                           <span>{item.key}</span>
                           <small>
-                            {item.description || 'Khong co description. Updated at: '}
+                            {item.description || 'Không có description. Updated at: '}
                             {item.updatedAt ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(item.updatedAt)) : 'N/A'}
                           </small>
                         </div>
@@ -263,7 +262,7 @@ export function AdminSessionWalletPage() {
                             type="button"
                           >
                             {patchConfigMutation.isPending ? <LoaderCircle className="spin" size={18} /> : <Save size={18} />}
-                            Luu
+                            Lưu
                           </button>
                         </div>
 

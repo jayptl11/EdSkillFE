@@ -94,6 +94,13 @@ export const apiPost = <T>(path: string, payload?: unknown, options: RequestOpti
     body: payload === undefined ? undefined : JSON.stringify(payload),
   })
 
+export const apiPut = <T>(path: string, payload?: unknown, options: RequestOptions = {}) =>
+  apiRequest<T>(path, {
+    ...options,
+    method: 'PUT',
+    body: payload === undefined ? undefined : JSON.stringify(payload),
+  })
+
 export const apiPatch = <T>(path: string, payload?: unknown, options: RequestOptions = {}) =>
   apiRequest<T>(path, {
     ...options,
@@ -218,9 +225,9 @@ const translateApiError = (code: string, fallback: string) => {
     PROFILE_PRIVATE: 'Người dùng này đang để hồ sơ ở chế độ riêng tư.',
     INVALID_DISPLAY_NAME: 'Tên hiển thị không hợp lệ.',
     INVALID_BIO: 'Tiểu sử không hợp lệ.',
-    INVALID_UNIVERSITY: 'Thông tin trường học không hợp lệ.',
-    INVALID_FACULTY: 'Thông tin khoa/ngành không hợp lệ.',
-    INVALID_YEAR_OF_STUDY: 'Năm học không hợp lệ.',
+    INVALID_PHONE: 'Số điện thoại không hợp lệ.',
+    INVALID_DATE_OF_BIRTH: 'Ngày sinh không hợp lệ.',
+    INVALID_DEGREE_URL: 'Đường dẫn bằng cấp không hợp lệ.',
     INVALID_SKILLS_TO_TEACH: 'Danh sách kỹ năng muốn dạy không hợp lệ.',
     INVALID_SKILLS_TO_LEARN: 'Danh sách kỹ năng muốn học không hợp lệ.',
     SKILL_NOT_FOUND: 'Kỹ năng không tồn tại trong skill catalog.',
@@ -234,14 +241,14 @@ const translateApiError = (code: string, fallback: string) => {
     INVALID_SKILL_CATEGORY: 'Category kỹ năng không hợp lệ.',
     INVALID_SKILL_ALIASES: 'Danh sách alias kỹ năng không hợp lệ.',
     INVALID_LIMIT: 'Giới hạn số lượng kết quả không hợp lệ.',
-    INSUFFICIENT_POINTS: 'So du points khong du de thuc hien giao dich nay.',
-    SELF_BOOKING: 'Ban khong the tu book session cua chinh minh.',
-    SESSION_NOT_AVAILABLE: 'Session nay khong con o trang thai Available.',
-    SESSION_INVALID_STATUS: 'Session khong dung trang thai de thuc hien thao tac nay.',
-    POINT_WALLET_NOT_FOUND: 'Khong tim thay wallet points cua nguoi dung.',
-    SYSTEM_CONFIG_NOT_FOUND: 'Khong tim thay cau hinh he thong can thiet.',
-    SYSTEM_CONFIG_INVALID_VALUE: 'Gia tri cau hinh he thong khong hop le.',
-    SESSION_LIMIT_REACHED: 'Ban da dat toi gioi han session cho phep.',
+    INSUFFICIENT_POINTS: 'Số dư points không đủ để thực hiện giao dịch này.',
+    SELF_BOOKING: 'Bạn không thể tự book session của chính mình.',
+    SESSION_NOT_AVAILABLE: 'Session này không còn ở trạng thái Available.',
+    SESSION_INVALID_STATUS: 'Session không đúng trạng thái để thực hiện thao tác này.',
+    POINT_WALLET_NOT_FOUND: 'Không tìm thấy wallet points của người dùng.',
+    SYSTEM_CONFIG_NOT_FOUND: 'Không tìm thấy cấu hình hệ thống cần thiết.',
+    SYSTEM_CONFIG_INVALID_VALUE: 'Giá trị cấu hình hệ thống không hợp lệ.',
+    SESSION_LIMIT_REACHED: 'Bạn đã đạt tới giới hạn session cho phép.',
     INVALID_AVATAR_URL: 'Đường dẫn avatar không hợp lệ.',
     INVALID_AVATAR_FILE_NAME: 'Tên tệp avatar không hợp lệ.',
     INVALID_AVATAR_CONTENT_TYPE: 'Định dạng avatar chưa được hỗ trợ.',

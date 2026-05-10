@@ -1,13 +1,14 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   ArrowRight,
-  GraduationCap,
   KeyRound,
+  LoaderCircle,
   RotateCcw,
   Send,
+  Sparkles,
   UsersRound,
 } from 'lucide-react'
 import {
@@ -22,22 +23,23 @@ import {
   resendOtp,
   resetPassword,
   verifyOtp,
-  type PublicRegisterRole,
+  type SignupIntent,
 } from './api/auth'
-import { AuthPage, FieldIcon, OtpPreview, RoleOption } from './components/AuthLayout'
+import { AuthPage, FieldIcon } from './components/AuthLayout'
 import { SiteHeader } from './components/Brand'
 import { DashboardShell } from './components/DashboardView'
 import { LearningHero } from './components/LearningHero'
 import { MotionPage } from './components/MotionPage'
 import { ToastViewport } from './components/Toast'
 import { showToast } from './components/toastEvents'
+import { CompanionOnboardingPage } from './features/profile/CompanionOnboardingPage'
 import { OwnerProfilePage, PublicProfilePage } from './features/profile/ProfilePages'
+import { profileApi } from './features/profile/profileApi'
 import { PolicyConsentGate } from './features/policies/PolicyConsentGate'
 import { PoliciesPage, PolicyDetailPage } from './features/policies/PolicyPages'
 import { policyApi, policyKeys } from './features/policies/policyApi'
 import {
   buildAcceptedPolicies,
-  getPolicyLabel,
   getRequiredSignupPolicies,
   requiredSignupPolicyTypes,
 } from './features/policies/policyUtils'
@@ -61,7 +63,10 @@ interface RouteState {
   purpose?: OtpPurpose
   resetToken?: string
   message?: string
+  intent?: SignupIntent
 }
+
+const authIntentStorageKey = 'edskill-auth-intent'
 
 function App() {
   const location = useLocation()
@@ -73,6 +78,8 @@ function App() {
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/learn" element={<LearnEntryPage />} />
+          <Route path="/teach" element={<TeachEntryPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/policies" element={<PoliciesPage />} />
@@ -80,6 +87,14 @@ function App() {
           <Route path="/verify-otp" element={<VerifyOtpPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route
+            path="/teach/onboarding"
+            element={
+              <ProtectedRoute>
+                <CompanionOnboardingPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/dashboard"
             element={
@@ -121,7 +136,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/sessions/marketplace"
+            path="/dashboard/skills/marketplace"
             element={
               <ProtectedRoute>
                 <SessionMarketplacePage />
@@ -129,7 +144,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/sessions/learning"
+            path="/dashboard/skills/learning"
             element={
               <ProtectedRoute>
                 <LearningSessionsPage />
@@ -137,7 +152,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/sessions/teaching"
+            path="/dashboard/skills/teaching"
             element={
               <ProtectedRoute>
                 <TeachingSessionsPage />
@@ -145,7 +160,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/sessions/new"
+            path="/dashboard/skills/new"
             element={
               <ProtectedRoute>
                 <CreateSessionOfferPage />
@@ -153,7 +168,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/sessions/:sessionId"
+            path="/dashboard/skills/:sessionId"
             element={
               <ProtectedRoute>
                 <SessionDetailPage />
@@ -161,7 +176,7 @@ function App() {
             }
           />
           <Route path="/profile/:userId" element={<PublicProfilePage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate replace to="/" />} />
         </Routes>
       </AnimatePresence>
     </>
@@ -173,7 +188,7 @@ function AuthExpiryWatcher() {
 
   useEffect(() => {
     const handleExpiredSession = () => {
-      navigate('/login', {
+      navigate('/login?intent=learn', {
         replace: true,
         state: { message: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.' },
       })
@@ -190,7 +205,13 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   const session = useAppStore((state) => state.session)
 
   if (!session?.accessToken) {
-    return <Navigate to="/login" replace state={{ message: 'Vui lòng đăng nhập để tiếp tục.' }} />
+    return (
+      <Navigate
+        replace
+        state={{ message: 'Vui lòng đăng nhập để tiếp tục.' }}
+        to="/login?intent=learn"
+      />
+    )
   }
 
   return <PolicyConsentGate>{children}</PolicyConsentGate>
@@ -215,14 +236,98 @@ function LandingPage() {
   )
 }
 
+function LearnEntryPage() {
+  const session = useAppStore((state) => state.session)
+
+  if (!session?.accessToken) {
+    return <Navigate replace to="/register?intent=learn" />
+  }
+
+  return <Navigate replace to="/dashboard/skills/marketplace" />
+}
+
+function TeachEntryPage() {
+  const session = useAppStore((state) => state.session)
+
+  if (!session?.accessToken) {
+    return <Navigate replace to="/register?intent=teach" />
+  }
+
+  return <TeachAccessRedirect />
+}
+
+function TeachAccessRedirect() {
+  const navigate = useNavigate()
+  const hasTriggeredEnableRef = useRef(false)
+  const profileQuery = useQuery({
+    queryKey: ['profile', 'me', 'teaching-access'],
+    queryFn: profileApi.getMyProfile,
+  })
+  const enableMutation = useMutation({
+    mutationFn: profileApi.enableCompanion,
+  })
+
+  useEffect(() => {
+    const profile = profileQuery.data
+    if (!profile) {
+      return
+    }
+
+    if (!profile.roles.includes('companion')) {
+      if (!hasTriggeredEnableRef.current) {
+        hasTriggeredEnableRef.current = true
+        enableMutation.mutate()
+      }
+      return
+    }
+
+    navigate(profile.isCompanionOnboardingComplete ? '/dashboard/skills/teaching' : '/teach/onboarding', {
+      replace: true,
+    })
+  }, [enableMutation, navigate, profileQuery.data])
+
+  useEffect(() => {
+    const profile = enableMutation.data
+    if (!profile) {
+      return
+    }
+
+    navigate(profile.isCompanionOnboardingComplete ? '/dashboard/skills/teaching' : '/teach/onboarding', {
+      replace: true,
+    })
+  }, [enableMutation.data, navigate])
+
+  useEffect(() => {
+    if (enableMutation.isError) {
+      showToast({ kind: 'error', message: getErrorMessage(enableMutation.error) })
+      navigate('/dashboard', { replace: true })
+    }
+  }, [enableMutation.error, enableMutation.isError, navigate])
+
+  return (
+    <MotionPage className="page dashboard-page">
+      <SiteHeader />
+      <section className="profile-state-card teaching-redirect-card">
+        <LoaderCircle className="spin" size={24} />
+        <div>
+          <h2>Đang chuẩn bị khu vực dạy học</h2>
+          <p>EdSkill đang đưa bạn tới đúng bước tiếp theo để bắt đầu dạy.</p>
+        </div>
+      </section>
+    </MotionPage>
+  )
+}
+
 function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const routeState = getRouteState(location.state)
+  const intent = useResolvedIntent(location.search, routeState.intent)
   const setSession = useAppStore((state) => state.setSession)
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const copy = getAuthCopy(intent)
 
   useRouteToast(routeState.message)
 
@@ -239,7 +344,8 @@ function LoginPage() {
     try {
       const response = await login({ identifier: identifier.trim(), password })
       setSession(normalizeSession(response))
-      navigate('/dashboard', { replace: true })
+      rememberIntent(intent)
+      navigate(getPostAuthRoute(intent), { replace: true })
     } catch (error) {
       showToast({ kind: 'error', message: getErrorMessage(error) })
     } finally {
@@ -249,15 +355,14 @@ function LoginPage() {
 
   return (
     <AuthPage
-      title="Đăng nhập"
-      subtitle="Nhập thông tin tài khoản để tiếp tục."
-      panelLabel="Login"
-      panelTitle="Chào mừng bạn quay lại EdSkill."
-      panelLines={[
-        'Tiếp tục học kỹ năng bạn cần',
-        'Chia sẻ điều bạn giỏi',
-        'Xây dựng hồ sơ uy tín trong cộng đồng',
-      ]}
+      accent={intent === 'teach' ? 'teach' : 'learn'}
+      contextLabel={copy.contextLabel}
+      panelLabel={copy.panelLabel}
+      panelLines={copy.panelLines}
+      panelTitle={copy.panelTitle}
+      steps={[{ label: 'Đăng nhập', active: true }]}
+      subtitle={copy.loginSubtitle}
+      title={copy.loginTitle}
     >
       <form className="auth-form" onSubmit={handleSubmit}>
         <label>
@@ -266,9 +371,8 @@ function LoginPage() {
             <FieldIcon type="user" />
             <input
               autoComplete="off"
-              value={identifier}
               onChange={(event) => setIdentifier(event.target.value)}
-
+              value={identifier}
             />
           </div>
         </label>
@@ -278,9 +382,9 @@ function LoginPage() {
             <FieldIcon type="password" />
             <input
               autoComplete="off"
+              onChange={(event) => setPassword(event.target.value)}
               type="password"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
             />
           </div>
         </label>
@@ -290,15 +394,12 @@ function LoginPage() {
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.98 }}
         >
-          {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+          {isSubmitting ? 'Đang đăng nhập...' : copy.loginButton}
           <ArrowRight size={18} />
         </motion.button>
-        <button className="button google full" disabled type="button">
-          Đăng nhập Google sẽ có sau
-        </button>
         <div className="form-links">
-          <Link to="/forgot-password">Quên mật khẩu?</Link>
-          <Link to="/register">Tạo tài khoản</Link>
+          <Link to={`/forgot-password${buildIntentSearch(intent)}`}>Quên mật khẩu?</Link>
+          <Link to={`/register${buildIntentSearch(intent)}`}>{copy.switchToRegisterLabel}</Link>
         </div>
       </form>
     </AuthPage>
@@ -307,6 +408,9 @@ function LoginPage() {
 
 function RegisterPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const routeState = getRouteState(location.state)
+  const intent = useResolvedIntent(location.search, routeState.intent)
   const [form, setForm] = useState({
     email: '',
     username: '',
@@ -314,7 +418,6 @@ function RegisterPage() {
     lastName: '',
     password: '',
   })
-  const [roles, setRoles] = useState<PublicRegisterRole[]>(['learner'])
   const [hasAcceptedPolicies, setHasAcceptedPolicies] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const policiesQuery = useQuery({
@@ -324,20 +427,15 @@ function RegisterPage() {
   })
   const requiredPolicies = getRequiredSignupPolicies(policiesQuery.data ?? [])
   const hasRequiredPolicyCatalog = requiredPolicies.length === requiredSignupPolicyTypes.length
+  const copy = getAuthCopy(intent)
 
   const updateField = (field: keyof typeof form, value: string) => {
     setForm((current) => ({ ...current, [field]: value }))
   }
 
-  const toggleRole = (role: PublicRegisterRole) => {
-    setRoles((current) =>
-      current.includes(role) ? current.filter((item) => item !== role) : [...current, role],
-    )
-  }
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const validationMessage = validateRegisterForm(form, roles)
+    const validationMessage = validateRegisterForm(form)
 
     if (validationMessage) {
       showToast({ kind: 'error', message: validationMessage })
@@ -374,12 +472,14 @@ function RegisterPage() {
         username: form.username.trim(),
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
-        roles,
+        signupIntent: intent,
         acceptedPolicies: buildAcceptedPolicies(requiredPolicies),
       })
-      navigate('/verify-otp', {
+      rememberIntent(intent)
+      navigate(`/verify-otp${buildIntentSearch(intent)}`, {
         state: {
           email: form.email.trim(),
+          intent,
           purpose: 'register',
           message: 'Mã xác thực đã được gửi tới email của bạn.',
         },
@@ -390,13 +490,11 @@ function RegisterPage() {
         await policiesQuery.refetch()
         showToast({
           kind: 'error',
-          message:
-            'Chính sách đã được cập nhật. Vui lòng đọc và xác nhận lại trước khi tiếp tục.',
+          message: 'Chính sách đã được cập nhật. Vui lòng đọc và xác nhận lại trước khi tiếp tục.',
         })
       } else {
         showToast({ kind: 'error', message: getErrorMessage(error) })
       }
-
     } finally {
       setIsSubmitting(false)
     }
@@ -404,16 +502,14 @@ function RegisterPage() {
 
   return (
     <AuthPage
-      title="Tạo tài khoản"
-      subtitle="Điền thông tin cơ bản và chọn vai trò phù hợp."
-      panelLabel="Register"
-      panelTitle="Bắt đầu với EdSkill."
-      panelLines={[
-        'Học điều bạn cần',
-        'Dạy điều bạn giỏi',
-        'Cùng phát triển trong cộng đồng trao đổi kỹ năng ngang hàng',
-      ]}
-      accent="learn"
+      accent={intent === 'teach' ? 'teach' : 'learn'}
+      contextLabel={copy.contextLabel}
+      panelLabel={copy.panelLabel}
+      panelLines={copy.panelLines}
+      panelTitle={copy.panelTitle}
+      steps={[{ label: 'Tạo tài khoản', active: true }, { label: 'Xác thực email' }]}
+      subtitle={copy.registerSubtitle}
+      title={copy.registerTitle}
     >
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="two-column">
@@ -423,9 +519,8 @@ function RegisterPage() {
               <FieldIcon type="user" />
               <input
                 autoComplete="off"
-                value={form.firstName}
                 onChange={(event) => updateField('firstName', event.target.value)}
-
+                value={form.firstName}
               />
             </div>
           </label>
@@ -435,8 +530,8 @@ function RegisterPage() {
               <FieldIcon type="user" />
               <input
                 autoComplete="off"
-                value={form.lastName}
                 onChange={(event) => updateField('lastName', event.target.value)}
+                value={form.lastName}
               />
             </div>
           </label>
@@ -447,10 +542,9 @@ function RegisterPage() {
             <FieldIcon type="email" />
             <input
               autoComplete="off"
+              onChange={(event) => updateField('email', event.target.value)}
               type="email"
               value={form.email}
-              onChange={(event) => updateField('email', event.target.value)}
-
             />
           </div>
         </label>
@@ -460,8 +554,8 @@ function RegisterPage() {
             <FieldIcon type="user" />
             <input
               autoComplete="off"
-              value={form.username}
               onChange={(event) => updateField('username', event.target.value)}
+              value={form.username}
             />
           </div>
         </label>
@@ -471,36 +565,27 @@ function RegisterPage() {
             <FieldIcon type="password" />
             <input
               autoComplete="off"
+              onChange={(event) => updateField('password', event.target.value)}
               type="password"
               value={form.password}
-              onChange={(event) => updateField('password', event.target.value)}
-
             />
           </div>
         </label>
-        <div className="role-options" aria-label="Chọn vai trò">
-          <RoleOption
-            active={roles.includes('learner')}
-            label="Learner"
-            description="Học kỹ năng bạn cần với Companion phù hợp và lộ trình gợi ý."
-            Icon={GraduationCap}
-            onClick={() => toggleRole('learner')}
-          />
-          <RoleOption
-            active={roles.includes('companion')}
-            label="Companion"
-            description="Chia sẻ kỹ năng, hướng dẫn Learner bằng kinh nghiệm thực tế."
-            Icon={UsersRound}
-            onClick={() => toggleRole('companion')}
-          />
+        <div className="auth-intent-panel">
+          <span className="eyebrow">
+            {intent === 'teach' ? <UsersRound size={15} /> : <Sparkles size={15} />}
+            {intent === 'teach' ? 'Bạn đang vào luồng dạy học' : 'Bạn đang vào luồng học ngay'}
+          </span>
+          <p>
+            {intent === 'teach'
+              ? 'Sau khi vào thành công, bạn sẽ được đưa tới màn hoàn thiện hồ sơ dạy học.'
+              : 'Sau khi vào thành công, bạn sẽ được đưa tới khu tìm buổi học.'}
+          </p>
         </div>
         <div className="policy-signup-panel">
           <div className="policy-signup-head">
-            <h3>Chính sách bắt buộc khi đăng ký</h3>
-            <p>
-              EdSkill cần ghi nhận đồng ý với Điều khoản sử dụng, Chính sách riêng tư và Chính sách
-              Points/Tokens tại thời điểm tạo tài khoản.
-            </p>
+            <h3>Chính sách bắt buộc khi tạo tài khoản</h3>
+            <p>EdSkill cần ghi nhận việc đồng ý với các chính sách đang áp dụng trước khi bạn bắt đầu.</p>
           </div>
           {policiesQuery.isLoading ? (
             <p className="status-message info">Đang tải các chính sách bắt buộc...</p>
@@ -512,7 +597,7 @@ function RegisterPage() {
           ) : null}
           {!policiesQuery.isLoading && !policiesQuery.isError && !hasRequiredPolicyCatalog ? (
             <p className="status-message error">
-              Hệ thống đang thiếu policy bắt buộc để đăng ký. Vui lòng thử lại sau.
+              Hệ thống đang thiếu chính sách bắt buộc để tạo tài khoản. Vui lòng thử lại sau.
             </p>
           ) : null}
           {!policiesQuery.isLoading && hasRequiredPolicyCatalog ? (
@@ -526,7 +611,7 @@ function RegisterPage() {
                     target="_blank"
                     to={`/policies/${policy.slug}`}
                   >
-                    {getPolicyLabel(policy.slug, policy.title)}
+                    {policy.title}
                   </Link>
                 ))}
               </div>
@@ -536,10 +621,7 @@ function RegisterPage() {
                   onChange={(event) => setHasAcceptedPolicies(event.target.checked)}
                   type="checkbox"
                 />
-                <span>
-                  Tôi đồng ý với Điều khoản sử dụng, Chính sách riêng tư và Chính sách
-                  Points/Tokens của EdSkill.
-                </span>
+                <span>Tôi đã đọc và đồng ý với các chính sách bắt buộc của EdSkill.</span>
               </label>
             </>
           ) : null}
@@ -550,11 +632,11 @@ function RegisterPage() {
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.98 }}
         >
-          {isSubmitting ? 'Đang tạo tài khoản...' : 'Tạo tài khoản'}
+          {isSubmitting ? 'Đang tạo tài khoản...' : copy.registerButton}
           <ArrowRight size={18} />
         </motion.button>
         <p className="auth-footnote">
-          Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
+          Đã có tài khoản? <Link to={`/login${buildIntentSearch(intent)}`}>{copy.switchToLoginLabel}</Link>
         </p>
       </form>
     </AuthPage>
@@ -565,11 +647,13 @@ function VerifyOtpPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const routeState = getRouteState(location.state)
+  const intent = useResolvedIntent(location.search, routeState.intent)
   const [email, setEmail] = useState(routeState.email ?? '')
   const [otp, setOtp] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isResending, setIsResending] = useState(false)
   const purpose = routeState.purpose ?? 'register'
+  const copy = getAuthCopy(intent)
 
   useRouteToast(routeState.message)
 
@@ -587,11 +671,12 @@ function VerifyOtpPage() {
       const response = await verifyOtp(email.trim(), otp.trim())
 
       if (response.resetToken) {
-        navigate('/reset-password', {
+        navigate(`/reset-password${buildIntentSearch(intent)}`, {
           state: {
             email: email.trim(),
-            resetToken: response.resetToken,
+            intent,
             message: 'OTP đã được xác thực. Hãy tạo mật khẩu mới.',
+            resetToken: response.resetToken,
           },
         })
         return
@@ -600,14 +685,19 @@ function VerifyOtpPage() {
       if (purpose === 'reset') {
         showToast({
           kind: 'error',
-          message: 'OTP đã được xác thực nhưng backend chưa trả về mã đặt lại mật khẩu.',
+          message: 'OTP đã được xác thực nhưng hệ thống chưa trả về mã đặt lại mật khẩu.',
         })
         return
       }
 
-      navigate('/login', {
+      navigate(`/login${buildIntentSearch(intent)}`, {
         replace: true,
-        state: { message: 'Đăng ký đã xác thực. Vui lòng đăng nhập.' },
+        state: {
+          message:
+            intent === 'teach'
+              ? 'Email đã xác thực. Đăng nhập để hoàn thiện hồ sơ dạy học.'
+              : 'Email đã xác thực. Đăng nhập để bắt đầu tìm buổi học.',
+        },
       })
     } catch (error) {
       showToast({ kind: 'error', message: getErrorMessage(error) })
@@ -636,16 +726,18 @@ function VerifyOtpPage() {
 
   return (
     <AuthPage
-      title="Nhập mã OTP"
-      subtitle="Kiểm tra email và nhập mã xác thực để tiếp tục."
-      panelLabel="Verify Email"
-      panelTitle="Xác minh email của bạn."
-      panelLines={[
-        'Hoàn tất bước này để bảo vệ tài khoản',
-        'Ví điểm, token',
-        'Hồ sơ kỹ năng trên EdSkill',
+      accent={purpose === 'reset' ? 'reset' : intent === 'teach' ? 'teach' : 'learn'}
+      contextLabel="Xác thực email"
+      panelLabel={copy.panelLabel}
+      panelLines={copy.panelLines}
+      panelTitle={copy.panelTitle}
+      steps={[
+        { label: 'Tạo tài khoản', done: purpose === 'register' },
+        { label: 'Xác thực email', active: true },
+        { label: purpose === 'reset' ? 'Đặt lại mật khẩu' : intent === 'teach' ? 'Hoàn thiện hồ sơ dạy học' : 'Tìm buổi học' },
       ]}
-      accent={purpose === 'reset' ? 'reset' : 'secure'}
+      subtitle="Kiểm tra email và nhập mã xác thực để tiếp tục."
+      title="Nhập mã OTP"
     >
       <form className="auth-form" onSubmit={handleSubmit}>
         <label>
@@ -654,16 +746,14 @@ function VerifyOtpPage() {
             <FieldIcon type="email" />
             <input
               autoComplete="off"
+              onChange={(event) => setEmail(event.target.value)}
               type="email"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
-
             />
           </div>
         </label>
         <label>
           Mã OTP
-          <OtpPreview value={otp} />
           <div className="input-shell">
             <FieldIcon type="token" />
             <input
@@ -671,9 +761,8 @@ function VerifyOtpPage() {
               className="otp-input"
               inputMode="numeric"
               maxLength={6}
-              value={otp}
               onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-
+              value={otp}
             />
           </div>
         </label>
@@ -704,6 +793,8 @@ function VerifyOtpPage() {
 
 function ForgotPasswordPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const intent = useResolvedIntent(location.search)
   const [email, setEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -719,11 +810,12 @@ function ForgotPasswordPage() {
 
     try {
       await forgotPassword(email.trim())
-      navigate('/verify-otp', {
+      navigate(`/verify-otp${buildIntentSearch(intent)}`, {
         state: {
           email: email.trim(),
-          purpose: 'reset',
+          intent,
           message: 'Hướng dẫn đặt lại mật khẩu đã được gửi tới email của bạn.',
+          purpose: 'reset',
         },
       })
     } catch (error) {
@@ -735,15 +827,14 @@ function ForgotPasswordPage() {
 
   return (
     <AuthPage
-      title="Khôi phục mật khẩu"
-      subtitle="Nhập email tài khoản để nhận hướng dẫn đặt lại."
-      panelLabel="Forgot Password"
-      panelTitle="Quên mật khẩu?"
-      panelLines={[
-        'Nhập email đã đăng ký',
-        'EdSkill sẽ gửi cho bạn liên kết để đặt lại mật khẩu',
-      ]}
       accent="reset"
+      contextLabel="Khôi phục tài khoản"
+      panelLabel="Đặt lại mật khẩu"
+      panelLines={['Nhập email đã đăng ký', 'Nhận mã xác thực', 'Tạo lại mật khẩu an toàn']}
+      panelTitle="Lấy lại quyền truy cập tài khoản."
+      steps={[{ label: 'Nhập email', active: true }, { label: 'Xác thực email' }, { label: 'Tạo mật khẩu mới' }]}
+      subtitle="Nhập email tài khoản để nhận hướng dẫn đặt lại mật khẩu."
+      title="Khôi phục mật khẩu"
     >
       <form className="auth-form" onSubmit={handleSubmit}>
         <label>
@@ -752,10 +843,9 @@ function ForgotPasswordPage() {
             <FieldIcon type="email" />
             <input
               autoComplete="off"
+              onChange={(event) => setEmail(event.target.value)}
               type="email"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
-
             />
           </div>
         </label>
@@ -765,11 +855,11 @@ function ForgotPasswordPage() {
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.98 }}
         >
-          {isSubmitting ? 'Đang gửi...' : 'Gửi liên kết đặt lại'}
+          {isSubmitting ? 'Đang gửi...' : 'Gửi mã xác thực'}
           <Send size={18} />
         </motion.button>
         <p className="auth-footnote">
-          Nhớ mật khẩu rồi? <Link to="/login">Đăng nhập</Link>
+          Nhớ mật khẩu rồi? <Link to={`/login${buildIntentSearch(intent)}`}>Đăng nhập</Link>
         </p>
       </form>
     </AuthPage>
@@ -780,6 +870,7 @@ function ResetPasswordPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const routeState = getRouteState(location.state)
+  const intent = useResolvedIntent(location.search, routeState.intent)
   const [resetToken, setResetToken] = useState(routeState.resetToken ?? '')
   const [newPassword, setNewPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -806,7 +897,7 @@ function ResetPasswordPage() {
 
     try {
       await resetPassword(resetToken.trim(), newPassword)
-      navigate('/login', {
+      navigate(`/login${buildIntentSearch(intent)}`, {
         replace: true,
         state: { message: 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập.' },
       })
@@ -819,24 +910,21 @@ function ResetPasswordPage() {
 
   return (
     <AuthPage
-      title="Tạo mật khẩu mới."
-      subtitle="Chọn mật khẩu mạnh để bảo vệ tài khoản và tiếp tục sử dụng EdSkill an toàn."
-      panelLabel="Reset Password"
-      panelTitle="Tạo mật khẩu mới."
-      panelLines={['Chọn mật khẩu mạnh', 'Bảo vệ tài khoản EdSkill']}
       accent="reset"
+      contextLabel="Tạo mật khẩu mới"
+      panelLabel="Bảo vệ tài khoản"
+      panelLines={['Mật khẩu đủ mạnh', 'Dễ nhớ với bạn', 'An toàn hơn cho tài khoản']}
+      panelTitle="Tạo mật khẩu mới để tiếp tục."
+      steps={[{ label: 'Nhập email', done: true }, { label: 'Xác thực email', done: true }, { label: 'Tạo mật khẩu mới', active: true }]}
+      subtitle="Chọn mật khẩu mới để tiếp tục dùng EdSkill an toàn."
+      title="Tạo mật khẩu mới"
     >
       <form className="auth-form" onSubmit={handleSubmit}>
         <label>
           Mã đặt lại
           <div className="input-shell textarea-shell">
             <FieldIcon type="token" />
-            <textarea
-              value={resetToken}
-              onChange={(event) => setResetToken(event.target.value)}
-
-              rows={3}
-            />
+            <textarea onChange={(event) => setResetToken(event.target.value)} rows={3} value={resetToken} />
           </div>
         </label>
         <label>
@@ -845,9 +933,9 @@ function ResetPasswordPage() {
             <FieldIcon type="password" />
             <input
               autoComplete="off"
+              onChange={(event) => setNewPassword(event.target.value)}
               type="password"
               value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
             />
           </div>
         </label>
@@ -857,7 +945,7 @@ function ResetPasswordPage() {
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.98 }}
         >
-          {isSubmitting ? 'Đang cập nhật...' : 'Đặt lại mật khẩu'}
+          {isSubmitting ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}
           <ArrowRight size={18} />
         </motion.button>
       </form>
@@ -878,38 +966,38 @@ function DashboardPage() {
       showToast({ kind: 'info', message: getErrorMessage(error) })
     } finally {
       clearSession()
-      navigate('/login', { replace: true, state: { message: 'Bạn đã đăng xuất thành công.' } })
+      navigate('/login?intent=learn', {
+        replace: true,
+        state: { message: 'Bạn đã đăng xuất thành công.' },
+      })
     }
   }
 
   if (!session) {
-    return <Navigate to="/login" replace />
+    return <Navigate replace to="/login?intent=learn" />
   }
 
   return (
     <DashboardShell
-      username={session.username}
-      email={session.email}
-      roles={session.roles}
       dailyReminderNeeded={session.shouldPromptDailyReminderTime}
-      primaryRole={primaryRole}
-      onLogout={handleLogout}
-      profileHref="/dashboard/profile"
+      email={session.email}
       getCardCopy={getDashboardCopy}
+      onLogout={handleLogout}
+      primaryRole={primaryRole}
+      profileHref="/dashboard/profile"
+      roles={session.roles}
+      username={session.username}
     />
   )
 }
 
-const validateRegisterForm = (
-  form: {
-    email: string
-    username: string
-    firstName: string
-    lastName: string
-    password: string
-  },
-  roles: PublicRegisterRole[],
-) => {
+const validateRegisterForm = (form: {
+  email: string
+  username: string
+  firstName: string
+  lastName: string
+  password: string
+}) => {
   if (!form.firstName.trim() || !form.lastName.trim()) {
     return 'Vui lòng nhập đầy đủ họ và tên.'
   }
@@ -924,10 +1012,6 @@ const validateRegisterForm = (
 
   if (!isStrongPassword(form.password)) {
     return 'Mật khẩu cần ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số.'
-  }
-
-  if (roles.length === 0) {
-    return 'Vui lòng chọn ít nhất một vai trò.'
   }
 
   return ''
@@ -959,19 +1043,98 @@ const getPrimaryRole = (roles: UserRole[]) => {
 }
 
 const getDashboardCopy = (card: string, role: string) => {
-  if (card === 'Phiên đồng hành' && role === 'companion') {
-    return 'Chuẩn bị lịch đồng hành và các yêu cầu hỗ trợ từ Learner.'
+  if (card === 'Mục tiêu kỹ năng') {
+    return role === 'companion'
+      ? 'Chốt kỹ năng bạn muốn dạy và làm rõ hồ sơ công khai của mình.'
+      : 'Chọn kỹ năng gần nhất bạn muốn cải thiện để tìm đúng buổi học.'
   }
 
-  if (card === 'Phiên đồng hành') {
-    return 'Kết nối với Companion khi module ghép cặp sẵn sàng.'
+  if (card === 'Lộ trình học') {
+    return 'Đi theo các bước ngắn, rõ và dễ bắt đầu thay vì phải tự sắp xếp mọi thứ từ đầu.'
   }
 
-  if (card === 'Nhắc học hằng ngày') {
-    return 'Theo dõi trạng thái nhắc học để chuẩn bị luồng cài đặt tiếp theo.'
+  if (card === 'Buổi học') {
+    return role === 'companion'
+      ? 'Quản lý lịch dạy, xác nhận người học và mở thêm buổi học mới.'
+      : 'Theo dõi buổi học đã đăng ký và những bước cần xác nhận tiếp theo.'
   }
 
-  return 'Sẵn sàng cho module tính năng tiếp theo của EdSkill.'
+  return 'Giữ nhịp đều mỗi ngày để biến kế hoạch học thành tiến triển thật.'
+}
+
+function normalizeIntent(value: string | null | undefined): SignupIntent | null {
+  if (value === 'learn' || value === 'teach') {
+    return value
+  }
+
+  return null
+}
+
+function getStoredIntent(): SignupIntent | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  return normalizeIntent(window.localStorage.getItem(authIntentStorageKey))
+}
+
+function rememberIntent(intent: SignupIntent) {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(authIntentStorageKey, intent)
+  }
+}
+
+function useResolvedIntent(search: string, routeIntent?: SignupIntent) {
+  const intentFromSearch = normalizeIntent(new URLSearchParams(search).get('intent'))
+  const resolved = intentFromSearch ?? routeIntent ?? getStoredIntent() ?? 'learn'
+
+  useEffect(() => {
+    rememberIntent(resolved)
+  }, [resolved])
+
+  return resolved
+}
+
+function buildIntentSearch(intent: SignupIntent) {
+  return `?intent=${intent}`
+}
+
+function getPostAuthRoute(intent: SignupIntent) {
+  return intent === 'teach' ? '/teach' : '/dashboard/skills/marketplace'
+}
+
+function getAuthCopy(intent: SignupIntent) {
+  if (intent === 'teach') {
+    return {
+      contextLabel: 'Bắt đầu dạy học',
+      loginButton: 'Vào khu dạy học',
+      loginSubtitle: 'Đăng nhập để hoàn thiện hồ sơ dạy học hoặc tiếp tục mở buổi học mới.',
+      loginTitle: 'Chào mừng bạn quay lại khu dạy học.',
+      panelLabel: 'Dạy học',
+      panelLines: ['Hoàn thiện hồ sơ dạy học', 'Chọn kỹ năng bạn muốn dạy', 'Mở buổi học khi đã sẵn sàng'],
+      panelTitle: 'Đi đúng luồng để bắt đầu dạy dễ hơn.',
+      registerButton: 'Tạo tài khoản để dạy',
+      registerSubtitle: 'Điền thông tin cơ bản để bắt đầu hành trình trở thành người dạy trên EdSkill.',
+      registerTitle: 'Tạo tài khoản cho luồng dạy học.',
+      switchToLoginLabel: 'Đăng nhập ngay',
+      switchToRegisterLabel: 'Tạo tài khoản để dạy',
+    }
+  }
+
+  return {
+    contextLabel: 'Bắt đầu học ngay',
+    loginButton: 'Vào khu tìm buổi học',
+    loginSubtitle: 'Đăng nhập để tìm buổi học phù hợp và tiếp tục hành trình học của bạn.',
+    loginTitle: 'Quay lại để tiếp tục học nhanh hơn.',
+    panelLabel: 'Học ngay',
+    panelLines: ['Tìm kỹ năng bạn cần', 'Chọn buổi học phù hợp', 'Bắt đầu theo mục tiêu cá nhân'],
+    panelTitle: 'Mọi thứ bắt đầu từ kỹ năng bạn muốn học.',
+    registerButton: 'Tạo tài khoản để học',
+    registerSubtitle: 'Điền thông tin cơ bản để bắt đầu tìm buổi học phù hợp trên EdSkill.',
+    registerTitle: 'Tạo tài khoản cho luồng học ngay.',
+    switchToLoginLabel: 'Đăng nhập',
+    switchToRegisterLabel: 'Tạo tài khoản để học',
+  }
 }
 
 export default App

@@ -12,7 +12,7 @@ export {
 } from './client'
 export { normalizeSession, type LoginResponse } from './session'
 
-export type PublicRegisterRole = 'learner' | 'companion'
+export type SignupIntent = 'learn' | 'teach'
 
 export interface RegisterRequest {
   email: string
@@ -20,7 +20,7 @@ export interface RegisterRequest {
   firstName: string
   lastName: string
   password: string
-  roles: PublicRegisterRole[]
+  signupIntent: SignupIntent
   acceptedPolicies: AcceptedPolicyInput[]
 }
 

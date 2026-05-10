@@ -30,12 +30,12 @@ export function getConfigLabel(key: string) {
 
 export function validateConfigDraft(key: string, value: string, allDrafts: Record<string, string>) {
   if (!value.trim()) {
-    return 'Gia tri khong duoc de trong.'
+    return 'Giá trị không được để trống.'
   }
 
   const numericValue = Number(value)
   if (Number.isNaN(numericValue)) {
-    return 'Gia tri phai la so hop le.'
+    return 'Giá trị phải là số hợp lệ.'
   }
 
   if (
@@ -46,7 +46,7 @@ export function validateConfigDraft(key: string, value: string, allDrafts: Recor
     const platformValue = Number(allDrafts['session.late_cancel_platform_pct'] ?? '0')
 
     if (!Number.isNaN(companionValue) && !Number.isNaN(platformValue) && companionValue + platformValue !== 100) {
-      return 'Tong late cancel companion % va platform % phai bang 100.'
+      return 'Tổng late cancel companion % và platform % phải bằng 100.'
     }
   }
 

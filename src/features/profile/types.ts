@@ -7,15 +7,17 @@ export interface ProfileDto {
   displayName: string
   avatarUrl: string | null
   bio: string | null
-  university: string | null
-  faculty: string | null
-  yearOfStudy: number | null
+  dateOfBirth: string | null
+  phone: string | null
+  degreeUrl: string | null
   skillsToTeach: string[]
   skillsToLearn: string[]
   isPublic: boolean
   roles: ProfileRole[]
   totalSessions: number
   lastActiveAt: string | null
+  isCompanionOnboardingComplete: boolean
+  missingCompanionProfileFields: ProfileField[]
 }
 
 export interface AvatarUploadUrlDto {
@@ -31,24 +33,39 @@ export interface GenerateAvatarUploadUrlRequest {
   fileSize: number
 }
 
+export interface GenerateDegreeUploadUrlRequest {
+  fileName: string
+  contentType: 'application/pdf' | 'image/jpeg' | 'image/png' | 'image/webp'
+  fileSize: number
+}
+
 export interface UpdateMyProfilePayload {
   displayName?: string
+  hasDisplayName?: boolean
   bio?: string | null
-  university?: string | null
-  faculty?: string | null
-  yearOfStudy?: number | null
+  hasBio?: boolean
+  dateOfBirth?: string | null
+  hasDateOfBirth?: boolean
+  phone?: string | null
+  hasPhone?: boolean
+  degreeUrl?: string | null
+  hasDegreeUrl?: boolean
   skillsToTeach?: string[] | null
+  hasSkillsToTeach?: boolean
   skillsToLearn?: string[] | null
+  hasSkillsToLearn?: boolean
   avatarUrl?: string | null
+  hasAvatarUrl?: boolean
   isPublic?: boolean
+  hasIsPublic?: boolean
 }
 
 export interface ProfileFormValues {
   displayName: string
   bio: string
-  university: string
-  faculty: string
-  yearOfStudy: number | null
+  dateOfBirth: string
+  phone: string
+  degreeUrl: string | null
   skillsToTeach: string[]
   skillsToLearn: string[]
   isPublic: boolean
@@ -58,9 +75,9 @@ export interface ProfileFormValues {
 export type ProfileField =
   | 'displayName'
   | 'bio'
-  | 'university'
-  | 'faculty'
-  | 'yearOfStudy'
+  | 'dateOfBirth'
+  | 'phone'
+  | 'degreeUrl'
   | 'skillsToTeach'
   | 'skillsToLearn'
   | 'avatarUrl'

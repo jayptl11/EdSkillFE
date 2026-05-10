@@ -10,16 +10,16 @@ import { walletApi, walletKeys } from './walletApi'
 import type { PointTransactionDto, PointTransactionType } from './types'
 
 const transactionTypeOptions: Array<{ label: string; value: PointTransactionType | '' }> = [
-  { label: 'Tat ca giao dich', value: '' },
-  { label: 'Signup bonus', value: 'SignupBonus' },
-  { label: 'Purchase', value: 'Purchase' },
-  { label: 'Session payment', value: 'SessionPayment' },
-  { label: 'Session earning', value: 'SessionEarning' },
-  { label: 'Platform fee', value: 'PlatformFee' },
-  { label: 'Refund', value: 'Refund' },
-  { label: 'Admin grant', value: 'AdminGrant' },
-  { label: 'Held', value: 'Held' },
-  { label: 'Hold release', value: 'HoldRelease' },
+  { label: 'Tất cả giao dịch', value: '' },
+  { label: 'Điểm khởi đầu', value: 'SignupBonus' },
+  { label: 'Nạp thêm điểm', value: 'Purchase' },
+  { label: 'Thanh toán buổi học', value: 'SessionPayment' },
+  { label: 'Thu nhập từ buổi học', value: 'SessionEarning' },
+  { label: 'Phần nền tảng giữ lại', value: 'PlatformFee' },
+  { label: 'Hoàn điểm', value: 'Refund' },
+  { label: 'Cộng điểm thủ công', value: 'AdminGrant' },
+  { label: 'Điểm đang giữ', value: 'Held' },
+  { label: 'Giải phóng điểm giữ', value: 'HoldRelease' },
 ]
 
 const TRANSACTION_LIMIT = 20
@@ -37,12 +37,11 @@ export function WalletPage() {
 
   const transactionsQuery = useQuery({
     queryKey: walletKeys.transactions({ type: typeFilter, page, limit: TRANSACTION_LIMIT }),
-    queryFn: () =>
-      walletApi.getTransactions({ type: typeFilter, page, limit: TRANSACTION_LIMIT }),
+    queryFn: () => walletApi.getTransactions({ type: typeFilter, page, limit: TRANSACTION_LIMIT }),
   })
 
   if (!session?.accessToken) {
-    return <Navigate replace state={{ message: 'Vui long dang nhap de tiep tuc.' }} to="/login" />
+    return <Navigate replace state={{ message: 'Vui lòng đăng nhập để tiếp tục.' }} to="/login?intent=learn" />
   }
 
   const transactions = transactionsQuery.data?.data ?? []
@@ -55,17 +54,17 @@ export function WalletPage() {
         <div>
           <span className="eyebrow">
             <Wallet size={15} />
-            Wallet points
+            Ví điểm
           </span>
-          <h1>Theo doi so du va lich su points.</h1>
+          <h1>Theo dõi số dư, điểm đang giữ và mọi giao dịch gần đây.</h1>
           <p>
-            So du available, held balance va moi giao dich lien quan den session booking, refund va
-            admin grant deu duoc tong hop tai day.
+            Đây là nơi bạn xem lại toàn bộ thay đổi về điểm khi đăng ký buổi học, hoàn điểm hoặc
+            nhận thu nhập từ buổi học.
           </p>
         </div>
         <div className="profile-hero-actions">
           <Link className="button secondary" to="/dashboard">
-            Ve dashboard
+            Về trang của tôi
           </Link>
           <button
             className="button secondary"
@@ -76,7 +75,7 @@ export function WalletPage() {
             type="button"
           >
             <RefreshCcw size={18} />
-            Lam moi
+            Làm mới
           </button>
         </div>
       </section>
@@ -84,7 +83,7 @@ export function WalletPage() {
       {summaryQuery.isLoading ? (
         <section className="profile-state-card">
           <LoaderCircle className="spin" size={24} />
-          <p>Dang tai wallet summary...</p>
+          <p>Đang tải ví điểm...</p>
         </section>
       ) : null}
 
@@ -92,7 +91,7 @@ export function WalletPage() {
         <section className="profile-state-card error">
           <AlertCircle size={22} />
           <div>
-            <h2>Khong the tai wallet</h2>
+            <h2>Không thể tải ví điểm</h2>
             <p>{getErrorMessage(summaryQuery.error)}</p>
           </div>
         </section>
@@ -100,24 +99,24 @@ export function WalletPage() {
 
       {summaryQuery.data ? (
         <section className="wallet-summary-grid">
-          <SummaryCard label="Available balance" value={summaryQuery.data.balance} />
-          <SummaryCard label="Held balance" value={summaryQuery.data.heldBalance} />
-          <SummaryCard label="Total earned" value={summaryQuery.data.totalEarned} />
-          <SummaryCard label="Total spent" value={summaryQuery.data.totalSpent} />
+          <SummaryCard label="Số dư khả dụng" value={summaryQuery.data.balance} />
+          <SummaryCard label="Điểm đang giữ" value={summaryQuery.data.heldBalance} />
+          <SummaryCard label="Tổng đã nhận" value={summaryQuery.data.totalEarned} />
+          <SummaryCard label="Tổng đã chi" value={summaryQuery.data.totalSpent} />
         </section>
       ) : null}
 
       <section className="session-board-shell wallet-board-shell">
         <div className="session-board-toolbar">
           <div>
-            <h2>Lich su giao dich</h2>
+            <h2>Lịch sử giao dịch</h2>
             <p>
-              Held transaction co the co amount bang 0. O day FE hien thi bien dong available va
-              held balance de khong mat thong tin.
+              Một số giao dịch chỉ thay đổi phần điểm đang giữ. EdSkill vẫn hiển thị đầy đủ để bạn
+              kiểm tra lại từng bước.
             </p>
           </div>
           <label className="session-filter-field">
-            <span>Loai giao dich</span>
+            <span>Loại giao dịch</span>
             <select
               onChange={(event) => {
                 setTypeFilter(event.target.value as PointTransactionType | '')
@@ -137,7 +136,7 @@ export function WalletPage() {
         {transactionsQuery.isLoading ? (
           <section className="profile-state-card">
             <LoaderCircle className="spin" size={20} />
-            <p>Dang tai giao dich...</p>
+            <p>Đang tải giao dịch...</p>
           </section>
         ) : null}
 
@@ -152,8 +151,8 @@ export function WalletPage() {
           <>
             {transactions.length === 0 ? (
               <section className="session-empty-state">
-                <h3>Chua co giao dich nao.</h3>
-                <p>Wallet cua ban chua phat sinh giao dich cho bo loc hien tai.</p>
+                <h3>Chưa có giao dịch nào.</h3>
+                <p>Ví điểm của bạn chưa phát sinh giao dịch cho bộ lọc hiện tại.</p>
               </section>
             ) : (
               <div className="wallet-transaction-list">
@@ -172,55 +171,45 @@ export function WalletPage() {
                     </div>
                     <dl className="wallet-transaction-grid">
                       <div>
-                        <dt>Available delta</dt>
+                        <dt>Biến động khả dụng</dt>
                         <dd>{formatSignedPoints(transaction.balanceAfter - transaction.balanceBefore)}</dd>
                       </div>
                       <div>
-                        <dt>Held delta</dt>
-                        <dd>
-                          {formatSignedPoints(
-                            transaction.heldBalanceAfter - transaction.heldBalanceBefore,
-                          )}
-                        </dd>
+                        <dt>Biến động điểm giữ</dt>
+                        <dd>{formatSignedPoints(transaction.heldBalanceAfter - transaction.heldBalanceBefore)}</dd>
                       </div>
                       <div>
-                        <dt>Available after</dt>
+                        <dt>Số dư sau giao dịch</dt>
                         <dd>{formatPoints(transaction.balanceAfter)}</dd>
                       </div>
                       <div>
-                        <dt>Held after</dt>
+                        <dt>Điểm giữ sau giao dịch</dt>
                         <dd>{formatPoints(transaction.heldBalanceAfter)}</dd>
                       </div>
                       <div>
-                        <dt>Created at</dt>
+                        <dt>Thời gian</dt>
                         <dd>{formatDateTime(transaction.createdAt)}</dd>
                       </div>
                       <div>
-                        <dt>Session</dt>
+                        <dt>Liên kết</dt>
                         <dd>
                           {transaction.sessionId ? (
-                            <Link to={`/dashboard/sessions/${transaction.sessionId}`}>
-                              {transaction.sessionId.slice(0, 8)}
-                            </Link>
+                            <Link to={`/dashboard/skills/${transaction.sessionId}`}>Xem buổi học</Link>
                           ) : (
-                            'N/A'
+                            'Không có'
                           )}
                         </dd>
                       </div>
                     </dl>
                     <p className="wallet-transaction-note">
-                      {transaction.note || 'Khong co ghi chu them cho giao dich nay.'}
+                      {transaction.note || 'Không có ghi chú thêm cho giao dịch này.'}
                     </p>
                   </article>
                 ))}
               </div>
             )}
 
-            <PaginationControls
-              currentPage={page}
-              onPageChange={setPage}
-              totalPages={totalPages}
-            />
+            <PaginationControls currentPage={page} onPageChange={setPage} totalPages={totalPages} />
           </>
         ) : null}
       </section>
@@ -254,7 +243,7 @@ function PaginationControls({
         onClick={() => onPageChange(currentPage - 1)}
         type="button"
       >
-        Trang truoc
+        Trang trước
       </button>
       <span>
         Trang {currentPage} / {totalPages}
@@ -273,11 +262,11 @@ function PaginationControls({
 
 function getTransactionTitle(transaction: PointTransactionDto) {
   if (transaction.type === 'Held') {
-    return 'Points duoc hold cho session booking'
+    return 'Điểm đã được giữ cho buổi học'
   }
 
   if (transaction.type === 'HoldRelease') {
-    return 'Held balance duoc giai phong'
+    return 'Điểm giữ đã được trả lại'
   }
 
   return transaction.type

@@ -3,17 +3,21 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
   CalendarDays,
+  Clock3,
   LoaderCircle,
   Plus,
   RefreshCcw,
   Search,
   Sparkles,
+  UserRound,
 } from 'lucide-react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { getErrorMessage } from '../../api/client'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
+import { profileApi, profileKeys } from '../profile/profileApi'
+import { formatLastActive } from '../profile/profileUtils'
 import { useAppStore } from '../../store/useAppStore'
 import {
   buildJitsiUrl,
@@ -34,15 +38,15 @@ type SessionBoardMode = 'marketplace' | 'learning' | 'teaching'
 const SESSION_LIMIT = 12
 
 const sessionStatusOptions: Array<{ label: string; value: SessionStatus | '' }> = [
-  { label: 'Tat ca status', value: '' },
-  { label: 'Available', value: 'Available' },
-  { label: 'Pending', value: 'Pending' },
-  { label: 'Confirmed', value: 'Confirmed' },
-  { label: 'In progress', value: 'InProgress' },
-  { label: 'Pending review', value: 'PendingReview' },
-  { label: 'Completed', value: 'Completed' },
-  { label: 'Cancelled', value: 'Cancelled' },
-  { label: 'Disputed', value: 'Disputed' },
+  { label: 'Tất cả trạng thái', value: '' },
+  { label: 'Đang mở đăng ký', value: 'Available' },
+  { label: 'Chờ xác nhận', value: 'Pending' },
+  { label: 'Đã xác nhận', value: 'Confirmed' },
+  { label: 'Đang diễn ra', value: 'InProgress' },
+  { label: 'Chờ xác nhận hoàn tất', value: 'PendingReview' },
+  { label: 'Đã hoàn tất', value: 'Completed' },
+  { label: 'Đã hủy', value: 'Cancelled' },
+  { label: 'Cần hỗ trợ', value: 'Disputed' },
 ]
 
 export function SessionMarketplacePage() {
@@ -62,13 +66,18 @@ export function CreateSessionOfferPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [formValues, setFormValues] = useState(createInitialOfferForm)
+  const profileQuery = useQuery({
+    queryKey: profileKeys.me(),
+    queryFn: profileApi.getMyProfile,
+    enabled: Boolean(session?.accessToken),
+  })
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateSessionPayload) => sessionsApi.create(payload),
     onSuccess: async (createdSession) => {
-      showToast({ kind: 'success', message: 'Session offer da duoc tao.' })
+      showToast({ kind: 'success', message: 'Buổi học đã được mở.' })
       await invalidateSessionQueries(queryClient, createdSession.sessionId)
-      navigate(`/dashboard/sessions/${createdSession.sessionId}`)
+      navigate(`/dashboard/skills/${createdSession.sessionId}`)
     },
     onError: (error) => {
       showToast({ kind: 'error', message: getErrorMessage(error) })
@@ -76,37 +85,53 @@ export function CreateSessionOfferPage() {
   })
 
   if (!session?.accessToken) {
-    return <Navigate replace state={{ message: 'Vui long dang nhap de tiep tuc.' }} to="/login" />
+    return <Navigate replace state={{ message: 'Vui lòng đăng nhập để tiếp tục.' }} to="/login?intent=teach" />
   }
 
   if (!session.roles.includes('companion')) {
-    return <Navigate replace to="/dashboard" />
+    return <Navigate replace to="/teach" />
+  }
+
+  if (profileQuery.isLoading) {
+    return (
+      <MotionPage className="page dashboard-page profile-page session-hub-page">
+        <SiteHeader />
+        <section className="profile-state-card">
+          <LoaderCircle className="spin" size={24} />
+          <p>Đang kiểm tra hồ sơ dạy học...</p>
+        </section>
+      </MotionPage>
+    )
+  }
+
+  if (profileQuery.data && !profileQuery.data.isCompanionOnboardingComplete) {
+    return <TeachingSoftGate />
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     if (!formValues.skill.trim()) {
-      showToast({ kind: 'error', message: 'Skill la bat buoc.' })
+      showToast({ kind: 'error', message: 'Hãy nhập kỹ năng cho buổi học này.' })
       return
     }
 
     if (!formValues.scheduledAt) {
-      showToast({ kind: 'error', message: 'Vui long chon thoi diem session.' })
+      showToast({ kind: 'error', message: 'Vui lòng chọn thời gian bắt đầu.' })
       return
     }
 
     if (formValues.durationMinutes <= 0 || formValues.pointCost <= 0) {
-      showToast({ kind: 'error', message: 'Duration va point cost phai lon hon 0.' })
+      showToast({ kind: 'error', message: 'Thời lượng và số điểm cần lớn hơn 0.' })
       return
     }
 
     createMutation.mutate({
-      skill: formValues.skill.trim(),
       description: formValues.description.trim() || undefined,
       durationMinutes: formValues.durationMinutes,
       pointCost: formValues.pointCost,
       scheduledAt: new Date(formValues.scheduledAt).toISOString(),
+      skill: formValues.skill.trim(),
     })
   }
 
@@ -117,17 +142,17 @@ export function CreateSessionOfferPage() {
         <div>
           <span className="eyebrow">
             <Plus size={15} />
-            Tao session offer
+            Mở buổi học mới
           </span>
-          <h1>Dang lich hoc de learner co the book.</h1>
+          <h1>Tạo một buổi học rõ ràng để người học dễ quyết định đăng ký.</h1>
           <p>
-            Offer moi duoc tao o status Available. Khi learner book, points se duoc hold va session
-            chuyen sang Pending.
+            Nêu đúng kỹ năng, thời gian và mô tả ngắn gọn. Buổi học của bạn sẽ hiển thị trong khu
+            tìm buổi học ngay khi được mở.
           </p>
         </div>
         <div className="profile-hero-actions">
-          <Link className="button secondary" to="/dashboard/sessions/teaching">
-            Ve teaching sessions
+          <Link className="button secondary" to="/dashboard/skills/teaching">
+            Về lịch dạy của tôi
           </Link>
         </div>
       </section>
@@ -138,14 +163,14 @@ export function CreateSessionOfferPage() {
             <div>
               <span className="eyebrow">
                 <Sparkles size={15} />
-                Companion offer
+                Buổi học công khai
               </span>
-              <h2>Chi tiet session</h2>
+              <h2>Thông tin buổi học</h2>
             </div>
             <div className="profile-form-actions">
               <button className="button primary" disabled={createMutation.isPending} type="submit">
                 {createMutation.isPending ? <LoaderCircle className="spin" size={18} /> : <Plus size={18} />}
-                Tao offer
+                Mở buổi học
               </button>
             </div>
           </div>
@@ -153,29 +178,25 @@ export function CreateSessionOfferPage() {
           <section className="profile-section-card">
             <div className="profile-form-grid">
               <label className="profile-field">
-                <span>Skill *</span>
+                <span>Kỹ năng *</span>
                 <input
-                  onChange={(event) =>
-                    setFormValues((current) => ({ ...current, skill: event.target.value }))
-                  }
-                  placeholder="VD: Excel, IELTS speaking, React basics"
+                  onChange={(event) => setFormValues((current) => ({ ...current, skill: event.target.value }))}
+                  placeholder="Ví dụ: Excel cho người mới, IELTS Speaking, React cơ bản"
                   value={formValues.skill}
                 />
               </label>
 
               <label className="profile-field">
-                <span>Scheduled at *</span>
+                <span>Thời gian bắt đầu *</span>
                 <input
-                  onChange={(event) =>
-                    setFormValues((current) => ({ ...current, scheduledAt: event.target.value }))
-                  }
+                  onChange={(event) => setFormValues((current) => ({ ...current, scheduledAt: event.target.value }))}
                   type="datetime-local"
                   value={formValues.scheduledAt}
                 />
               </label>
 
               <label className="profile-field">
-                <span>Duration (minutes)</span>
+                <span>Thời lượng (phút)</span>
                 <input
                   min={15}
                   onChange={(event) =>
@@ -190,7 +211,7 @@ export function CreateSessionOfferPage() {
               </label>
 
               <label className="profile-field">
-                <span>Point cost</span>
+                <span>Số điểm</span>
                 <input
                   min={1}
                   onChange={(event) =>
@@ -205,11 +226,10 @@ export function CreateSessionOfferPage() {
               </label>
 
               <label className="profile-field full">
-                <span>Description</span>
+                <span>Mô tả buổi học</span>
                 <textarea
-                  onChange={(event) =>
-                    setFormValues((current) => ({ ...current, description: event.target.value }))
-                  }
+                  onChange={(event) => setFormValues((current) => ({ ...current, description: event.target.value }))}
+                  placeholder="Bạn sẽ giúp người học đạt được điều gì trong buổi này?"
                   rows={5}
                   value={formValues.description}
                 />
@@ -219,12 +239,11 @@ export function CreateSessionOfferPage() {
         </form>
 
         <aside className="session-guide-card">
-          <h3>Nho cho MVP</h3>
+          <h3>Mẹo để buổi học dễ được chọn</h3>
           <ul>
-            <li>Offer moi bat dau o status Available.</li>
-            <li>Learner book se hold points ngay lap tuc.</li>
-            <li>Companion can confirm de tao jitsiRoomId.</li>
-            <li>Payout chi xay ra khi session Completed hoac late cancel.</li>
+            <li>Đặt tên kỹ năng rõ như người học thường tìm kiếm.</li>
+            <li>Nêu ngắn gọn đầu ra sau buổi học thay vì mô tả quá dài.</li>
+            <li>Chọn thời gian thực sự sẵn sàng để tránh phải hủy buổi học.</li>
           </ul>
         </aside>
       </section>
@@ -240,32 +259,37 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
   const [statusFilter, setStatusFilter] = useState<SessionStatus | ''>(mode === 'marketplace' ? 'Available' : '')
   const [skillFilter, setSkillFilter] = useState('')
   const [dateFilter, setDateFilter] = useState('')
+  const teachingProfileQuery = useQuery({
+    queryKey: profileKeys.me(),
+    queryFn: profileApi.getMyProfile,
+    enabled: Boolean(session?.accessToken) && mode === 'teaching',
+  })
 
   const listQuery = useQuery({
     queryKey: sessionKeys.list({
-      status: mode === 'marketplace' ? 'Available' : statusFilter,
-      role: mode === 'learning' ? 'learner' : mode === 'teaching' ? 'companion' : undefined,
-      page,
       limit: SESSION_LIMIT,
+      page,
+      role: mode === 'learning' ? 'learner' : mode === 'teaching' ? 'companion' : undefined,
+      status: mode === 'marketplace' ? 'Available' : statusFilter,
     }),
     queryFn: () =>
       sessionsApi.list({
-        status: mode === 'marketplace' ? 'Available' : statusFilter,
-        role: mode === 'learning' ? 'learner' : mode === 'teaching' ? 'companion' : undefined,
-        page,
         limit: SESSION_LIMIT,
+        page,
+        role: mode === 'learning' ? 'learner' : mode === 'teaching' ? 'companion' : undefined,
+        status: mode === 'marketplace' ? 'Available' : statusFilter,
       }),
   })
 
   const bookMutation = useMutation({
     mutationFn: (sessionId: string) => sessionsApi.book(sessionId),
     onSuccess: async (bookedSession) => {
-      showToast({ kind: 'success', message: 'Session da duoc book. Wallet se duoc lam moi.' })
+      showToast({ kind: 'success', message: 'Đăng ký thành công. Ví điểm sẽ được cập nhật.' })
       await Promise.all([
         invalidateSessionQueries(queryClient, bookedSession.sessionId),
         invalidateWalletQueries(queryClient),
       ])
-      navigate(`/dashboard/sessions/${bookedSession.sessionId}`)
+      navigate(`/dashboard/skills/${bookedSession.sessionId}`)
     },
     onError: (error) => {
       showToast({ kind: 'error', message: getErrorMessage(error) })
@@ -273,7 +297,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
   })
 
   if (!session?.accessToken) {
-    return <Navigate replace state={{ message: 'Vui long dang nhap de tiep tuc.' }} to="/login" />
+    return <Navigate replace state={{ message: 'Vui lòng đăng nhập để tiếp tục.' }} to="/login?intent=learn" />
   }
 
   if (mode === 'learning' && !session.roles.includes('learner')) {
@@ -281,7 +305,23 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
   }
 
   if (mode === 'teaching' && !session.roles.includes('companion')) {
-    return <Navigate replace to="/dashboard" />
+    return <Navigate replace to="/teach" />
+  }
+
+  if (mode === 'teaching' && teachingProfileQuery.isLoading) {
+    return (
+      <MotionPage className="page dashboard-page profile-page session-hub-page">
+        <SiteHeader />
+        <section className="profile-state-card">
+          <LoaderCircle className="spin" size={24} />
+          <p>Đang kiểm tra hồ sơ dạy học...</p>
+        </section>
+      </MotionPage>
+    )
+  }
+
+  if (mode === 'teaching' && teachingProfileQuery.data && !teachingProfileQuery.data.isCompanionOnboardingComplete) {
+    return <TeachingSoftGate />
   }
 
   const sessions = (listQuery.data?.data ?? []).filter((item) => {
@@ -295,10 +335,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
     return matchesSkill && matchesDate
   })
 
-  const totalPages =
-    mode === 'marketplace'
-      ? Math.max(1, Math.ceil((listQuery.data?.total ?? 0) / SESSION_LIMIT))
-      : Math.max(1, Math.ceil((listQuery.data?.total ?? 0) / SESSION_LIMIT))
+  const totalPages = Math.max(1, Math.ceil((listQuery.data?.total ?? 0) / SESSION_LIMIT))
 
   return (
     <MotionPage className="page dashboard-page profile-page session-hub-page">
@@ -314,12 +351,12 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
         </div>
         <div className="profile-hero-actions">
           <Link className="button secondary" to="/dashboard">
-            Ve dashboard
+            Về trang của tôi
           </Link>
           {mode === 'teaching' ? (
-            <Link className="button primary" to="/dashboard/sessions/new">
+            <Link className="button primary" to="/dashboard/skills/new">
               <Plus size={18} />
-              Tao offer moi
+              Mở buổi học
             </Link>
           ) : null}
         </div>
@@ -331,8 +368,8 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
             <h2>{getBoardToolbarTitle(mode)}</h2>
             <p>
               {mode === 'marketplace'
-                ? 'Thi truong session Available. Chon mot offer phu hop roi book va theo doi status.'
-                : 'Danh sach session duoc tra ve theo role cua ban. Mo detail de thao tac theo status.'}
+                ? 'Lọc nhanh theo kỹ năng và thời gian để tìm buổi học phù hợp.'
+                : 'Mở từng buổi học để xác nhận lịch, tham gia phòng học hoặc xem chi tiết.'}
             </p>
           </div>
 
@@ -340,18 +377,18 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
             {mode === 'marketplace' ? (
               <>
                 <label className="session-filter-field">
-                  <span>Loc theo skill</span>
+                  <span>Tìm theo kỹ năng</span>
                   <div className="admin-search-shell">
                     <Search size={16} />
                     <input
                       onChange={(event) => setSkillFilter(event.target.value)}
-                      placeholder="Nhap skill"
+                      placeholder="Ví dụ: IELTS, Excel, React"
                       value={skillFilter}
                     />
                   </div>
                 </label>
                 <label className="session-filter-field">
-                  <span>Loc theo ngay</span>
+                  <span>Ngày học</span>
                   <input
                     onChange={(event) => setDateFilter(event.target.value)}
                     type="date"
@@ -361,7 +398,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
               </>
             ) : (
               <label className="session-filter-field">
-                <span>Status</span>
+                <span>Trạng thái</span>
                 <select
                   onChange={(event) => {
                     setStatusFilter(event.target.value as SessionStatus | '')
@@ -386,7 +423,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
               type="button"
             >
               <RefreshCcw size={18} />
-              Lam moi
+              Làm mới
             </button>
           </div>
         </div>
@@ -394,7 +431,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
         {listQuery.isLoading ? (
           <section className="profile-state-card">
             <LoaderCircle className="spin" size={20} />
-            <p>Dang tai session list...</p>
+            <p>Đang tải danh sách buổi học...</p>
           </section>
         ) : null}
 
@@ -409,11 +446,11 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
           <>
             {sessions.length === 0 ? (
               <section className="session-empty-state">
-                <h3>Chua co session nao phu hop.</h3>
+                <h3>Chưa có buổi học nào phù hợp.</h3>
                 <p>
                   {mode === 'marketplace'
-                    ? 'Thu doi bo loc hoac quay lai sau khi companion tao them offer.'
-                    : 'Role nay hien chua co session khop voi bo loc da chon.'}
+                    ? 'Thử đổi từ khóa hoặc quay lại sau khi có thêm buổi học mới.'
+                    : 'Hiện chưa có buổi học nào khớp với bộ lọc bạn đang chọn.'}
                 </p>
               </section>
             ) : (
@@ -454,9 +491,15 @@ function SessionCard({
 }) {
   const currentRole = getCurrentSessionRole(session, viewerId)
   const joinUrl = session.jitsiRoomId ? buildJitsiUrl(session.jitsiRoomId) : null
+  const companionQuery = useQuery({
+    queryKey: [...profileKeys.user(session.companionId), 'session-card'],
+    queryFn: () => profileApi.getUserProfile(session.companionId),
+    retry: false,
+  })
+  const companionProfile = companionQuery.data
 
   return (
-    <article className="session-card">
+    <article className="session-card session-discovery-card">
       <div className="session-card-top">
         <span className={`session-status-chip status-${session.status.toLowerCase()}`}>
           {getSessionStatusLabel(session.status)}
@@ -464,40 +507,92 @@ function SessionCard({
         <span className="session-cost-chip">{formatSessionPoints(session.pointCost)}</span>
       </div>
 
+      <div className="session-teacher-row">
+        {companionProfile?.avatarUrl ? (
+          <img alt={companionProfile.displayName} className="session-teacher-avatar" src={companionProfile.avatarUrl} />
+        ) : (
+          <div className="session-teacher-avatar placeholder">
+            <UserRound size={18} />
+          </div>
+        )}
+        <div>
+          <strong>{companionProfile?.displayName || 'Người dạy trên EdSkill'}</strong>
+          <span>{companionProfile?.bio || 'Hồ sơ đang được cập nhật'}</span>
+        </div>
+      </div>
+
       <h3>{session.skill}</h3>
-      <p>{session.description || 'Chua co mo ta them cho session nay.'}</p>
+      <p>{session.description || 'Người dạy sẽ giới thiệu rõ mục tiêu và cách đồng hành trong buổi học này.'}</p>
 
       <dl className="session-card-meta">
         <div>
-          <dt>Scheduled</dt>
+          <dt>Thời gian</dt>
           <dd>{formatSessionDateTime(session.scheduledAt)}</dd>
         </div>
         <div>
-          <dt>Duration</dt>
-          <dd>{session.durationMinutes} phut</dd>
+          <dt>Thời lượng</dt>
+          <dd>{session.durationMinutes} phút</dd>
         </div>
         <div>
-          <dt>Vai tro cua ban</dt>
-          <dd>{currentRole === 'viewer' ? 'Viewer' : currentRole}</dd>
+          <dt>Vai trò của bạn</dt>
+          <dd>{currentRole === 'viewer' ? 'Đang xem' : currentRole === 'learner' ? 'Người học' : 'Người dạy'}</dd>
+        </div>
+        <div>
+          <dt>Hoạt động gần đây</dt>
+          <dd>{companionProfile ? formatLastActive(companionProfile.lastActiveAt) : 'Đang tải'}</dd>
         </div>
       </dl>
 
+      {companionProfile?.skillsToTeach?.length ? (
+        <div className="session-skill-strip">
+          {companionProfile.skillsToTeach.slice(0, 3).map((skill) => (
+            <span key={skill}>{skill}</span>
+          ))}
+        </div>
+      ) : null}
+
       <div className="session-card-actions">
-        <Link className="button secondary" to={`/dashboard/sessions/${session.sessionId}`}>
-          Xem chi tiet
+        <Link className="button secondary" to={`/dashboard/skills/${session.sessionId}`}>
+          Xem chi tiết
         </Link>
         {canBook ? (
           <button className="button primary" disabled={isBooking} onClick={onBook} type="button">
-            {isBooking ? <LoaderCircle className="spin" size={18} /> : 'Book'}
+            {isBooking ? <LoaderCircle className="spin" size={18} /> : 'Đăng ký'}
           </button>
         ) : null}
         {session.status === 'Confirmed' && joinUrl && currentRole !== 'viewer' ? (
           <a className="button secondary" href={joinUrl} rel="noreferrer" target="_blank">
-            Mo room
+            Vào phòng học
           </a>
         ) : null}
       </div>
     </article>
+  )
+}
+
+function TeachingSoftGate() {
+  return (
+    <MotionPage className="page dashboard-page profile-page session-hub-page">
+      <SiteHeader />
+      <section className="dashboard-hero profile-hero">
+        <div>
+          <span className="eyebrow">
+            <Clock3 size={15} />
+            Hoàn thiện hồ sơ trước khi dạy
+          </span>
+          <h1>Bạn cần hoàn thiện hồ sơ dạy học trước khi mở hoặc quản lý buổi học.</h1>
+          <p>
+            EdSkill sẽ chỉ cho người học thấy hồ sơ rõ ràng, công khai và đủ thông tin để họ yên
+            tâm đăng ký.
+          </p>
+        </div>
+        <div className="profile-hero-actions">
+          <Link className="button primary" to="/teach/onboarding">
+            Hoàn thiện hồ sơ dạy học
+          </Link>
+        </div>
+      </section>
+    </MotionPage>
   )
 }
 
@@ -518,7 +613,7 @@ function PaginationControls({
         onClick={() => onPageChange(currentPage - 1)}
         type="button"
       >
-        Trang truoc
+        Trang trước
       </button>
       <span>
         Trang {currentPage} / {totalPages}
@@ -537,58 +632,58 @@ function PaginationControls({
 
 function getBoardEyebrow(mode: SessionBoardMode) {
   if (mode === 'marketplace') {
-    return 'Session marketplace'
+    return 'Khám phá buổi học'
   }
 
   if (mode === 'learning') {
-    return 'My learning sessions'
+    return 'Buổi học của tôi'
   }
 
-  return 'My teaching sessions'
+  return 'Khu dạy học'
 }
 
 function getBoardTitle(mode: SessionBoardMode) {
   if (mode === 'marketplace') {
-    return 'Kham pha session Available va book ngay khi phu hop.'
+    return 'Tìm buổi học phù hợp theo kỹ năng và thời gian của bạn.'
   }
 
   if (mode === 'learning') {
-    return 'Theo doi cac session ban da book trong vai tro learner.'
+    return 'Theo dõi các buổi học bạn đã đăng ký.'
   }
 
-  return 'Quan ly offer va session dang day trong vai tro companion.'
+  return 'Quản lý những buổi học bạn đang mở và đang dạy.'
 }
 
 function getBoardDescription(mode: SessionBoardMode) {
   if (mode === 'marketplace') {
-    return 'Marketplace goi GET /api/sessions voi status=Available, sau do FE loc them theo skill va ngay.'
+    return 'Bộ lọc đơn giản, thẻ thông tin rõ và lối vào nhanh để người học quyết định dễ hơn.'
   }
 
   if (mode === 'learning') {
-    return 'Session list nay duoc backend tra ve theo role=learner cua current user.'
+    return 'Xem lại lịch học, trạng thái xác nhận và đường vào phòng học của bạn.'
   }
 
-  return 'Session list nay duoc backend tra ve theo role=companion, kem CTA tao offer moi.'
+  return 'Kiểm tra buổi học nào đang chờ xác nhận, đang diễn ra hoặc đã hoàn tất.'
 }
 
 function getBoardToolbarTitle(mode: SessionBoardMode) {
   if (mode === 'marketplace') {
-    return 'Danh sach offer'
+    return 'Danh sách buổi học đang mở'
   }
 
   if (mode === 'learning') {
-    return 'Learning sessions'
+    return 'Lịch học của tôi'
   }
 
-  return 'Teaching sessions'
+  return 'Lịch dạy của tôi'
 }
 
 function createInitialOfferForm() {
   return {
-    skill: '',
     description: '',
     durationMinutes: 60,
     pointCost: 100,
     scheduledAt: toDateTimeLocalValue(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+    skill: '',
   }
 }

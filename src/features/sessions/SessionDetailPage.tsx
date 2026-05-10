@@ -66,32 +66,32 @@ export function SessionDetailPage() {
 
   const bookMutation = useMutation({
     mutationFn: () => sessionsApi.book(sessionId),
-    onSuccess: handleWalletSessionSuccess('Session da duoc book.'),
+    onSuccess: handleWalletSessionSuccess('Đăng ký buổi học thành công.'),
     onError: handleActionError,
   })
 
   const confirmMutation = useMutation({
     mutationFn: () => sessionsApi.confirm(sessionId),
-    onSuccess: handleSessionOnlySuccess('Session da duoc confirm.'),
+    onSuccess: handleSessionOnlySuccess('Buổi học đã được xác nhận.'),
     onError: handleActionError,
   })
 
   const rejectMutation = useMutation({
     mutationFn: () => sessionsApi.reject(sessionId, { reason: rejectReason.trim() || undefined }),
-    onSuccess: handleWalletSessionSuccess('Session da bi reject va learner duoc refund.'),
+    onSuccess: handleWalletSessionSuccess('Buổi học đã bị từ chối và người học được hoàn điểm.'),
     onError: handleActionError,
   })
 
   const cancelMutation = useMutation({
     mutationFn: () => sessionsApi.cancel(sessionId, { reason: cancelReason.trim() || undefined }),
-    onSuccess: handleWalletSessionSuccess('Session da duoc cancel.'),
+    onSuccess: handleWalletSessionSuccess('Buổi học đã được hủy.'),
     onError: handleActionError,
   })
 
   const joinMutation = useMutation({
     mutationFn: () => sessionsApi.join(sessionId),
     onSuccess: async (updatedSession) => {
-      showToast({ kind: 'success', message: 'Session da chuyen sang InProgress.' })
+      showToast({ kind: 'success', message: 'Buổi học đã bắt đầu.' })
       await invalidateSessionQueries(queryClient, updatedSession.sessionId)
 
       if (updatedSession.jitsiRoomId) {
@@ -106,18 +106,18 @@ export function SessionDetailPage() {
       sessionsApi.leave(sessionId, {
         actualDuration: leaveDuration.trim() ? Number(leaveDuration) : undefined,
       }),
-    onSuccess: handleSessionOnlySuccess('Da ghi nhan leave session.'),
+    onSuccess: handleSessionOnlySuccess('Đã rời khỏi buổi học.'),
     onError: handleActionError,
   })
 
   const completionMutation = useMutation({
     mutationFn: () => sessionsApi.confirmCompletion(sessionId),
-    onSuccess: handleWalletSessionSuccess('Da ghi nhan confirm completion.'),
+    onSuccess: handleWalletSessionSuccess('Đã xác nhận hoàn tất buổi học.'),
     onError: handleActionError,
   })
 
   if (!authSession?.accessToken) {
-    return <Navigate replace state={{ message: 'Vui long dang nhap de tiep tuc.' }} to="/login" />
+    return <Navigate replace state={{ message: 'Vui lòng đăng nhập để tiếp tục.' }} to="/login" />
   }
 
   function handleActionError(error: unknown) {
@@ -148,17 +148,16 @@ export function SessionDetailPage() {
         <div>
           <span className="eyebrow">
             <Clock3 size={15} />
-            Session detail
+            Chi tiết buổi học
           </span>
-          <h1>Theo doi state machine cua session nay theo thoi gian thuc nhe.</h1>
+          <h1>Theo dõi trạng thái buổi học theo thời gian thực.</h1>
           <p>
-            CTA phu thuoc vao status hien tai va vai tro cua current user trong session. FE khong tu
-            tinh payout hay refund.
+            Các nút thao tác thay đổi tùy theo trạng thái hiện tại và vai trò của bạn trong buổi học.
           </p>
         </div>
         <div className="profile-hero-actions">
-          <Link className="button secondary" to="/dashboard/sessions/marketplace">
-            Marketplace
+          <Link className="button secondary" to="/dashboard/skills/marketplace">
+            Khám phá buổi học
           </Link>
           <button
             className="button secondary"
@@ -169,7 +168,7 @@ export function SessionDetailPage() {
             type="button"
           >
             <RefreshCcw size={18} />
-            Lam moi
+            Làm mới
           </button>
         </div>
       </section>
@@ -177,7 +176,7 @@ export function SessionDetailPage() {
       {detailQuery.isLoading ? (
         <section className="profile-state-card">
           <LoaderCircle className="spin" size={24} />
-          <p>Dang tai session detail...</p>
+          <p>Đang tải chi tiết buổi học...</p>
         </section>
       ) : null}
 
@@ -185,7 +184,7 @@ export function SessionDetailPage() {
         <section className="profile-state-card error">
           <AlertCircle size={22} />
           <div>
-            <h2>Khong the tai session detail</h2>
+            <h2>Không thể tải chi tiết buổi học</h2>
             <p>{getErrorMessage(detailQuery.error)}</p>
           </div>
         </section>
@@ -205,50 +204,46 @@ export function SessionDetailPage() {
             </div>
 
             <p className="session-detail-description">
-              {sessionData.description || 'Chua co mo ta them cho session nay.'}
+              {sessionData.description || 'Chưa có mô tả thêm cho buổi học này.'}
             </p>
 
             <dl className="session-detail-grid">
-              <DetailItem label="Session ID" value={sessionData.sessionId} />
-              <DetailItem label="Vai tro cua ban" value={viewerRole} />
-              <DetailItem label="Companion ID" value={sessionData.companionId} />
-              <DetailItem label="Learner ID" value={sessionData.learnerId || 'Chua co'} />
-              <DetailItem label="Scheduled at" value={formatSessionDateTime(sessionData.scheduledAt)} />
-              <DetailItem label="Duration" value={`${sessionData.durationMinutes} phut`} />
-              <DetailItem label="Actual start" value={formatSessionDateTime(sessionData.actualStartAt)} />
-              <DetailItem label="Actual end" value={formatSessionDateTime(sessionData.actualEndAt)} />
+              <DetailItem label="Vai trò của bạn" value={viewerRole === 'learner' ? 'Người học' : viewerRole === 'companion' ? 'Người hướng dẫn' : 'Người xem'} />
+              <DetailItem label="Thời gian" value={formatSessionDateTime(sessionData.scheduledAt)} />
+              <DetailItem label="Thời lượng" value={`${sessionData.durationMinutes} phút`} />
+              <DetailItem label="Bắt đầu" value={formatSessionDateTime(sessionData.actualStartAt)} />
+              <DetailItem label="Kết thúc" value={formatSessionDateTime(sessionData.actualEndAt)} />
               <DetailItem
-                label="Actual duration"
-                value={sessionData.actualDuration ? `${sessionData.actualDuration} phut` : 'Chua co'}
+                label="Thời lượng thực tế"
+                value={sessionData.actualDuration ? `${sessionData.actualDuration} phút` : 'Chưa có'}
               />
-              <DetailItem label="Jitsi room" value={sessionData.jitsiRoomId || 'Chua tao'} />
+              <DetailItem label="Phòng học trực tuyến" value={sessionData.jitsiRoomId ? 'Đã tạo' : 'Chưa tạo'} />
               <DetailItem label="Cancelled at" value={formatSessionDateTime(sessionData.cancelledAt)} />
               <DetailItem label="Disbursed at" value={formatSessionDateTime(sessionData.disbursedAt)} />
             </dl>
 
             {sessionData.cancelReason ? (
               <div className="session-note-banner">
-                <strong>Cancel reason</strong>
+                <strong>Lý do hủy</strong>
                 <p>{sessionData.cancelReason}</p>
               </div>
             ) : null}
 
             {sessionData.status === 'PendingReview' ? (
               <div className="session-note-banner info">
-                <strong>Completion confirmations</strong>
+                <strong>Xác nhận hoàn tất</strong>
                 <p>
-                  Learner: {sessionData.learnerConfirmed ? 'confirmed' : 'waiting'} | Companion:{' '}
-                  {sessionData.companionConfirmed ? 'confirmed' : 'waiting'}
+                  Người học: {sessionData.learnerConfirmed ? 'đã xác nhận' : 'chờ'} | Người hướng dẫn:{' '}
+                  {sessionData.companionConfirmed ? 'đã xác nhận' : 'chờ'}
                 </p>
               </div>
             ) : null}
 
             {sessionData.status === 'Disputed' ? (
               <div className="session-note-banner danger">
-                <strong>Disputed</strong>
+                <strong>Đang tranh chấp</strong>
                 <p>
-                  Actual duration nho hon nguong min_duration_minutes. FE dung hien CTA confirm
-                  completion va chuyen user sang cho support/manual review.
+                  Thời lượng thực tế ngắn hơn mức tối thiểu. Vui lòng liên hệ bộ phận hỗ trợ để được giải quyết.
                 </p>
               </div>
             ) : null}
@@ -257,14 +252,14 @@ export function SessionDetailPage() {
           <aside className="session-side-stack">
             <section className="profile-section-card session-action-panel">
               <div className="session-action-head">
-                <h3>Actions</h3>
-                <p>Status hien tai se quyet dinh CTA duoc mo.</p>
+                <h3>Thao tác</h3>
+                <p>Các nút thao tác sẽ thay đổi theo trạng thái hiện tại.</p>
               </div>
 
               <div className="session-action-stack">
                 {canBookSession(sessionData, authSession.userId) && authSession.roles.includes('learner') ? (
                   <button className="button primary" disabled={bookMutation.isPending} onClick={() => bookMutation.mutate()} type="button">
-                    {bookMutation.isPending ? <LoaderCircle className="spin" size={18} /> : 'Book session'}
+                    {bookMutation.isPending ? <LoaderCircle className="spin" size={18} /> : 'Đăng ký'}
                   </button>
                 ) : null}
 
@@ -277,10 +272,10 @@ export function SessionDetailPage() {
                       type="button"
                     >
                       {confirmMutation.isPending ? <LoaderCircle className="spin" size={18} /> : <CheckCheck size={18} />}
-                      Confirm session
+                      Xác nhận
                     </button>
                     <label className="profile-field">
-                      <span>Reject reason</span>
+                      <span>Lý do từ chối</span>
                       <textarea
                         onChange={(event) => setRejectReason(event.target.value)}
                         rows={3}
@@ -294,7 +289,7 @@ export function SessionDetailPage() {
                       type="button"
                     >
                       {rejectMutation.isPending ? <LoaderCircle className="spin" size={18} /> : <XCircle size={18} />}
-                      Reject session
+                      Từ chối
                     </button>
                   </>
                 ) : null}
@@ -302,7 +297,7 @@ export function SessionDetailPage() {
                 {canCancelSession(sessionData, viewerRole) ? (
                   <>
                     <label className="profile-field">
-                      <span>Cancel reason</span>
+                      <span>Lý do hủy</span>
                       <textarea
                         onChange={(event) => setCancelReason(event.target.value)}
                         rows={3}
@@ -316,7 +311,7 @@ export function SessionDetailPage() {
                       type="button"
                     >
                       {cancelMutation.isPending ? <LoaderCircle className="spin" size={18} /> : <XCircle size={18} />}
-                      Cancel session
+                      Hủy buổi học
                     </button>
                   </>
                 ) : null}
@@ -329,14 +324,14 @@ export function SessionDetailPage() {
                     type="button"
                   >
                     {joinMutation.isPending ? <LoaderCircle className="spin" size={18} /> : <Video size={18} />}
-                    Join session
+                    Vào phòng học
                   </button>
                 ) : null}
 
                 {sessionData.status === 'InProgress' && viewerRole !== 'viewer' ? (
                   <>
                     <label className="profile-field">
-                      <span>Actual duration (optional minutes)</span>
+                      <span>Thời lượng thực tế (phút, không bắt buộc)</span>
                       <input
                         min={1}
                         onChange={(event) => setLeaveDuration(event.target.value)}
@@ -350,7 +345,7 @@ export function SessionDetailPage() {
                       onClick={() => leaveMutation.mutate()}
                       type="button"
                     >
-                      {leaveMutation.isPending ? <LoaderCircle className="spin" size={18} /> : 'Leave session'}
+                      {leaveMutation.isPending ? <LoaderCircle className="spin" size={18} /> : 'Rời phòng học'}
                     </button>
                   </>
                 ) : null}
@@ -369,26 +364,20 @@ export function SessionDetailPage() {
                     {completionMutation.isPending ? (
                       <LoaderCircle className="spin" size={18} />
                     ) : (
-                      'Confirm completion'
+                      'Xác nhận hoàn tất'
                     )}
                   </button>
                 ) : null}
               </div>
             </section>
 
-            <section className="profile-section-card session-action-panel">
-              <h3>Notes</h3>
-              <ul>
-                <li>FE refresh wallet sau book, reject, cancel va confirm-completion.</li>
-                <li>Join goi /join truoc roi moi mo Jitsi bang jitsiRoomId.</li>
-                <li>Khong hardcode payout split trong UI detail nay.</li>
-              </ul>
-              {sessionData.jitsiRoomId ? (
+            {sessionData.jitsiRoomId ? (
+              <section className="profile-section-card session-action-panel">
                 <a className="button secondary" href={buildJitsiUrl(sessionData.jitsiRoomId)} rel="noreferrer" target="_blank">
-                  Mo Jitsi room truc tiep
+                  Mở phòng học trực tuyến
                 </a>
-              ) : null}
-            </section>
+              </section>
+            ) : null}
           </aside>
         </section>
       ) : null}

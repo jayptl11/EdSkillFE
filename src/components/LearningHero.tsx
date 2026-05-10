@@ -1,23 +1,21 @@
 import { Link } from 'react-router-dom'
-import Tilt from 'react-parallax-tilt'
 import {
   ArrowRight,
   BarChart3,
   BookOpen,
   Camera,
-  CheckCircle2,
   GraduationCap,
   Lightbulb,
   Mic2,
   Music2,
   PenTool,
+  Search,
   Sparkles,
+  Star,
   Target,
-  UsersRound,
   type LucideIcon,
 } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
-import landingLogo from '../assets/landing-logo-source.jpg'
 import personalOne from '../assets/landing-personal-1.jpg'
 import personalTwo from '../assets/landing-personal-2.jpg'
 import personalThree from '../assets/landing-personal-3.jpg'
@@ -29,6 +27,23 @@ interface SkillCard {
   Icon: LucideIcon
   tone: 'gold' | 'blue' | 'sky'
 }
+
+const popularSkills = [
+  'Tiếng Anh giao tiếp',
+  'Toán',
+  'Excel',
+  'Lập trình React',
+  'IELTS Speaking',
+  'Thiết kế Canva',
+  'Guitar cơ bản',
+  'Kỹ năng thuyết trình',
+]
+
+const trustStats = [
+  { value: '1000+', label: 'kỹ năng có thể bắt đầu ngay' },
+  { value: '1:1', label: 'học theo mục tiêu cá nhân' },
+  { value: '2 bước', label: 'để bắt đầu dạy trên EdSkill' },
+]
 
 const skillCards: SkillCard[] = [
   {
@@ -78,7 +93,7 @@ const skillCards: SkillCard[] = [
 const modelCards = [
   {
     title: 'Học qua dự án ngắn hạn',
-    copy: 'Learner đi từ vấn đề thực tế đến sản phẩm đầu ra rõ ràng.',
+    copy: 'Người học đi từ vấn đề thực tế đến sản phẩm đầu ra rõ ràng.',
   },
   {
     title: 'Lộ trình cá nhân hóa',
@@ -135,78 +150,94 @@ const topUniPromo = {
 }
 
 export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
+  const learnHref = isSignedIn ? '/dashboard/skills/marketplace' : '/register?intent=learn'
+  const teachHref = isSignedIn ? '/teach' : '/register?intent=teach'
   const reduceMotion = useReducedMotion()
 
   return (
     <>
-      <section className="landing-hero" id="home">
-        <motion.div
-          className="landing-hero-copy"
-          initial={{ opacity: 0, x: -24 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-        >
+      <section className="landing-hero superprof-hero">
+        <div className="landing-hero-copy">
           <span className="eyebrow">
             <Sparkles size={15} />
-            Nền tảng học kỹ năng toàn diện
+            Tìm người dạy nhanh, bắt đầu dễ
           </span>
-          <img className="landing-hero-logo" src={landingLogo} alt="EdSkill" />
-          <h1>Học kỹ năng theo cách hiện đại, thực tế và truyền cảm hứng.</h1>
+          <h1>Tìm người dạy phù hợp cho kỹ năng bạn muốn học ngay hôm nay.</h1>
           <p>
-            EdSkill kết nối kỹ năng sở thích, học thuật và bổ trợ công việc trong một
-            hệ sinh thái học tập có lộ trình, thực hành và Companion.
+            EdSkill giúp bạn bắt đầu từ đúng kỹ năng, đúng mục tiêu và đúng nhịp học. Nếu bạn
+            muốn dạy, chỉ cần đi theo luồng riêng dành cho người dạy.
           </p>
-          <div className="hero-actions">
-            <motion.div whileHover={{ y: -3 }} whileTap={{ scale: 0.98 }}>
-              <Link className="button primary" to={isSignedIn ? '/dashboard' : '/register'}>
-                Đăng ký ngay
-                <ArrowRight size={18} />
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ y: -3 }} whileTap={{ scale: 0.98 }}>
-              <a className="button secondary" href="#skills">
-                Khám phá thêm
-              </a>
-            </motion.div>
+
+          <div className="landing-search-shell">
+            <div className="landing-search-bar">
+              <Search size={18} />
+              <span>Ví dụ: IELTS speaking, Excel, React cơ bản, Guitar đệm hát</span>
+            </div>
+            <Link className="button primary" to={learnHref}>
+              Tìm buổi học
+              <ArrowRight size={18} />
+            </Link>
           </div>
-          <div className="hero-proof">
-            <span>
-              <CheckCircle2 size={18} />
-              Theo vai trò
-            </span>
-            <span>
-              <UsersRound size={18} />
-              Học cùng cộng đồng
-            </span>
+
+          <div className="hero-actions">
+            <Link className="button primary" to={learnHref}>
+              Học ngay
+            </Link>
+            <Link className="button secondary" to={teachHref}>
+              Dạy học
+            </Link>
+          </div>
+
+          <div className="hero-skill-chips">
+            {popularSkills.map((skill) => (
+              <Link className="hero-skill-chip" key={skill} to={learnHref}>
+                {skill}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <motion.div
+          animate={{ opacity: 1, y: 0 }}
+          className="landing-hero-media superprof-hero-card"
+          initial={{ opacity: 0, y: 24 }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <img
+            className="superprof-hero-image"
+            src="/hero-1.jpg"
+            alt="Người học đang trao đổi trực tiếp cùng người dạy trên EdSkill"
+          />
+          <div className="superprof-hero-overlay">
+            <div>
+              <span className="eyebrow">Được tìm nhiều</span>
+              <strong>Tiếng Anh giao tiếp</strong>
+              <p>Học online hoặc gặp trực tiếp theo mục tiêu của bạn.</p>
+            </div>
+            <div className="superprof-rating">
+              <Star size={16} />
+              <span>Hồ sơ rõ ràng, lịch học dễ theo dõi</span>
+            </div>
           </div>
         </motion.div>
+      </section>
 
-        <Tilt
-          className="landing-hero-media"
-          tiltEnable={!reduceMotion}
-          tiltMaxAngleX={4}
-          tiltMaxAngleY={6}
-          perspective={1200}
-          scale={1.01}
-          transitionSpeed={1400}
-          gyroscope={false}
-        >
-          <motion.div
-            className="landing-photo-card"
-            initial={{ opacity: 0, scale: 0.96, y: 24 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.62, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <img src="/hero-1.jpg" alt="Học viên EdSkill trình diễn và luyện tập kỹ năng" />
-          </motion.div>
-        </Tilt>
+      <section className="landing-section landing-stat-strip">
+        <div className="landing-stat-grid">
+          {trustStats.map((item) => (
+            <article className="landing-stat-card" key={item.label}>
+              <strong>{item.value}</strong>
+              <span>{item.label}</span>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="landing-section landing-skills" id="skills">
         <SectionHeading
           eyebrow="Nhóm kỹ năng nổi bật"
           title="Kỹ năng được chia thành 3 nhóm phù hợp cho nhiều mục tiêu phát triển."
-          copy="Từ sở thích cá nhân, năng lực học thuật đến kỹ năng hỗ trợ công việc, EdSkill giúp Learner bắt đầu dễ dàng và tiến bộ bền vững."
+          copy="Từ sở thích cá nhân, năng lực học thuật đến kỹ năng hỗ trợ công việc, EdSkill giúp người học bắt đầu dễ dàng và tiến bộ bền vững."
         />
         <motion.div
           className="landing-card-grid skills-grid"
@@ -241,7 +272,7 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
       <FeatureSection
         eyebrow="Mô hình học đổi mới"
         title="Nội dung thực tế, lộ trình linh hoạt và đầu ra rõ ràng."
-        copy="Các bài học được thiết kế để Learner hiểu nhanh, thực hành sớm và nhìn thấy tiến bộ sau từng chặng."
+        copy="Các bài học được thiết kế để người học hiểu nhanh, thực hành sớm và nhìn thấy tiến bộ sau từng chặng."
         image="/hero-2.jpg"
         imageAlt="Minh họa cộng đồng học tập EdSkill"
         cards={modelCards}
@@ -260,7 +291,7 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
       <section className="landing-section">
         <SectionHeading
           eyebrow="Bạn đồng hành"
-          title="Phản hồi từ Learner và cộng đồng đã đồng hành cùng EdSkill."
+          title="Phản hồi từ người học và cộng đồng đã đồng hành cùng EdSkill."
           copy="Các câu chuyện tập trung vào trải nghiệm học, khả năng ứng dụng và sự tự tin sau quá trình luyện tập."
         />
         <div className="landing-card-grid testimonial-grid">
@@ -280,13 +311,13 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
       <section className="landing-section landing-overview" id="overview">
         <SectionHeading
           eyebrow="Tổng quan EdSkill"
-          title="Một hệ sinh thái học tập giúp Learner phát triển toàn diện và có giá trị cho xã hội."
+          title="Một hệ sinh thái học tập giúp người học phát triển toàn diện và có giá trị cho xã hội."
         />
         <div className="landing-overview-grid">
           <OverviewCard
             Icon={Target}
             title="Mission"
-            copy="Giúp Learner tiếp cận kỹ năng theo cách hiện đại, ứng dụng được và tạo ra thay đổi tích cực."
+            copy="Giúp người học tiếp cận kỹ năng theo cách hiện đại, ứng dụng được và tạo ra thay đổi tích cực."
           />
           <OverviewCard
             Icon={BookOpen}

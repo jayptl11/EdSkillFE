@@ -7,7 +7,7 @@ const activePollingStatuses: SessionStatus[] = ['Pending', 'Confirmed', 'InProgr
 
 export function formatSessionDateTime(value: string | null) {
   if (!value) {
-    return 'Chua co'
+    return 'Chưa có'
   }
 
   return new Intl.DateTimeFormat(undefined, {

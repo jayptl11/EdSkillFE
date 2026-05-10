@@ -32,12 +32,12 @@ export function DashboardShell({
         <div>
           <span className="eyebrow">
             <Sparkles size={15} />
-            Dashboard {getRoleLabel(primaryRole)}
+            Khu vực {getRoleLabel(primaryRole).toLowerCase()}
           </span>
-          <h1>Xin chao, {username || email}</h1>
+          <h1>Xin chào, {username || email}</h1>
           <p>
-            Khong gian EdSkill cua ban da san sang. Chon buoc tiep theo, giu nhip hoc va mo cac
-            cong cu wallet, sessions va admin theo dung vai tro.
+            Mọi thứ bạn cần để học, dạy và theo dõi tiến trình đang ở đây. Chọn đúng việc
+            tiếp theo để bắt đầu nhanh hơn.
           </p>
           <div className="role-chip-row">
             {roles.map((role) => (
@@ -46,36 +46,36 @@ export function DashboardShell({
           </div>
           <div className="dashboard-hero-links">
             <Link className="button secondary" to={profileHref}>
-              Cap nhat ho so
+              Cập nhật hồ sơ
             </Link>
             <Link className="button secondary" to="/dashboard/wallet">
-              Wallet
+              Ví điểm
             </Link>
-            <Link className="button secondary" to="/dashboard/sessions/marketplace">
-              Marketplace
+            <Link className="button secondary" to="/dashboard/skills/marketplace">
+              Tìm buổi học
             </Link>
             {roles.includes('learner') ? (
-              <Link className="button secondary" to="/dashboard/sessions/learning">
-                Learning sessions
+              <Link className="button secondary" to="/dashboard/skills/learning">
+                Buổi học của tôi
               </Link>
             ) : null}
             {roles.includes('companion') ? (
               <>
-                <Link className="button secondary" to="/dashboard/sessions/teaching">
-                  Teaching sessions
+                <Link className="button secondary" to="/dashboard/skills/teaching">
+                  Lịch dạy của tôi
                 </Link>
-                <Link className="button secondary" to="/dashboard/sessions/new">
-                  Tao offer
+                <Link className="button secondary" to="/dashboard/skills/new">
+                  Mở buổi học
                 </Link>
               </>
             ) : null}
             {roles.includes('admin') ? (
               <>
                 <Link className="button secondary" to="/dashboard/admin/session-wallet">
-                  Session wallet admin
+                  Quản trị ví điểm
                 </Link>
                 <Link className="button secondary" to="/dashboard/admin/skills">
-                  Quan ly skills
+                  Quản lý kỹ năng
                 </Link>
               </>
             ) : null}
@@ -88,7 +88,7 @@ export function DashboardShell({
           whileTap={{ scale: 0.98 }}
         >
           <LogOut size={18} />
-          Dang xuat
+          Đăng xuất
         </motion.button>
       </section>
       <motion.section
@@ -112,55 +112,55 @@ export function DashboardShell({
             <CalendarCheck2 size={22} />
           </span>
           <div>
-            <h2>Buoc hoc tiep theo</h2>
-            <p>Hoan thien ho so, wallet va cac session flow dau tien cua ban.</p>
+            <h2>Bước nên làm tiếp</h2>
+            <p>Hoàn thiện hồ sơ, kiểm tra ví điểm và chốt buổi học đầu tiên của bạn.</p>
           </div>
           <span className="summary-progress">
             <span />
           </span>
         </div>
         <div className="session-panel">
-          <h2>Phien dang nhap</h2>
+          <h2>Thông tin tài khoản</h2>
           <dl>
             <div>
               <dt>Email</dt>
               <dd>{email}</dd>
             </div>
             <div>
-              <dt>Vai tro</dt>
+              <dt>Vai trò</dt>
               <dd>{roles.map(getRoleLabel).join(', ')}</dd>
             </div>
             <div>
-              <dt>Nhac hoc</dt>
-              <dd>{dailyReminderNeeded ? 'Can thiet lap' : 'Chua can'}</dd>
+              <dt>Nhắc học</dt>
+              <dd>{dailyReminderNeeded ? 'Cần thiết lập' : 'Đã ổn'}</dd>
             </div>
           </dl>
         </div>
         <div className="study-pulse">
           <Clock3 size={28} />
-          <strong>15 phut</strong>
-          <span>goi y cho phien hoc dau</span>
+          <strong>15 phút</strong>
+          <span>để hoàn thiện bước khởi đầu hôm nay</span>
         </div>
       </section>
       <section className="dashboard-quick-links">
         <Link className="dashboard-quick-link" to="/dashboard/wallet">
-          <strong>Wallet</strong>
-          <span>Theo doi balance, held points va transaction history.</span>
+          <strong>Ví điểm</strong>
+          <span>Theo dõi số dư, điểm đang giữ và mọi thay đổi gần đây.</span>
         </Link>
-        <Link className="dashboard-quick-link" to="/dashboard/sessions/marketplace">
-          <strong>Marketplace</strong>
-          <span>Xem session Available, book nhanh va theo doi detail.</span>
+        <Link className="dashboard-quick-link" to="/dashboard/skills/marketplace">
+          <strong>Tìm buổi học</strong>
+          <span>Xem các buổi học đang mở và chọn lịch phù hợp với bạn.</span>
         </Link>
         {roles.includes('learner') ? (
-          <Link className="dashboard-quick-link" to="/dashboard/sessions/learning">
-            <strong>My learning sessions</strong>
-            <span>Danh sach session ban da book trong vai tro learner.</span>
+          <Link className="dashboard-quick-link" to="/dashboard/skills/learning">
+            <strong>Buổi học của tôi</strong>
+            <span>Theo dõi các buổi học bạn đã đăng ký và những việc cần xác nhận.</span>
           </Link>
         ) : null}
         {roles.includes('companion') ? (
-          <Link className="dashboard-quick-link" to="/dashboard/sessions/teaching">
-            <strong>My teaching sessions</strong>
-            <span>Quan ly offer, confirm, reject va theo doi pending review.</span>
+          <Link className="dashboard-quick-link" to="/dashboard/skills/teaching">
+            <strong>Lịch dạy của tôi</strong>
+            <span>Quản lý buổi học, xác nhận lịch và mở thêm buổi học mới.</span>
           </Link>
         ) : null}
       </section>
@@ -170,14 +170,14 @@ export function DashboardShell({
 
 const getRoleLabel = (role: string) => {
   if (role === 'admin') {
-    return 'Admin'
+    return 'Quản trị'
   }
 
   if (role === 'companion') {
-    return 'Companion'
+    return 'Người dạy'
   }
 
-  return 'Learner'
+  return 'Người học'
 }
 
 function DashboardCard({

@@ -33,6 +33,6 @@ export const learningTracks: LearningTrack[] = [
 export const dashboardCards = [
   { title: 'Mục tiêu kỹ năng', Icon: GraduationCap },
   { title: 'Lộ trình học', Icon: BookOpen },
-  { title: 'Phiên đồng hành', Icon: Network },
+  { title: 'Buổi học', Icon: Network },
   { title: 'Nhắc học hằng ngày', Icon: Lightbulb },
 ]

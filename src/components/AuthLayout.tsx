@@ -5,6 +5,7 @@ import {
   GraduationCap,
   LockKeyhole,
   Mail,
+  Search,
   ShieldCheck,
   Sparkles,
   UserRound,
@@ -25,6 +26,8 @@ export function AuthPage({
   panelLines,
   children,
   accent = 'secure',
+  contextLabel = 'Truy cập tài khoản',
+  steps,
 }: {
   title: string
   subtitle: string
@@ -32,7 +35,9 @@ export function AuthPage({
   panelTitle: string
   panelLines: string[]
   children: ReactNode
-  accent?: 'secure' | 'learn' | 'reset'
+  accent?: 'secure' | 'learn' | 'reset' | 'teach'
+  contextLabel?: string
+  steps?: Array<{ label: string; active?: boolean; done?: boolean }>
 }) {
   return (
     <MotionPage className="page auth-page">
@@ -45,17 +50,29 @@ export function AuthPage({
           title={panelTitle}
         />
         <motion.div
+          animate={{ opacity: 1, x: 0 }}
           className="auth-card"
           initial={{ opacity: 0, x: 28 }}
-          animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
         >
           <span className="eyebrow">
             <ShieldCheck size={15} />
-            Truy cập tài khoản
+            {contextLabel}
           </span>
           <h2>{title}</h2>
           <p>{subtitle}</p>
+          {steps?.length ? (
+            <div className="auth-step-row" aria-label="Tiến trình">
+              {steps.map((step) => (
+                <span
+                  className={`auth-step-chip ${step.active ? 'active' : ''} ${step.done ? 'done' : ''}`.trim()}
+                  key={step.label}
+                >
+                  {step.label}
+                </span>
+              ))}
+            </div>
+          ) : null}
           {children}
         </motion.div>
       </section>
@@ -93,13 +110,13 @@ export function RoleOption({
 }) {
   return (
     <motion.button
+      aria-pressed={active}
       className={`role-option ${active ? 'active' : ''}`}
+      layout
       onClick={onClick}
       type="button"
-      aria-pressed={active}
       whileHover={{ y: -4 }}
       whileTap={{ scale: 0.98 }}
-      layout
     >
       <span className="role-icon">
         <Icon size={22} />
@@ -108,30 +125,16 @@ export function RoleOption({
         <strong>{label}</strong>
         <small>{description}</small>
       </span>
-      {active && (
+      {active ? (
         <motion.span
+          animate={{ scale: 1, rotate: 0 }}
           className="role-check"
           initial={{ scale: 0, rotate: -90 }}
-          animate={{ scale: 1, rotate: 0 }}
         >
           <Check size={15} />
         </motion.span>
-      )}
+      ) : null}
     </motion.button>
-  )
-}
-
-export function OtpPreview({ value }: { value: string }) {
-  const digits = value.padEnd(6, ' ').slice(0, 6).split('')
-
-  return (
-    <div className="otp-preview" aria-hidden="true">
-      {digits.map((digit, index) => (
-        <span className={digit.trim() ? 'filled' : ''} key={`${index}-${digit}`}>
-          {digit.trim() ? digit : ''}
-        </span>
-      ))}
-    </div>
   )
 }
 
@@ -141,7 +144,7 @@ function AnimatedAuthPanel({
   title,
   lines,
 }: {
-  accent: 'secure' | 'learn' | 'reset'
+  accent: 'secure' | 'learn' | 'reset' | 'teach'
   label: string
   title: string
   lines: string[]
@@ -149,12 +152,14 @@ function AnimatedAuthPanel({
   const reduceMotion = useReducedMotion()
   const primaryLine = lines[0]
   const supportingLines = lines.slice(1)
+  const AccentIcon =
+    accent === 'teach' ? UsersRound : accent === 'learn' ? Search : ShieldCheck
 
   return (
     <motion.div
+      animate={{ opacity: 1, x: 0 }}
       className={`auth-brand-panel ${accent}`}
       initial={{ opacity: 0, x: -26 }}
-      animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className="auth-panel-copy">
@@ -162,8 +167,8 @@ function AnimatedAuthPanel({
       </div>
       <div className="auth-visual-stack">
         <motion.div
-          className="auth-floating-card main"
           animate={reduceMotion ? undefined : { y: [0, -10, 0] }}
+          className="auth-floating-card main"
           transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
         >
           <BookOpen size={24} />
@@ -171,17 +176,17 @@ function AnimatedAuthPanel({
           <strong>{title}</strong>
         </motion.div>
         <motion.div
-          className="auth-floating-card side"
           animate={reduceMotion ? undefined : { y: [0, 12, 0] }}
+          className="auth-floating-card side"
           transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <ShieldCheck size={22} />
+          <AccentIcon size={22} />
           <span>{primaryLine}</span>
         </motion.div>
       </div>
       <div className="mini-grid">
-        {learningTracks.slice(0, 6).map(({ label, Icon, tone }) => (
-          <span className={tone} key={label}>
+        {learningTracks.slice(0, 6).map(({ label: itemLabel, Icon, tone }) => (
+          <span className={tone} key={itemLabel}>
             <Icon size={20} />
           </span>
         ))}
@@ -207,22 +212,22 @@ function StudyIllustration() {
 
   return (
     <motion.div
-      className="study-illustration"
-      aria-label="Minh họa cộng đồng học tập"
       animate={reduceMotion ? undefined : { y: [0, -8, 0] }}
+      aria-label="Minh họa cộng đồng học tập"
+      className="study-illustration"
       transition={{ duration: 4.6, repeat: Infinity, ease: 'easeInOut' }}
     >
-      <img src={panelLearning} alt="" aria-hidden="true" />
+      <img alt="" aria-hidden="true" src={panelLearning} />
       <motion.span
-        className="study-spark spark-one"
         animate={reduceMotion ? undefined : { scale: [1, 1.2, 1], rotate: [0, 8, 0] }}
+        className="study-spark spark-one"
         transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
       >
         <Sparkles size={18} />
       </motion.span>
       <motion.span
-        className="study-spark spark-two"
         animate={reduceMotion ? undefined : { scale: [1, 1.15, 1], y: [0, -5, 0] }}
+        className="study-spark spark-two"
         transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
       >
         <GraduationCap size={18} />

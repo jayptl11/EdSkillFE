@@ -28,30 +28,36 @@ export function SiteHeader() {
       <LogoLink />
       <nav>
         <Link className="nav-link" to="/policies">
-          Chinh sach
+          Chính sách
         </Link>
         {session ? (
           <>
-            <Link className="nav-link" to="/dashboard/sessions/marketplace">
-              Sessions
+            <Link className="nav-link" to="/dashboard/skills/marketplace">
+              Tìm buổi học
+            </Link>
+            <Link className="nav-link" to="/teach">
+              Dạy học
             </Link>
             <Link className="nav-link" to="/dashboard/wallet">
-              Wallet
+              Ví điểm
             </Link>
             <Link className="nav-link" to="/dashboard/profile">
-              Ho so
+              Hồ sơ
             </Link>
             <Link className="nav-link highlighted" to="/dashboard">
-              Dashboard
+              Trang của tôi
             </Link>
           </>
         ) : (
           <>
-            <Link className="nav-link" to="/login">
-              Dang nhap
+            <Link className="nav-link" to="/login?intent=learn">
+              Đăng nhập
             </Link>
-            <Link className="nav-link highlighted" to="/register">
-              Tham gia
+            <Link className="nav-link" to="/register?intent=learn">
+              Học ngay
+            </Link>
+            <Link className="nav-link highlighted" to="/register?intent=teach">
+              Dạy học
             </Link>
           </>
         )}

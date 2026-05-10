@@ -15,26 +15,29 @@ import {
 } from 'lucide-react'
 import { getErrorMessage, isApiError } from '../../api/client'
 import { SiteHeader } from '../../components/Brand'
-import { CustomSelect } from '../../components/CustomSelect'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
 import { useAppStore } from '../../store/useAppStore'
 import { SkillAutocomplete } from '../skills/SkillAutocomplete'
 import {
   clearSavedAvatar,
+  clearSavedDegree,
   profileApi,
   profileKeys,
   requestAvatarUploadUrl,
+  requestDegreeUploadUrl,
   saveAvatarUrl,
+  saveDegreeUrl,
   uploadFileToPresignedUrl,
 } from './profileApi'
 import {
-  buildProfilePatch,
+  buildProfileUpdatePayload,
   extractProfileFieldErrors,
   formatLastActive,
   getRoleBadgeLabel,
   toProfileFormValues,
   validateAvatarFile,
+  validateDegreeFile,
   validateProfileForm,
   type ProfileFieldErrors,
 } from './profileUtils'
@@ -43,9 +46,9 @@ import type { ProfileDto, ProfileField, ProfileFormValues } from './types'
 const emptyForm: ProfileFormValues = {
   displayName: '',
   bio: '',
-  university: '',
-  faculty: '',
-  yearOfStudy: null,
+  dateOfBirth: '',
+  phone: '',
+  degreeUrl: null,
   skillsToTeach: [],
   skillsToLearn: [],
   isPublic: true,
@@ -56,6 +59,7 @@ export function OwnerProfilePage() {
   const session = useAppStore((state) => state.session)
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const degreeFileInputRef = useRef<HTMLInputElement | null>(null)
   const previewUrlRef = useRef<string | null>(null)
   const hasInitializedRef = useRef(false)
   const [formValues, setFormValues] = useState<ProfileFormValues>(emptyForm)
@@ -63,6 +67,7 @@ export function OwnerProfilePage() {
   const [fieldErrors, setFieldErrors] = useState<ProfileFieldErrors>({})
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const [isUploadingDegree, setIsUploadingDegree] = useState(false)
 
   const profileQuery = useQuery({
     queryKey: profileKeys.me(),
@@ -112,8 +117,8 @@ export function OwnerProfilePage() {
     return <Navigate to="/login" replace />
   }
 
-  const patchPayload = buildProfilePatch(formValues, initialValues)
-  const isDirty = Object.keys(patchPayload).length > 0
+  const updatePayload = buildProfileUpdatePayload(formValues, initialValues)
+  const isDirty = Object.keys(updatePayload).length > 0
 
   const handleChange = (field: keyof ProfileFormValues, value: string | number | boolean | null) => {
     setFormValues((current) => ({ ...current, [field]: value }))
@@ -171,7 +176,7 @@ export function OwnerProfilePage() {
       return
     }
 
-    updateProfileMutation.mutate(patchPayload)
+    updateProfileMutation.mutate(updatePayload)
   }
 
   async function handleAvatarChange(file: File) {
@@ -236,6 +241,66 @@ export function OwnerProfilePage() {
       showToast({ kind: 'error', message: getErrorMessage(error) })
     } finally {
       setIsUploadingAvatar(false)
+    }
+  }
+
+  async function handleDegreeChange(file: File) {
+    const validationMessage = validateDegreeFile(file)
+    if (validationMessage) {
+      throw new Error(validationMessage)
+    }
+
+    const uploadMeta = await requestDegreeUploadUrl(file)
+    await uploadFileToPresignedUrl(uploadMeta.uploadUrl, file)
+
+    setFormValues((current) => ({ ...current, degreeUrl: uploadMeta.publicUrl }))
+
+    const profile = await saveDegreeUrl(uploadMeta.publicUrl)
+    applyProfileSnapshot(profile)
+  }
+
+  const handleDegreeInputChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!file) {
+      return
+    }
+
+    const previousDegreeUrl = formValues.degreeUrl
+
+    setIsUploadingDegree(true)
+    clearFieldError('degreeUrl')
+
+    try {
+      await handleDegreeChange(file)
+      showToast({ kind: 'success', message: 'Bằng cấp đã được tải lên thành công.' })
+    } catch (error) {
+      setFormValues((current) => ({ ...current, degreeUrl: previousDegreeUrl }))
+      showToast({
+        kind: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Tải bằng cấp thất bại. Vui lòng thử lại.',
+      })
+    } finally {
+      setIsUploadingDegree(false)
+    }
+  }
+
+  const handleRemoveDegree = async () => {
+    setIsUploadingDegree(true)
+    clearFieldError('degreeUrl')
+
+    try {
+      const profile = await clearSavedDegree()
+      applyProfileSnapshot(profile)
+      showToast({ kind: 'success', message: 'Bằng cấp đã được xóa khỏi hồ sơ.' })
+    } catch (error) {
+      showToast({ kind: 'error', message: getErrorMessage(error) })
+    } finally {
+      setIsUploadingDegree(false)
     }
   }
 
@@ -386,16 +451,16 @@ export function OwnerProfilePage() {
               </div>
               <dl className="profile-stats profile-stats-tiles">
                 <div>
-                  <dt>Total sessions</dt>
+                  <dt>Tổng buổi học</dt>
                   <dd>{profileQuery.data.totalSessions}</dd>
                 </div>
                 <div>
-                  <dt>Last active</dt>
+                  <dt>Hoạt động gần nhất</dt>
                   <dd>{formatLastActive(profileQuery.data.lastActiveAt)}</dd>
                 </div>
                 <div>
-                  <dt>Public status</dt>
-                  <dd>{formValues.isPublic ? 'Public profile' : 'Private profile'}</dd>
+                  <dt>Trạng thái hồ sơ</dt>
+                  <dd>{formValues.isPublic ? 'Công khai' : 'Riêng tư'}</dd>
                 </div>
               </dl>
             </div>
@@ -491,50 +556,81 @@ export function OwnerProfilePage() {
             <section className="profile-section-card">
               <div className="profile-section-heading">
                 <div>
-                  <h3>Thông tin học tập</h3>
+                  <h3>Thông tin cá nhân</h3>
                 </div>
               </div>
 
               <div className="profile-form-grid">
                 <Field
-                  error={fieldErrors.university}
-                  helper="Tên trường hoặc tổ chức bạn đang theo học."
-                  label="Trường"
+                  error={fieldErrors.dateOfBirth}
+                  helper="Ngày sinh chỉ hiển thị với bạn, không hiển thị trên hồ sơ công khai."
+                  label="Ngày sinh"
                 >
                   <input
-                    onChange={(event) => handleChange('university', event.target.value)}
-                    value={formValues.university}
+                    max={new Date().toISOString().split('T')[0]}
+                    min="1900-01-01"
+                    onChange={(event) => handleChange('dateOfBirth', event.target.value)}
+                    type="date"
+                    value={formValues.dateOfBirth}
                   />
                 </Field>
 
                 <Field
-                  error={fieldErrors.faculty}
-                  helper="Khoa, ngành hoặc lĩnh vực học tập chính."
-                  label="Khoa / ngành"
+                  error={fieldErrors.phone}
+                  helper="Số điện thoại chỉ hiển thị với bạn, không hiển thị trên hồ sơ công khai."
+                  label="Số điện thoại"
                 >
                   <input
-                    onChange={(event) => handleChange('faculty', event.target.value)}
-                    value={formValues.faculty}
+                    maxLength={20}
+                    onChange={(event) => handleChange('phone', event.target.value)}
+                    placeholder="+84 ..."
+                    type="tel"
+                    value={formValues.phone}
                   />
                 </Field>
 
                 <Field
-                  error={fieldErrors.yearOfStudy}
-                  helper="Có thể để trống nếu bạn chưa muốn hiển thị."
-                  label="Năm học"
+                  className="full"
+                  error={fieldErrors.degreeUrl}
+                  helper="Tải lên bằng cấp hoặc chứng chỉ (PDF, JPG, PNG, WEBP). Tối đa 10 MB."
+                  label="Bằng cấp / Chứng chỉ"
                 >
-                  <CustomSelect
-                    onChange={(val) => handleChange('yearOfStudy', val)}
-                    options={[
-                      { label: 'Chưa cập nhật', value: '' },
-                      ...[1, 2, 3, 4, 5, 6].map((year) => ({
-                        label: `Năm ${year}`,
-                        value: year,
-                      })),
-                    ]}
-                    placeholder="Chưa cập nhật"
-                    value={formValues.yearOfStudy ?? ''}
+                  <input
+                    accept="application/pdf,image/jpeg,image/png,image/webp"
+                    className="profile-file-input"
+                    onChange={handleDegreeInputChange}
+                    ref={degreeFileInputRef}
+                    type="file"
                   />
+                  <div className="profile-avatar-actions">
+                    <button
+                      className="button secondary"
+                      disabled={isUploadingDegree}
+                      onClick={() => degreeFileInputRef.current?.click()}
+                      type="button"
+                    >
+                      {isUploadingDegree ? <LoaderCircle className="spin" size={18} /> : <Upload size={18} />}
+                      {isUploadingDegree ? 'Đang tải...' : formValues.degreeUrl ? 'Thay đổi' : 'Tải lên'}
+                    </button>
+                    {formValues.degreeUrl ? (
+                      <button
+                        className="button secondary ghost"
+                        disabled={isUploadingDegree}
+                        onClick={() => {
+                          void handleRemoveDegree()
+                        }}
+                        type="button"
+                      >
+                        <Trash2 size={18} />
+                        Xóa
+                      </button>
+                    ) : null}
+                  </div>
+                  {formValues.degreeUrl ? (
+                    <a className="profile-degree-link" href={formValues.degreeUrl} rel="noopener noreferrer" target="_blank">
+                      Xem bằng cấp đã tải lên
+                    </a>
+                  ) : null}
                 </Field>
               </div>
             </section>
@@ -633,7 +729,7 @@ export function PublicProfilePage() {
           <AlertCircle size={22} />
           <div>
             <h2>Không tìm thấy hồ sơ</h2>
-            <p>UserId này chưa có hồ sơ công khai để hiển thị.</p>
+            <p>Người dùng này chưa có hồ sơ công khai.</p>
           </div>
         </section>
       ) : null}
@@ -680,45 +776,25 @@ function PublicProfileCard({ profile }: { profile: ProfileDto }) {
 
       <div className="public-profile-summary">
         <div className="public-profile-summary-card">
-          <span>Trường</span>
-          <strong>{profile.university || 'Chưa cập nhật'}</strong>
-        </div>
-        <div className="public-profile-summary-card">
-          <span>Năm học</span>
-          <strong>{profile.yearOfStudy ? `Năm ${profile.yearOfStudy}` : 'Chưa cập nhật'}</strong>
-        </div>
-        <div className="public-profile-summary-card">
           <span>Hoạt động gần nhất</span>
           <strong>{formatLastActive(profile.lastActiveAt)}</strong>
         </div>
         <div className="public-profile-summary-card">
-          <span>Total sessions</span>
+          <span>Tổng buổi học</span>
           <strong>{profile.totalSessions}</strong>
         </div>
       </div>
 
       <div className="public-profile-grid">
         <div className="profile-meta-card">
-          <h3>Thông tin học tập</h3>
+          <h3>Thông tin chung</h3>
           <dl className="profile-stats">
             <div>
-              <dt>Trường</dt>
-              <dd>{profile.university || 'Chưa cập nhật'}</dd>
-            </div>
-            <div>
-              <dt>Khoa / ngành</dt>
-              <dd>{profile.faculty || 'Chưa cập nhật'}</dd>
-            </div>
-            <div>
-              <dt>Năm học</dt>
-              <dd>{profile.yearOfStudy ? `Năm ${profile.yearOfStudy}` : 'Chưa cập nhật'}</dd>
-            </div>
-            <div>
-              <dt>Last active</dt>
+              <dt>Hoạt động gần nhất</dt>
               <dd>{formatLastActive(profile.lastActiveAt)}</dd>
             </div>
             <div>
-              <dt>Total sessions</dt>
+              <dt>Tổng buổi học</dt>
               <dd>{profile.totalSessions}</dd>
             </div>
           </dl>
