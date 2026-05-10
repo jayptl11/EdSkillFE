@@ -539,6 +539,7 @@ export function OwnerProfilePage() {
               </div>
             </section>
 
+            {(profileQuery.data.roles.includes('companion') || profileQuery.data.roles.includes('learner')) ? (
             <section className="profile-section-card">
               <div className="profile-section-heading">
                 <div>
@@ -547,6 +548,7 @@ export function OwnerProfilePage() {
               </div>
 
               <div className="profile-skills-grid">
+                {profileQuery.data.roles.includes('companion') ? (
                 <SkillAutocomplete
                   error={fieldErrors.skillsToTeach}
                   label="Kỹ năng muốn dạy"
@@ -555,6 +557,8 @@ export function OwnerProfilePage() {
                   placeholder="Tìm kỹ năng muốn dạy"
                   selectedSkills={formValues.skillsToTeach}
                 />
+                ) : null}
+                {profileQuery.data.roles.includes('learner') ? (
                 <SkillAutocomplete
                   error={fieldErrors.skillsToLearn}
                   label="Kỹ năng muốn học"
@@ -563,8 +567,10 @@ export function OwnerProfilePage() {
                   placeholder="Tìm kỹ năng muốn học"
                   selectedSkills={formValues.skillsToLearn}
                 />
+                ) : null}
               </div>
             </section>
+            ) : null}
           </form>
         </section>
       ) : null}
@@ -718,15 +724,19 @@ function PublicProfileCard({ profile }: { profile: ProfileDto }) {
           </dl>
         </div>
 
+        {profile.roles.includes('companion') ? (
         <div className="profile-meta-card">
           <h3>Kỹ năng muốn dạy</h3>
           <SkillChips emptyLabel="Chưa cập nhật kỹ năng muốn dạy." skills={profile.skillsToTeach} />
         </div>
+        ) : null}
 
+        {profile.roles.includes('learner') ? (
         <div className="profile-meta-card">
           <h3>Kỹ năng muốn học</h3>
           <SkillChips emptyLabel="Chưa cập nhật kỹ năng muốn học." skills={profile.skillsToLearn} />
         </div>
+        ) : null}
       </div>
     </section>
   )
