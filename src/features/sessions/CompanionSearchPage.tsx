@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import {
   AlertCircle,
   BookOpen,
-  CalendarDays,
   Code,
   Globe,
   LineChart,
@@ -11,13 +10,14 @@ import {
   Palette,
   Star,
   UserRound,
+  Heart,
+  Sparkles,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getErrorMessage } from '../../api/client'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { SkillAutocomplete } from '../skills/SkillAutocomplete'
-import { formatSessionDateTime } from '../sessions/sessionUtils'
 import { companionApi, companionKeys, type CompanionSearchParams } from '../sessions/companionApi'
 import { DeliveryLocationPicker } from '../sessions/DeliveryLocationPicker'
 import type { SessionDeliveryMode } from '../sessions/types'
@@ -143,72 +143,56 @@ export function CompanionSearchPage() {
           ) : null}
 
           {companions.length > 0 ? (
-            <div className="session-card-grid">
+            <div className="discovery-hero-grid">
               {companions.map((companion) => (
-                <article className="session-card session-discovery-card" key={companion.companionId}>
-                  <div className="session-teacher-row">
-                    {companion.avatarUrl ? (
-                      <img
-                        alt={companion.displayName}
-                        className="session-teacher-avatar"
-                        src={companion.avatarUrl}
-                      />
-                    ) : (
-                      <div className="session-teacher-avatar placeholder">
-                        <UserRound size={18} />
+                <article className="discovery-hero-card" key={companion.companionId}>
+                  <Link
+                    className="discovery-hero-card-link"
+                    to={`/dashboard/companions/${companion.companionId}?skillId=${skillId}${deliveryMode ? `&deliveryMode=${deliveryMode}` : ''}${deliveryMode === 'Offline' && location ? `&location=${encodeURIComponent(location)}` : ''}`}
+                  >
+                    <div className="discovery-hero-image">
+                      {companion.avatarUrl ? (
+                        <img alt={companion.displayName} src={companion.avatarUrl} />
+                      ) : (
+                        <div className="discovery-hero-placeholder">
+                          <UserRound size={48} />
+                        </div>
+                      )}
+                      <button className="discovery-hero-favorite" onClick={(e) => { e.preventDefault(); /* TODO: handle fav */ }}>
+                        <Heart size={20} />
+                      </button>
+                      
+                      <div className="discovery-hero-overlay">
+                        <div className="discovery-hero-name">
+                          <strong>{companion.displayName}</strong>
+                        </div>
+                        <div className="discovery-hero-subtitle">
+                          {location && deliveryMode === 'Offline' 
+                            ? `${location} (trực tiếp)` 
+                            : deliveryMode === 'Online' 
+                              ? 'Học trực tuyến'
+                              : 'Trực tiếp & trực tuyến'}
+                        </div>
                       </div>
-                    )}
-                    <div>
-                      <strong>{companion.displayName}</strong>
-                      <span>{companion.bio || 'Hồ sơ đang được cập nhật'}</span>
                     </div>
-                  </div>
 
-                  {companion.skillsToTeach.length > 0 ? (
-                    <div className="session-skill-strip">
-                      {companion.skillsToTeach.slice(0, 3).map((s) => (
-                        <span key={s}>{s}</span>
-                      ))}
+                    <div className="discovery-hero-info">
+                      <div className="discovery-hero-stats">
+                        <div className="discovery-hero-rating">
+                          <Star fill="var(--color-warning, #f59e0b)" size={16} style={{ color: 'var(--color-warning, #f59e0b)' }} />
+                          <strong>{companion.avgRating.toFixed(1)}</strong>
+                          <span>({companion.totalReviews} đánh giá)</span>
+                        </div>
+                        <div className="discovery-hero-badge">
+                          <Sparkles size={14} />
+                          <span>Gia sư đề xuất</span>
+                        </div>
+                      </div>
+                      <p className="discovery-hero-bio">
+                        {companion.bio || 'Hồ sơ đang được cập nhật. Giáo viên chưa có thông tin giới thiệu chi tiết.'}
+                      </p>
                     </div>
-                  ) : null}
-
-                  <dl className="session-card-meta">
-                    <div>
-                      <dt>Đánh giá</dt>
-                      <dd>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Star size={13} style={{ color: 'var(--color-warning, #f59e0b)' }} />
-                          {companion.avgRating.toFixed(1)} ({companion.totalReviews} đánh giá)
-                        </span>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Giá từ</dt>
-                      <dd>{companion.lowestPointCost} điểm</dd>
-                    </div>
-                    <div>
-                      <dt>Lịch gần nhất</dt>
-                      <dd>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <CalendarDays size={13} />
-                          {formatSessionDateTime(companion.nextScheduledAt)}
-                        </span>
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Lịch còn trống</dt>
-                      <dd>{companion.matchingSessionCount} buổi</dd>
-                    </div>
-                  </dl>
-
-                  <div className="session-card-actions">
-                    <Link
-                      className="button secondary"
-                      to={`/dashboard/companions/${companion.companionId}?skillId=${skillId}${deliveryMode ? `&deliveryMode=${deliveryMode}` : ''}${deliveryMode === 'Offline' && location ? `&location=${encodeURIComponent(location)}` : ''}`}
-                    >
-                      Xem hồ sơ
-                    </Link>
-                  </div>
+                  </Link>
                 </article>
               ))}
             </div>

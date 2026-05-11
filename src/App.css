@@ -4697,4 +4697,155 @@
   }
 }
 
+/* ─────────────────────────────────────────────────────────
+   DISCOVERY HERO CARDS (SUPERPROF STYLE)
+────────────────────────────────────────────────────────── */
 
+.discovery-hero-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.discovery-hero-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.discovery-hero-card-link {
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: inherit;
+}
+
+.discovery-hero-card-link:hover {
+  text-decoration: none;
+}
+
+.discovery-hero-image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/5;
+  border-radius: 20px;
+  overflow: hidden;
+  background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+}
+
+.discovery-hero-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.discovery-hero-card:hover .discovery-hero-image img {
+  transform: scale(1.05);
+}
+
+.discovery-hero-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--blue);
+  opacity: 0.2;
+}
+
+.discovery-hero-favorite {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  z-index: 2;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  transition: transform 0.2s;
+}
+
+.discovery-hero-favorite:hover {
+  transform: scale(1.1);
+}
+
+.discovery-hero-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 60px 16px 16px;
+  background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.discovery-hero-name strong {
+  font-size: 22px;
+  font-weight: 800;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+.discovery-hero-subtitle {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.95;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.discovery-hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.discovery-hero-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.discovery-hero-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.discovery-hero-rating span {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.discovery-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(139, 92, 246, 0.1);
+  color: rgb(124, 58, 237);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.discovery-hero-bio {
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-line-break: auto;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
