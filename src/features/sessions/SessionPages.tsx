@@ -5,11 +5,13 @@ import {
   CalendarDays,
   Clock3,
   LoaderCircle,
+  MapPin,
   Plus,
   RefreshCcw,
   Search,
   Sparkles,
   UserRound,
+  Video,
 } from 'lucide-react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { getErrorMessage } from '../../api/client'
@@ -18,6 +20,7 @@ import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
 import { profileApi, profileKeys } from '../profile/profileApi'
 import { formatLastActive } from '../profile/profileUtils'
+import { SkillAutocomplete } from '../skills/SkillAutocomplete'
 import { useAppStore } from '../../store/useAppStore'
 import {
   buildJitsiUrl,
@@ -31,7 +34,7 @@ import {
   toDateTimeLocalValue,
 } from './sessionUtils'
 import { sessionsApi, sessionKeys } from './sessionsApi'
-import type { CreateSessionPayload, SessionDto, SessionStatus } from './types'
+import type { CreateSessionRequest, SessionDeliveryMode, SessionDto, SessionStatus } from './types'
 
 type SessionBoardMode = 'marketplace' | 'learning' | 'teaching'
 
@@ -73,7 +76,7 @@ export function CreateSessionOfferPage() {
   })
 
   const createMutation = useMutation({
-    mutationFn: (payload: CreateSessionPayload) => sessionsApi.create(payload),
+    mutationFn: (payload: CreateSessionRequest) => sessionsApi.create(payload),
     onSuccess: async (createdSession) => {
       showToast({ kind: 'success', message: 'Buổi học đã được mở.' })
       await invalidateSessionQueries(queryClient, createdSession.sessionId)
@@ -111,8 +114,18 @@ export function CreateSessionOfferPage() {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (!formValues.skill.trim()) {
-      showToast({ kind: 'error', message: 'Hãy nhập kỹ năng cho buổi học này.' })
+    if (!formValues.skillId) {
+      showToast({ kind: 'error', message: 'Hãy chọn kỹ năng cho buổi học này.' })
+      return
+    }
+
+    if (!formValues.deliveryMode) {
+      showToast({ kind: 'error', message: 'Vui lòng chọn hình thức học: Online hoặc Gặp trực tiếp.' })
+      return
+    }
+
+    if (formValues.deliveryMode === 'Offline' && !formValues.location.trim()) {
+      showToast({ kind: 'error', message: 'Vui lòng nhập địa điểm cho buổi học gặp trực tiếp.' })
       return
     }
 
@@ -121,17 +134,25 @@ export function CreateSessionOfferPage() {
       return
     }
 
-    if (formValues.durationMinutes <= 0 || formValues.pointCost <= 0) {
-      showToast({ kind: 'error', message: 'Thời lượng và số điểm cần lớn hơn 0.' })
+    if (formValues.pointCost <= 0) {
+      showToast({ kind: 'error', message: 'Số điểm cần lớn hơn 0.' })
+      return
+    }
+
+    const scheduledDate = new Date(formValues.scheduledAt)
+    if (scheduledDate <= new Date()) {
+      showToast({ kind: 'error', message: 'Thời gian bắt đầu phải là thời gian trong tương lai.' })
       return
     }
 
     createMutation.mutate({
-      description: formValues.description.trim() || undefined,
-      durationMinutes: formValues.durationMinutes,
+      skillId: formValues.skillId,
+      description: formValues.description.trim() || null,
+      deliveryMode: formValues.deliveryMode,
+      location: formValues.deliveryMode === 'Offline' ? formValues.location.trim() : null,
+      durationMinutes: formValues.durationMinutes as 30 | 45 | 60 | 90 | 120,
       pointCost: formValues.pointCost,
-      scheduledAt: new Date(formValues.scheduledAt).toISOString(),
-      skill: formValues.skill.trim(),
+      scheduledAt: scheduledDate.toISOString(),
     })
   }
 
@@ -177,14 +198,55 @@ export function CreateSessionOfferPage() {
 
           <section className="profile-section-card">
             <div className="profile-form-grid">
-              <label className="profile-field">
-                <span>Kỹ năng *</span>
-                <input
-                  onChange={(event) => setFormValues((current) => ({ ...current, skill: event.target.value }))}
-                  placeholder="Ví dụ: Excel cho người mới, IELTS Speaking, React cơ bản"
-                  value={formValues.skill}
+              <div className="profile-field full">
+                <SkillAutocomplete
+                  helperText="Chọn đúng kỹ năng để người học tìm thấy bạn dễ hơn."
+                  label="Kỹ năng *"
+                  onRemove={() => setFormValues((c) => ({ ...c, skillId: '', skillName: '' }))}
+                  onSelect={(name) => {
+                    // Lấy skillId từ API search khi user chọn
+                    // Dùng skillName để hiển thị, skillId để gửi lên server
+                    setFormValues((c) => ({ ...c, skillName: name, skillId: name }))
+                  }}
+                  onSelectWithId={(id, name) => setFormValues((c) => ({ ...c, skillId: id, skillName: name }))}
+                  placeholder="Gõ tên kỹ năng để tìm kiếm..."
+                  selectedSkills={formValues.skillName ? [formValues.skillName] : []}
                 />
-              </label>
+              </div>
+
+              <div className="profile-field full">
+                <span className="profile-field-label">Hình thức học *</span>
+                <div className="session-delivery-toggle">
+                  <button
+                    className={`session-delivery-option ${formValues.deliveryMode === 'Online' ? 'active' : ''}`}
+                    onClick={() => setFormValues((c) => ({ ...c, deliveryMode: 'Online', location: '' }))}
+                    type="button"
+                  >
+                    <Video size={16} />
+                    Online
+                  </button>
+                  <button
+                    className={`session-delivery-option ${formValues.deliveryMode === 'Offline' ? 'active' : ''}`}
+                    onClick={() => setFormValues((c) => ({ ...c, deliveryMode: 'Offline' }))}
+                    type="button"
+                  >
+                    <MapPin size={16} />
+                    Gặp trực tiếp
+                  </button>
+                </div>
+              </div>
+
+              {formValues.deliveryMode === 'Offline' ? (
+                <label className="profile-field full">
+                  <span>Địa điểm *</span>
+                  <input
+                    maxLength={500}
+                    onChange={(event) => setFormValues((c) => ({ ...c, location: event.target.value }))}
+                    placeholder="Ví dụ: Quận 1, TP.HCM hoặc 123 Nguyễn Huệ, Q1"
+                    value={formValues.location}
+                  />
+                </label>
+              ) : null}
 
               <label className="profile-field">
                 <span>Thời gian bắt đầu *</span>
@@ -196,18 +258,22 @@ export function CreateSessionOfferPage() {
               </label>
 
               <label className="profile-field">
-                <span>Thời lượng (phút)</span>
-                <input
-                  min={15}
+                <span>Thời lượng</span>
+                <select
                   onChange={(event) =>
                     setFormValues((current) => ({
                       ...current,
-                      durationMinutes: Number(event.target.value),
+                      durationMinutes: Number(event.target.value) as 30 | 45 | 60 | 90 | 120,
                     }))
                   }
-                  type="number"
                   value={formValues.durationMinutes}
-                />
+                >
+                  <option value={30}>30 phút</option>
+                  <option value={45}>45 phút</option>
+                  <option value={60}>60 phút</option>
+                  <option value={90}>90 phút</option>
+                  <option value={120}>120 phút</option>
+                </select>
               </label>
 
               <label className="profile-field">
@@ -490,6 +556,8 @@ function SessionCard({
   onBook: () => void
 }) {
   const currentRole = getCurrentSessionRole(session, viewerId)
+  const isOnline = session.deliveryMode === 'Online'
+  const canJoin = isOnline && session.jitsiRoomId !== null
   const joinUrl = session.jitsiRoomId ? buildJitsiUrl(session.jitsiRoomId) : null
   const companionQuery = useQuery({
     queryKey: [...profileKeys.user(session.companionId), 'session-card'],
@@ -504,7 +572,13 @@ function SessionCard({
         <span className={`session-status-chip status-${session.status.toLowerCase()}`}>
           {getSessionStatusLabel(session.status)}
         </span>
-        <span className="session-cost-chip">{formatSessionPoints(session.pointCost)}</span>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <span className={`session-delivery-badge ${isOnline ? 'online' : 'offline'}`}>
+            {isOnline ? <Video size={12} /> : <MapPin size={12} />}
+            {isOnline ? 'Online' : 'Trực tiếp'}
+          </span>
+          <span className="session-cost-chip">{formatSessionPoints(session.pointCost)}</span>
+        </div>
       </div>
 
       <div className="session-teacher-row">
@@ -523,6 +597,13 @@ function SessionCard({
 
       <h3>{session.skill}</h3>
       <p>{session.description || 'Người dạy sẽ giới thiệu rõ mục tiêu và cách đồng hành trong buổi học này.'}</p>
+
+      {!isOnline && session.location ? (
+        <div className="session-location-row">
+          <MapPin size={14} />
+          <span>{session.location}</span>
+        </div>
+      ) : null}
 
       <dl className="session-card-meta">
         <div>
@@ -560,7 +641,7 @@ function SessionCard({
             {isBooking ? <LoaderCircle className="spin" size={18} /> : 'Đăng ký'}
           </button>
         ) : null}
-        {session.status === 'Confirmed' && joinUrl && currentRole !== 'viewer' ? (
+        {session.status === 'Confirmed' && canJoin && joinUrl && currentRole !== 'viewer' ? (
           <a className="button secondary" href={joinUrl} rel="noreferrer" target="_blank">
             Vào phòng học
           </a>
@@ -680,10 +761,13 @@ function getBoardToolbarTitle(mode: SessionBoardMode) {
 
 function createInitialOfferForm() {
   return {
+    skillId: '',
+    skillName: '',
+    deliveryMode: '' as SessionDeliveryMode | '',
+    location: '',
     description: '',
-    durationMinutes: 60,
+    durationMinutes: 60 as 30 | 45 | 60 | 90 | 120,
     pointCost: 100,
     scheduledAt: toDateTimeLocalValue(new Date(Date.now() + 24 * 60 * 60 * 1000)),
-    skill: '',
   }
 }

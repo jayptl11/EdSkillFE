@@ -8,6 +8,8 @@ export type SessionStatus =
   | 'Cancelled'
   | 'Disputed'
 
+export type SessionDeliveryMode = 'Online' | 'Offline'
+
 export type SessionRoleFilter = 'learner' | 'companion'
 export type SessionActorRole = SessionRoleFilter | 'viewer'
 
@@ -17,6 +19,8 @@ export interface SessionDto {
   learnerId: string | null
   skill: string
   description: string | null
+  deliveryMode: SessionDeliveryMode
+  location: string | null
   durationMinutes: number
   pointCost: number
   scheduledAt: string
@@ -40,10 +44,21 @@ export interface SessionStatusDto {
   companionConfirmed: boolean
 }
 
+/** @deprecated Dùng CreateSessionRequest thay thế */
 export interface CreateSessionPayload {
   skill: string
   description?: string
   durationMinutes: number
+  pointCost: number
+  scheduledAt: string
+}
+
+export interface CreateSessionRequest {
+  skillId: string
+  description?: string | null
+  deliveryMode: SessionDeliveryMode
+  location?: string | null
+  durationMinutes: 30 | 45 | 60 | 90 | 120
   pointCost: number
   scheduledAt: string
 }

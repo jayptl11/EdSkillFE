@@ -5,7 +5,9 @@ import {
   CheckCheck,
   Clock3,
   LoaderCircle,
+  MapPin,
   RefreshCcw,
+  Star,
   Video,
   XCircle,
 } from 'lucide-react'
@@ -28,6 +30,7 @@ import {
   shouldPollSessionStatus,
 } from './sessionUtils'
 import { sessionsApi, sessionKeys } from './sessionsApi'
+import { reviewApi } from './reviewApi'
 import type { SessionDto, SessionStatusDto } from './types'
 
 export function SessionDetailPage() {
@@ -209,6 +212,7 @@ export function SessionDetailPage() {
 
             <dl className="session-detail-grid">
               <DetailItem label="Vai trò của bạn" value={viewerRole === 'learner' ? 'Người học' : viewerRole === 'companion' ? 'Người hướng dẫn' : 'Người xem'} />
+              <DetailItem label="Hình thức" value={sessionData.deliveryMode === 'Online' ? 'Online' : 'Gặp trực tiếp'} />
               <DetailItem label="Thời gian" value={formatSessionDateTime(sessionData.scheduledAt)} />
               <DetailItem label="Thời lượng" value={`${sessionData.durationMinutes} phút`} />
               <DetailItem label="Bắt đầu" value={formatSessionDateTime(sessionData.actualStartAt)} />
@@ -217,10 +221,18 @@ export function SessionDetailPage() {
                 label="Thời lượng thực tế"
                 value={sessionData.actualDuration ? `${sessionData.actualDuration} phút` : 'Chưa có'}
               />
-              <DetailItem label="Phòng học trực tuyến" value={sessionData.jitsiRoomId ? 'Đã tạo' : 'Chưa tạo'} />
-              <DetailItem label="Cancelled at" value={formatSessionDateTime(sessionData.cancelledAt)} />
-              <DetailItem label="Disbursed at" value={formatSessionDateTime(sessionData.disbursedAt)} />
+              <DetailItem label="Đã hủy lúc" value={formatSessionDateTime(sessionData.cancelledAt)} />
             </dl>
+
+            {sessionData.deliveryMode === 'Offline' && sessionData.location ? (
+              <div className="session-note-banner info">
+                <MapPin size={16} />
+                <div>
+                  <strong>Địa điểm gặp mặt</strong>
+                  <p>{sessionData.location}</p>
+                </div>
+              </div>
+            ) : null}
 
             {sessionData.cancelReason ? (
               <div className="session-note-banner">
@@ -316,7 +328,7 @@ export function SessionDetailPage() {
                   </>
                 ) : null}
 
-                {sessionData.status === 'Confirmed' && viewerRole !== 'viewer' ? (
+                {sessionData.status === 'Confirmed' && viewerRole !== 'viewer' && sessionData.deliveryMode === 'Online' ? (
                   <button
                     className="button primary"
                     disabled={joinMutation.isPending}
@@ -328,7 +340,7 @@ export function SessionDetailPage() {
                   </button>
                 ) : null}
 
-                {sessionData.status === 'InProgress' && viewerRole !== 'viewer' ? (
+                {sessionData.status === 'InProgress' && viewerRole !== 'viewer' && sessionData.deliveryMode === 'Online' ? (
                   <>
                     <label className="profile-field">
                       <span>Thời lượng thực tế (phút, không bắt buộc)</span>
@@ -371,12 +383,16 @@ export function SessionDetailPage() {
               </div>
             </section>
 
-            {sessionData.jitsiRoomId ? (
+            {sessionData.deliveryMode === 'Online' && sessionData.jitsiRoomId ? (
               <section className="profile-section-card session-action-panel">
                 <a className="button secondary" href={buildJitsiUrl(sessionData.jitsiRoomId)} rel="noreferrer" target="_blank">
                   Mở phòng học trực tuyến
                 </a>
               </section>
+            ) : null}
+
+            {sessionData.status === 'Completed' && viewerRole !== 'viewer' ? (
+              <ReviewForm sessionId={sessionData.sessionId} />
             ) : null}
           </aside>
         </section>
@@ -417,6 +433,8 @@ const emptySession: SessionDto = {
   learnerId: null,
   skill: '',
   description: null,
+  deliveryMode: 'Online',
+  location: null,
   durationMinutes: 0,
   pointCost: 0,
   scheduledAt: new Date(0).toISOString(),
@@ -433,3 +451,102 @@ const emptySession: SessionDto = {
   createdAt: new Date(0).toISOString(),
   updatedAt: new Date(0).toISOString(),
 }
+
+// ─── Review Form ────────────────────────────────────────────────────────────
+
+function ReviewForm({ sessionId }: { sessionId: string }) {
+  const [rating, setRating] = useState(0)
+  const [hoverRating, setHoverRating] = useState(0)
+  const [comment, setComment] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const [windowClosed, setWindowClosed] = useState(false)
+
+  const reviewMutation = useMutation({
+    mutationFn: () =>
+      reviewApi.create({
+        sessionId,
+        rating: rating as 1 | 2 | 3 | 4 | 5,
+        comment: comment.trim() || null,
+      }),
+    onSuccess: () => {
+      setSubmitted(true)
+      showToast({ kind: 'success', message: 'Đã gửi đánh giá thành công.' })
+    },
+    onError: (error) => {
+      const msg = getErrorMessage(error)
+      if (msg.includes('REVIEW_ALREADY_EXISTS')) {
+        setSubmitted(true)
+      } else if (msg.includes('REVIEW_WINDOW_CLOSED')) {
+        setWindowClosed(true)
+      } else {
+        showToast({ kind: 'error', message: msg })
+      }
+    },
+  })
+
+  if (windowClosed) {
+    return (
+      <section className="profile-section-card session-action-panel">
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+          Đã quá thời gian đánh giá (48 giờ sau khi hoàn tất).
+        </p>
+      </section>
+    )
+  }
+
+  if (submitted) {
+    return (
+      <section className="profile-section-card session-action-panel">
+        <p style={{ color: 'var(--color-success)', fontSize: '0.875rem', fontWeight: 500 }}>
+          ✓ Đã gửi đánh giá
+        </p>
+      </section>
+    )
+  }
+
+  const displayRating = hoverRating || rating
+
+  return (
+    <section className="profile-section-card session-action-panel">
+      <div className="session-action-head">
+        <h3>Đánh giá buổi học</h3>
+        <p>Chia sẻ trải nghiệm của bạn để giúp người học khác tham khảo.</p>
+      </div>
+      <div className="session-review-stars">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            aria-label={`${star} sao`}
+            className={`review-star ${star <= displayRating ? 'active' : ''}`}
+            key={star}
+            onClick={() => setRating(star)}
+            onMouseEnter={() => setHoverRating(star)}
+            onMouseLeave={() => setHoverRating(0)}
+            type="button"
+          >
+            <Star size={24} />
+          </button>
+        ))}
+      </div>
+      <label className="profile-field" style={{ marginTop: '0.75rem' }}>
+        <span>Nhận xét (không bắt buộc)</span>
+        <textarea
+          maxLength={1000}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Chia sẻ điều bạn thấy hay về buổi học này..."
+          rows={3}
+          value={comment}
+        />
+      </label>
+      <button
+        className="button primary"
+        disabled={rating === 0 || reviewMutation.isPending}
+        onClick={() => reviewMutation.mutate()}
+        style={{ marginTop: '0.5rem' }}
+        type="button"
+      >
+        {reviewMutation.isPending ? <LoaderCircle className="spin" size={18} /> : 'Gửi đánh giá'}
+      </button>
+    </section>
+  )
+}
+

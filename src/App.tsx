@@ -52,6 +52,8 @@ import {
   SessionMarketplacePage,
   TeachingSessionsPage,
 } from './features/sessions/SessionPages'
+import { CompanionSearchPage } from './features/sessions/CompanionSearchPage'
+import { CompanionDetailPage } from './features/sessions/CompanionDetailPage'
 import { WalletPage } from './features/wallet/WalletPage'
 import { useAppStore, type UserRole } from './store/useAppStore'
 import './App.css'
@@ -176,6 +178,22 @@ function App() {
             }
           />
           <Route path="/profile/:userId" element={<PublicProfilePage />} />
+          <Route
+            path="/dashboard/companions"
+            element={
+              <ProtectedRoute>
+                <CompanionSearchPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/companions/:companionId"
+            element={
+              <ProtectedRoute>
+                <CompanionDetailPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate replace to="/" />} />
         </Routes>
       </AnimatePresence>

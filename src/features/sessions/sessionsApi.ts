@@ -3,7 +3,7 @@ import { toQueryString } from '../../api/query'
 import type { PaginatedResponse } from '../../api/types'
 import type {
   CancelSessionPayload,
-  CreateSessionPayload,
+  CreateSessionRequest,
   LeaveSessionPayload,
   RejectSessionPayload,
   SessionDto,
@@ -22,7 +22,7 @@ export const sessionKeys = {
 }
 
 export const sessionsApi = {
-  create: (payload: CreateSessionPayload) => apiPost<SessionDto>('/api/sessions', payload, { auth: true }),
+  create: (payload: CreateSessionRequest) => apiPost<SessionDto>('/api/sessions', payload, { auth: true }),
 
   list: (params: SessionsListParams) =>
     apiGet<PaginatedResponse<SessionDto>>(`/api/sessions${toQueryString(params)}`, { auth: true }),

@@ -32,6 +32,9 @@ export function SiteHeader() {
         </Link>
         {session ? (
           <>
+            <Link className="nav-link" to="/dashboard/companions">
+              Khám phá skill mới
+            </Link>
             <Link className="nav-link" to="/dashboard/skills/marketplace">
               Tìm buổi học
             </Link>

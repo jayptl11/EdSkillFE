@@ -11,16 +11,20 @@ export function SkillAutocomplete({
   error,
   helperText = 'Chọn kỹ năng từ danh sách gợi ý để tránh trùng hoặc sai taxonomy.',
   label,
+  mode = 'multiple',
   onRemove,
   onSelect,
+  onSelectWithId,
   placeholder,
   selectedSkills,
 }: {
   error?: string
   helperText?: string
-  label: string
+  label?: string
+  mode?: 'single' | 'multiple'
   onRemove: (skill: string) => void
   onSelect: (skill: string) => void
+  onSelectWithId?: (id: string, name: string) => void
   placeholder: string
   selectedSkills: string[]
 }) {
@@ -39,6 +43,15 @@ export function SkillAutocomplete({
     return () => window.clearTimeout(timeoutId)
   }, [draft])
 
+  useEffect(() => {
+    if (mode === 'single' && !isOpen && selectedSkills[0] && draft !== selectedSkills[0]) {
+      setDraft(selectedSkills[0])
+    }
+    if (mode === 'single' && !isOpen && !selectedSkills[0] && draft) {
+      setDraft('')
+    }
+  }, [mode, isOpen, selectedSkills, draft])
+
   const searchQuery = useQuery({
     queryKey: skillKeys.search({ q: debouncedDraft, limit: SEARCH_LIMIT }),
     queryFn: () => skillApi.search({ q: debouncedDraft, limit: SEARCH_LIMIT }),
@@ -52,7 +65,12 @@ export function SkillAutocomplete({
 
   const addOption = (option: SkillOption) => {
     onSelect(option.name)
-    setDraft('')
+    onSelectWithId?.(option.id, option.name)
+    if (mode === 'single') {
+      setDraft(option.name)
+    } else {
+      setDraft('')
+    }
     setDebouncedDraft('')
     setIsOpen(false)
     setActiveIndex(0)
@@ -115,13 +133,15 @@ export function SkillAutocomplete({
   const showEmptyState = !searchQuery.isLoading && options.length === 0
 
   return (
-    <div className="profile-skills-card">
-      <div className="profile-skills-head">
-        <div>
-          <h3>{label}</h3>
-          <p>{helperText}</p>
+    <div className={`profile-skills-card ${mode === 'single' ? 'mode-single' : ''}`}>
+      {label || helperText ? (
+        <div className="profile-skills-head">
+          <div>
+            {label ? <h3>{label}</h3> : null}
+            {helperText ? <p>{helperText}</p> : null}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="skill-autocomplete">
         <div className="skill-autocomplete-input-shell">
@@ -132,9 +152,13 @@ export function SkillAutocomplete({
             aria-expanded={isOpen}
             onBlur={handleBlur}
             onChange={(event) => {
-              setDraft(event.target.value)
+              const val = event.target.value
+              setDraft(val)
               setIsOpen(true)
               setActiveIndex(0)
+              if (mode === 'single' && val === '' && selectedSkills.length > 0) {
+                onRemove(selectedSkills[0])
+              }
             }}
             onFocus={handleFocus}
             onKeyDown={handleKeyDown}
@@ -200,20 +224,22 @@ export function SkillAutocomplete({
 
       {error ? <p className="profile-field-error">{error}</p> : null}
 
-      {selectedSkills.length === 0 ? (
-        <p className="profile-empty-copy">Chưa có kỹ năng nào.</p>
-      ) : (
-        <div className="profile-chip-wrap">
-          {selectedSkills.map((skill) => (
-            <span className="profile-chip" key={skill}>
-              {skill}
-              <button aria-label={`Xóa ${skill}`} onClick={() => onRemove(skill)} type="button">
-                <X size={14} />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
+      {mode === 'multiple' ? (
+        selectedSkills.length === 0 ? (
+          <p className="profile-empty-copy">Chưa có kỹ năng nào.</p>
+        ) : (
+          <div className="profile-chip-wrap">
+            {selectedSkills.map((skill) => (
+              <span className="profile-chip" key={skill}>
+                {skill}
+                <button aria-label={`Xóa ${skill}`} onClick={() => onRemove(skill)} type="button">
+                  <X size={14} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )
+      ) : null}
     </div>
   )
 }
