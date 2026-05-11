@@ -25,6 +25,7 @@ import {
   verifyOtp,
   type SignupIntent,
 } from './api/auth'
+import { queryClient } from './api/queryClient'
 import { AuthPage, FieldIcon } from './components/AuthLayout'
 import { SiteHeader } from './components/Brand'
 import { DashboardShell } from './components/DashboardView'
@@ -206,6 +207,7 @@ function AuthExpiryWatcher() {
 
   useEffect(() => {
     const handleExpiredSession = () => {
+      queryClient.clear()
       navigate('/login?intent=learn', {
         replace: true,
         state: { message: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.' },
@@ -984,6 +986,7 @@ function DashboardPage() {
       showToast({ kind: 'info', message: getErrorMessage(error) })
     } finally {
       clearSession()
+      queryClient.clear()
       navigate('/login?intent=learn', {
         replace: true,
         state: { message: 'Bạn đã đăng xuất thành công.' },
