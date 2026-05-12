@@ -82,7 +82,7 @@ export function CreateSessionOfferPage() {
   })
 
   if (!session?.accessToken) {
-    return <Navigate replace state={{ message: 'Vui lòng đăng nhập để tiếp tục.' }} to="/login?intent=teach" />
+    return <Navigate replace state={{ intent: 'teach', message: 'Vui lòng đăng nhập để tiếp tục.' }} to="/login" />
   }
 
   if (!session.roles.includes('companion')) {
@@ -355,7 +355,16 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
   })
 
   if (!session?.accessToken) {
-    return <Navigate replace state={{ message: 'Vui lòng đăng nhập để tiếp tục.' }} to="/login?intent=learn" />
+    return (
+      <Navigate
+        replace
+        state={{
+          intent: mode === 'teaching' ? 'teach' : undefined,
+          message: 'Vui lòng đăng nhập để tiếp tục.',
+        }}
+        to="/login"
+      />
+    )
   }
 
   if (mode === 'learning' && !session.roles.includes('learner')) {

@@ -106,7 +106,7 @@ export function CompanionOnboardingPage() {
   )
 
   if (!session?.accessToken) {
-    return <Navigate replace to="/login?intent=teach" />
+    return <Navigate replace state={{ intent: 'teach' }} to="/login" />
   }
 
   const profile = profileQuery.data

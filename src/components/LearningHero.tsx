@@ -150,8 +150,9 @@ const topUniPromo = {
 }
 
 export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
-  const learnHref = isSignedIn ? '/dashboard/skills/learning' : '/register?intent=learn'
-  const teachHref = isSignedIn ? '/teach' : '/register?intent=teach'
+  const registerHref = isSignedIn ? '/dashboard' : '/register'
+  const discoverHref = isSignedIn ? '/dashboard/companions' : '/register'
+  const secondaryHref = isSignedIn ? '/teach' : '/login'
   const reduceMotion = useReducedMotion()
 
   return (
@@ -162,10 +163,10 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
             <Sparkles size={15} />
             Tìm người dạy nhanh, bắt đầu dễ
           </span>
-          <h1>Tìm người dạy phù hợp cho kỹ năng bạn muốn học ngay hôm nay.</h1>
+          <h1>Tìm người dạy phù hợp cho kỹ năng bạn muốn phát triển.</h1>
           <p>
-            EdSkill giúp bạn bắt đầu từ đúng kỹ năng, đúng mục tiêu và đúng nhịp học. Nếu bạn
-            muốn dạy, chỉ cần đi theo luồng riêng dành cho người dạy.
+            EdSkill giúp bạn bắt đầu từ đúng kỹ năng, đúng mục tiêu và đúng nhịp học, đồng thời
+            quản lý cả hành trình học lẫn dạy trong cùng một tài khoản.
           </p>
 
           <div className="landing-search-shell">
@@ -173,24 +174,24 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
               <Search size={18} />
               <span>Ví dụ: IELTS speaking, Excel, React cơ bản, Guitar đệm hát</span>
             </div>
-            <Link className="button primary" to={learnHref}>
-              Tìm buổi học
+            <Link className="button primary" to={discoverHref}>
+              {isSignedIn ? 'Tìm buổi học' : 'Đăng ký để bắt đầu'}
               <ArrowRight size={18} />
             </Link>
           </div>
 
           <div className="hero-actions">
-            <Link className="button primary" to={learnHref}>
-              Học ngay
+            <Link className="button primary" to={registerHref}>
+              {isSignedIn ? 'Trang của tôi' : 'Đăng ký'}
             </Link>
-            <Link className="button secondary" to={teachHref}>
-              Dạy học
+            <Link className="button secondary" to={secondaryHref}>
+              {isSignedIn ? 'Dạy học' : 'Đăng nhập'}
             </Link>
           </div>
 
           <div className="hero-skill-chips">
             {popularSkills.map((skill) => (
-              <Link className="hero-skill-chip" key={skill} to={learnHref}>
+              <Link className="hero-skill-chip" key={skill} to={discoverHref}>
                 {skill}
               </Link>
             ))}

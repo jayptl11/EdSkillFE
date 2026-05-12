@@ -83,14 +83,11 @@ export function SiteHeader() {
           </>
         ) : (
           <>
-            <Link className="nav-link" to="/login?intent=learn">
+            <Link className="nav-link" to="/login">
               Đăng nhập
             </Link>
-            <Link className="nav-link" to="/register?intent=learn">
-              Học ngay
-            </Link>
-            <Link className="nav-link highlighted" to="/register?intent=teach">
-              Dạy học
+            <Link className="nav-link highlighted" to="/register">
+              Đăng ký
             </Link>
           </>
         )}

@@ -8,8 +8,6 @@ import {
   LoaderCircle,
   RotateCcw,
   Send,
-  Sparkles,
-  UsersRound,
 } from 'lucide-react'
 import {
   authExpiredEventName,
@@ -199,7 +197,7 @@ function AuthExpiryWatcher() {
   useEffect(() => {
     const handleExpiredSession = () => {
       queryClient.clear()
-      navigate('/login?intent=learn', {
+      navigate('/login', {
         replace: true,
         state: { message: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.' },
       })
@@ -220,7 +218,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
       <Navigate
         replace
         state={{ message: 'Vui lòng đăng nhập để tiếp tục.' }}
-        to="/login?intent=learn"
+        to="/login"
       />
     )
   }
@@ -251,17 +249,17 @@ function LearnEntryPage() {
   const session = useAppStore((state) => state.session)
 
   if (!session?.accessToken) {
-    return <Navigate replace to="/register?intent=learn" />
+    return <Navigate replace to="/register" />
   }
 
-  return <Navigate replace to="/dashboard/companions" />
+  return <Navigate replace to="/dashboard" />
 }
 
 function TeachEntryPage() {
   const session = useAppStore((state) => state.session)
 
   if (!session?.accessToken) {
-    return <Navigate replace to="/register?intent=teach" />
+    return <Navigate replace to="/register" />
   }
 
   return <TeachAccessRedirect />
@@ -338,7 +336,7 @@ function LoginPage() {
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const copy = getAuthCopy(intent)
+  const copy = getAuthCopy()
 
   useRouteToast(routeState.message)
 
@@ -366,8 +364,8 @@ function LoginPage() {
 
   return (
     <AuthPage
-      accent={intent === 'teach' ? 'teach' : 'learn'}
-      contextLabel={copy.contextLabel}
+      accent="secure"
+      contextLabel="Đăng nhập"
       panelLabel={copy.panelLabel}
       panelLines={copy.panelLines}
       panelTitle={copy.panelTitle}
@@ -438,7 +436,7 @@ function RegisterPage() {
   })
   const requiredPolicies = getRequiredSignupPolicies(policiesQuery.data ?? [])
   const hasRequiredPolicyCatalog = requiredPolicies.length === requiredSignupPolicyTypes.length
-  const copy = getAuthCopy(intent)
+  const copy = getAuthCopy()
 
   const updateField = (field: keyof typeof form, value: string) => {
     setForm((current) => ({ ...current, [field]: value }))
@@ -513,12 +511,11 @@ function RegisterPage() {
 
   return (
     <AuthPage
-      accent={intent === 'teach' ? 'teach' : 'learn'}
-      contextLabel={copy.contextLabel}
+      accent="secure"
+      contextLabel="Đăng ký"
       panelLabel={copy.panelLabel}
       panelLines={copy.panelLines}
       panelTitle={copy.panelTitle}
-      steps={[{ label: 'Tạo tài khoản', active: true }, { label: 'Xác thực email' }]}
       subtitle={copy.registerSubtitle}
       title={copy.registerTitle}
     >
@@ -582,17 +579,6 @@ function RegisterPage() {
             />
           </div>
         </label>
-        <div className="auth-intent-panel">
-          <span className="eyebrow">
-            {intent === 'teach' ? <UsersRound size={15} /> : <Sparkles size={15} />}
-            {intent === 'teach' ? 'Bạn đang vào luồng dạy học' : 'Bạn đang vào luồng học ngay'}
-          </span>
-          <p>
-            {intent === 'teach'
-              ? 'Sau khi vào thành công, bạn sẽ được đưa tới màn hoàn thiện hồ sơ dạy học.'
-              : 'Sau khi vào thành công, bạn sẽ được đưa tới khu tìm buổi học.'}
-          </p>
-        </div>
         <div className="policy-signup-panel">
           <div className="policy-signup-head">
             <h3>Chính sách bắt buộc khi tạo tài khoản</h3>
@@ -664,7 +650,7 @@ function VerifyOtpPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isResending, setIsResending] = useState(false)
   const purpose = routeState.purpose ?? 'register'
-  const copy = getAuthCopy(intent)
+  const copy = getAuthCopy()
 
   useRouteToast(routeState.message)
 
@@ -704,10 +690,7 @@ function VerifyOtpPage() {
       navigate(`/login${buildIntentSearch(intent)}`, {
         replace: true,
         state: {
-          message:
-            intent === 'teach'
-              ? 'Email đã xác thực. Đăng nhập để hoàn thiện hồ sơ dạy học.'
-              : 'Email đã xác thực. Đăng nhập để bắt đầu tìm buổi học.',
+          message: 'Email đã xác thực. Đăng nhập để bắt đầu với EdSkill.',
         },
       })
     } catch (error) {
@@ -737,7 +720,7 @@ function VerifyOtpPage() {
 
   return (
     <AuthPage
-      accent={purpose === 'reset' ? 'reset' : intent === 'teach' ? 'teach' : 'learn'}
+      accent={purpose === 'reset' ? 'reset' : 'secure'}
       contextLabel="Xác thực email"
       panelLabel={copy.panelLabel}
       panelLines={copy.panelLines}
@@ -745,7 +728,7 @@ function VerifyOtpPage() {
       steps={[
         { label: 'Tạo tài khoản', done: purpose === 'register' },
         { label: 'Xác thực email', active: true },
-        { label: purpose === 'reset' ? 'Đặt lại mật khẩu' : intent === 'teach' ? 'Hoàn thiện hồ sơ dạy học' : 'Khám phá buổi học' },
+        { label: purpose === 'reset' ? 'Đặt lại mật khẩu' : 'Bắt đầu với EdSkill' },
       ]}
       subtitle="Kiểm tra email và nhập mã xác thực để tiếp tục."
       title="Nhập mã OTP"
@@ -978,7 +961,7 @@ function DashboardPage() {
     } finally {
       clearSession()
       queryClient.clear()
-      navigate('/login?intent=learn', {
+      navigate('/login', {
         replace: true,
         state: { message: 'Bạn đã đăng xuất thành công.' },
       })
@@ -986,7 +969,7 @@ function DashboardPage() {
   }
 
   if (!session) {
-    return <Navigate replace to="/login?intent=learn" />
+    return <Navigate replace to="/login" />
   }
 
   return (
@@ -1108,44 +1091,26 @@ function useResolvedIntent(search: string, routeIntent?: SignupIntent) {
 }
 
 function buildIntentSearch(intent: SignupIntent) {
-  return `?intent=${intent}`
+  return intent === 'teach' ? '?intent=teach' : ''
 }
 
 function getPostAuthRoute(intent: SignupIntent) {
-  return intent === 'teach' ? '/teach' : '/dashboard/companions'
+  return intent === 'teach' ? '/teach' : '/dashboard'
 }
 
-function getAuthCopy(intent: SignupIntent) {
-  if (intent === 'teach') {
-    return {
-      contextLabel: 'Bắt đầu dạy học',
-      loginButton: 'Vào khu dạy học',
-      loginSubtitle: 'Đăng nhập để hoàn thiện hồ sơ dạy học hoặc tiếp tục mở buổi học mới.',
-      loginTitle: 'Chào mừng bạn quay lại khu dạy học.',
-      panelLabel: 'Dạy học',
-      panelLines: ['Hoàn thiện hồ sơ dạy học', 'Chọn kỹ năng bạn muốn dạy', 'Mở buổi học khi đã sẵn sàng'],
-      panelTitle: 'Đi đúng luồng để bắt đầu dạy dễ hơn.',
-      registerButton: 'Tạo tài khoản để dạy',
-      registerSubtitle: 'Điền thông tin cơ bản để bắt đầu hành trình trở thành người dạy trên EdSkill.',
-      registerTitle: 'Tạo tài khoản cho luồng dạy học.',
-      switchToLoginLabel: 'Đăng nhập ngay',
-      switchToRegisterLabel: 'Tạo tài khoản để dạy',
-    }
-  }
-
+function getAuthCopy() {
   return {
-    contextLabel: 'Bắt đầu học ngay',
-    loginButton: 'Vào khu tìm buổi học',
-    loginSubtitle: 'Đăng nhập để tìm buổi học phù hợp và tiếp tục hành trình học của bạn.',
-    loginTitle: 'Quay lại để tiếp tục học nhanh hơn.',
-    panelLabel: 'Học ngay',
-    panelLines: ['Tìm kỹ năng bạn cần', 'Chọn buổi học phù hợp', 'Bắt đầu theo mục tiêu cá nhân'],
-    panelTitle: 'Mọi thứ bắt đầu từ kỹ năng bạn muốn học.',
-    registerButton: 'Tạo tài khoản để học',
-    registerSubtitle: 'Điền thông tin cơ bản để bắt đầu tìm buổi học phù hợp trên EdSkill.',
-    registerTitle: 'Tạo tài khoản cho luồng học ngay.',
+    loginButton: 'Đăng nhập',
+    loginSubtitle: 'Đăng nhập để tiếp tục hành trình học tập của bạn trên EdSkill.',
+    loginTitle: 'Chào mừng bạn quay lại.',
+    panelLabel: 'Khám phá skill mới',
+    panelLines: ['Bắt đầu nhẹ nhàng cùng EdSkill'],
+    panelTitle: 'Khám phá các skill mới để hoàn thiện bản thân hơn.',
+    registerButton: 'Đăng ký',
+    registerSubtitle: 'Tạo tài khoản để bắt đầu khám phá những kỹ năng phù hợp với bạn.',
+    registerTitle: 'Bắt đầu cùng EdSkill.',
     switchToLoginLabel: 'Đăng nhập',
-    switchToRegisterLabel: 'Tạo tài khoản để học',
+    switchToRegisterLabel: 'Đăng ký',
   }
 }
 

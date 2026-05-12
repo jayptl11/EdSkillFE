@@ -32,18 +32,13 @@ export function DashboardShell({
         <div>
           <span className="eyebrow">
             <Sparkles size={15} />
-            Khu vực {getRoleLabel(primaryRole).toLowerCase()}
+            Trang của tôi
           </span>
           <h1>Xin chào, {username || email}</h1>
           <p>
             Mọi thứ bạn cần để học, dạy và theo dõi tiến trình đang ở đây. Chọn đúng việc
             tiếp theo để bắt đầu nhanh hơn.
           </p>
-          <div className="role-chip-row">
-            {roles.map((role) => (
-              <span key={role}>{getRoleLabel(role)}</span>
-            ))}
-          </div>
           <div className="dashboard-hero-links">
             <Link className="button secondary" to={profileHref}>
               Cập nhật hồ sơ
@@ -127,10 +122,6 @@ export function DashboardShell({
               <dd>{email}</dd>
             </div>
             <div>
-              <dt>Vai trò</dt>
-              <dd>{roles.map(getRoleLabel).join(', ')}</dd>
-            </div>
-            <div>
               <dt>Nhắc học</dt>
               <dd>{dailyReminderNeeded ? 'Cần thiết lập' : 'Đã ổn'}</dd>
             </div>
@@ -177,18 +168,6 @@ export function DashboardShell({
       </section>
     </MotionPage>
   )
-}
-
-const getRoleLabel = (role: string) => {
-  if (role === 'admin') {
-    return 'Quản trị'
-  }
-
-  if (role === 'companion') {
-    return 'Người dạy'
-  }
-
-  return 'Người học'
 }
 
 function DashboardCard({

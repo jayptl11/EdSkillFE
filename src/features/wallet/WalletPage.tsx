@@ -41,7 +41,7 @@ export function WalletPage() {
   })
 
   if (!session?.accessToken) {
-    return <Navigate replace state={{ message: 'Vui lòng đăng nhập để tiếp tục.' }} to="/login?intent=learn" />
+    return <Navigate replace state={{ message: 'Vui lòng đăng nhập để tiếp tục.' }} to="/login" />
   }
 
   const transactions = transactionsQuery.data?.data ?? []
