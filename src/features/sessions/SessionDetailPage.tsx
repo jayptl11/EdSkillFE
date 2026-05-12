@@ -159,8 +159,8 @@ export function SessionDetailPage() {
           </p>
         </div>
         <div className="profile-hero-actions">
-          <Link className="button secondary" to="/dashboard/skills/marketplace">
-            Khám phá buổi học
+          <Link className="button secondary" to="/dashboard/skills/learning">
+            Buổi học của tôi
           </Link>
           <button
             className="button secondary"

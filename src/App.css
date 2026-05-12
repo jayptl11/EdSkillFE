@@ -112,6 +112,17 @@
   box-shadow: 0 12px 26px rgba(36, 147, 245, 0.2);
 }
 
+.nav-wallet-link {
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+  background: rgba(245, 185, 36, 0.1);
+  color: #b8860b;
+}
+
+.nav-wallet-link:hover {
+  background: rgba(245, 185, 36, 0.2);
+}
+
 .hero-section {
   min-height: calc(100svh - 101px);
   display: grid;

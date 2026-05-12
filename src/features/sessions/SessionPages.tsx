@@ -8,7 +8,6 @@ import {
   MapPin,
   Plus,
   RefreshCcw,
-  Search,
   Sparkles,
   UserRound,
   Video,
@@ -24,7 +23,6 @@ import { SkillAutocomplete } from '../skills/SkillAutocomplete'
 import { useAppStore } from '../../store/useAppStore'
 import {
   buildJitsiUrl,
-  canBookSession,
   formatSessionDateTime,
   formatSessionPoints,
   getCurrentSessionRole,
@@ -36,7 +34,7 @@ import {
 import { sessionsApi, sessionKeys } from './sessionsApi'
 import type { CreateSessionRequest, SessionDeliveryMode, SessionDto, SessionStatus } from './types'
 
-type SessionBoardMode = 'marketplace' | 'learning' | 'teaching'
+type SessionBoardMode = 'learning' | 'teaching'
 
 const SESSION_LIMIT = 12
 
@@ -51,10 +49,6 @@ const sessionStatusOptions: Array<{ label: string; value: SessionStatus | '' }> 
   { label: 'Đã hủy', value: 'Cancelled' },
   { label: 'Cần hỗ trợ', value: 'Disputed' },
 ]
-
-export function SessionMarketplacePage() {
-  return <SessionBoardPage mode="marketplace" />
-}
 
 export function LearningSessionsPage() {
   return <SessionBoardPage mode="learning" />
@@ -322,9 +316,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
-  const [statusFilter, setStatusFilter] = useState<SessionStatus | ''>(mode === 'marketplace' ? 'Available' : '')
-  const [skillFilter, setSkillFilter] = useState('')
-  const [dateFilter, setDateFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState<SessionStatus | ''>('')
   const teachingProfileQuery = useQuery({
     queryKey: profileKeys.me(),
     queryFn: profileApi.getMyProfile,
@@ -335,15 +327,15 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
     queryKey: sessionKeys.list({
       limit: SESSION_LIMIT,
       page,
-      role: mode === 'learning' ? 'learner' : mode === 'teaching' ? 'companion' : undefined,
-      status: mode === 'marketplace' ? 'Available' : statusFilter,
+      role: mode === 'learning' ? 'learner' : 'companion',
+      status: statusFilter,
     }),
     queryFn: () =>
       sessionsApi.list({
         limit: SESSION_LIMIT,
         page,
-        role: mode === 'learning' ? 'learner' : mode === 'teaching' ? 'companion' : undefined,
-        status: mode === 'marketplace' ? 'Available' : statusFilter,
+        role: mode === 'learning' ? 'learner' : 'companion',
+        status: statusFilter,
       }),
   })
 
@@ -390,16 +382,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
     return <TeachingSoftGate />
   }
 
-  const sessions = (listQuery.data?.data ?? []).filter((item) => {
-    if (mode !== 'marketplace') {
-      return true
-    }
-
-    const matchesSkill =
-      !skillFilter.trim() || item.skill.toLowerCase().includes(skillFilter.trim().toLowerCase())
-    const matchesDate = !dateFilter || item.scheduledAt.slice(0, 10) === dateFilter
-    return matchesSkill && matchesDate
-  })
+  const sessions = listQuery.data?.data ?? []
 
   const totalPages = Math.max(1, Math.ceil((listQuery.data?.total ?? 0) / SESSION_LIMIT))
 
@@ -433,53 +416,27 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
           <div>
             <h2>{getBoardToolbarTitle(mode)}</h2>
             <p>
-              {mode === 'marketplace'
-                ? 'Lọc nhanh theo kỹ năng và thời gian để tìm buổi học phù hợp.'
-                : 'Mở từng buổi học để xác nhận lịch, tham gia phòng học hoặc xem chi tiết.'}
+              Mở từng buổi học để xác nhận lịch, tham gia phòng học hoặc xem chi tiết.
             </p>
           </div>
 
           <div className="session-filter-grid">
-            {mode === 'marketplace' ? (
-              <>
-                <label className="session-filter-field">
-                  <span>Tìm theo kỹ năng</span>
-                  <div className="admin-search-shell">
-                    <Search size={16} />
-                    <input
-                      onChange={(event) => setSkillFilter(event.target.value)}
-                      placeholder="Ví dụ: IELTS, Excel, React"
-                      value={skillFilter}
-                    />
-                  </div>
-                </label>
-                <label className="session-filter-field">
-                  <span>Ngày học</span>
-                  <input
-                    onChange={(event) => setDateFilter(event.target.value)}
-                    type="date"
-                    value={dateFilter}
-                  />
-                </label>
-              </>
-            ) : (
-              <label className="session-filter-field">
-                <span>Trạng thái</span>
-                <select
-                  onChange={(event) => {
-                    setStatusFilter(event.target.value as SessionStatus | '')
-                    setPage(1)
-                  }}
-                  value={statusFilter}
-                >
-                  {sessionStatusOptions.map((option) => (
-                    <option key={option.label} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
+            <label className="session-filter-field">
+              <span>Trạng thái</span>
+              <select
+                onChange={(event) => {
+                  setStatusFilter(event.target.value as SessionStatus | '')
+                  setPage(1)
+                }}
+                value={statusFilter}
+              >
+                {sessionStatusOptions.map((option) => (
+                  <option key={option.label} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <button
               className="button secondary"
@@ -514,16 +471,14 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
               <section className="session-empty-state">
                 <h3>Chưa có buổi học nào phù hợp.</h3>
                 <p>
-                  {mode === 'marketplace'
-                    ? 'Thử đổi từ khóa hoặc quay lại sau khi có thêm buổi học mới.'
-                    : 'Hiện chưa có buổi học nào khớp với bộ lọc bạn đang chọn.'}
+                  Hiện chưa có buổi học nào khớp với bộ lọc bạn đang chọn.
                 </p>
               </section>
             ) : (
               <div className="session-card-grid">
                 {sessions.map((item) => (
                   <SessionCard
-                    canBook={mode === 'marketplace' && canBookSession(item, session.userId)}
+                    canBook={false}
                     isBooking={bookMutation.isPending && bookMutation.variables === item.sessionId}
                     key={item.sessionId}
                     onBook={() => bookMutation.mutate(item.sessionId)}
@@ -712,10 +667,6 @@ function PaginationControls({
 }
 
 function getBoardEyebrow(mode: SessionBoardMode) {
-  if (mode === 'marketplace') {
-    return 'Khám phá buổi học'
-  }
-
   if (mode === 'learning') {
     return 'Buổi học của tôi'
   }
@@ -724,10 +675,6 @@ function getBoardEyebrow(mode: SessionBoardMode) {
 }
 
 function getBoardTitle(mode: SessionBoardMode) {
-  if (mode === 'marketplace') {
-    return 'Tìm buổi học phù hợp theo kỹ năng và thời gian của bạn.'
-  }
-
   if (mode === 'learning') {
     return 'Theo dõi các buổi học bạn đã đăng ký.'
   }
@@ -736,10 +683,6 @@ function getBoardTitle(mode: SessionBoardMode) {
 }
 
 function getBoardDescription(mode: SessionBoardMode) {
-  if (mode === 'marketplace') {
-    return 'Bộ lọc đơn giản, thẻ thông tin rõ và lối vào nhanh để người học quyết định dễ hơn.'
-  }
-
   if (mode === 'learning') {
     return 'Xem lại lịch học, trạng thái xác nhận và đường vào phòng học của bạn.'
   }
@@ -748,10 +691,6 @@ function getBoardDescription(mode: SessionBoardMode) {
 }
 
 function getBoardToolbarTitle(mode: SessionBoardMode) {
-  if (mode === 'marketplace') {
-    return 'Danh sách buổi học đang mở'
-  }
-
   if (mode === 'learning') {
     return 'Lịch học của tôi'
   }

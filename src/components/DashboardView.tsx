@@ -62,9 +62,6 @@ export function DashboardShell({
                 <Link className="button secondary" to="/dashboard/wallet">
                   Ví điểm
                 </Link>
-                <Link className="button secondary" to="/dashboard/skills/marketplace">
-                  Tìm buổi học
-                </Link>
                 {roles.includes('learner') ? (
                   <Link className="button secondary" to="/dashboard/skills/learning">
                     Buổi học của tôi
@@ -162,10 +159,6 @@ export function DashboardShell({
             <Link className="dashboard-quick-link" to="/dashboard/wallet">
               <strong>Ví điểm</strong>
               <span>Theo dõi số dư, điểm đang giữ và mọi thay đổi gần đây.</span>
-            </Link>
-            <Link className="dashboard-quick-link" to="/dashboard/skills/marketplace">
-              <strong>Tìm buổi học</strong>
-              <span>Xem các buổi học đang mở và chọn lịch phù hợp với bạn.</span>
             </Link>
             {roles.includes('learner') ? (
               <Link className="dashboard-quick-link" to="/dashboard/skills/learning">

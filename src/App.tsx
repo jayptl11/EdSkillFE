@@ -50,7 +50,6 @@ import { SessionDetailPage } from './features/sessions/SessionDetailPage'
 import {
   CreateSessionOfferPage,
   LearningSessionsPage,
-  SessionMarketplacePage,
   TeachingSessionsPage,
 } from './features/sessions/SessionPages'
 import { CompanionSearchPage } from './features/sessions/CompanionSearchPage'
@@ -135,14 +134,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <WalletPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/skills/marketplace"
-            element={
-              <ProtectedRoute>
-                <SessionMarketplacePage />
               </ProtectedRoute>
             }
           />
@@ -263,7 +254,7 @@ function LearnEntryPage() {
     return <Navigate replace to="/register?intent=learn" />
   }
 
-  return <Navigate replace to="/dashboard/skills/marketplace" />
+  return <Navigate replace to="/dashboard/companions" />
 }
 
 function TeachEntryPage() {
@@ -754,7 +745,7 @@ function VerifyOtpPage() {
       steps={[
         { label: 'Tạo tài khoản', done: purpose === 'register' },
         { label: 'Xác thực email', active: true },
-        { label: purpose === 'reset' ? 'Đặt lại mật khẩu' : intent === 'teach' ? 'Hoàn thiện hồ sơ dạy học' : 'Tìm buổi học' },
+        { label: purpose === 'reset' ? 'Đặt lại mật khẩu' : intent === 'teach' ? 'Hoàn thiện hồ sơ dạy học' : 'Khám phá buổi học' },
       ]}
       subtitle="Kiểm tra email và nhập mã xác thực để tiếp tục."
       title="Nhập mã OTP"
@@ -1121,7 +1112,7 @@ function buildIntentSearch(intent: SignupIntent) {
 }
 
 function getPostAuthRoute(intent: SignupIntent) {
-  return intent === 'teach' ? '/teach' : '/dashboard/skills/marketplace'
+  return intent === 'teach' ? '/teach' : '/dashboard/companions'
 }
 
 function getAuthCopy(intent: SignupIntent) {

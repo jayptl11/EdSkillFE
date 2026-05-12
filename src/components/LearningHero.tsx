@@ -150,7 +150,7 @@ const topUniPromo = {
 }
 
 export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
-  const learnHref = isSignedIn ? '/dashboard/skills/marketplace' : '/register?intent=learn'
+  const learnHref = isSignedIn ? '/dashboard/skills/learning' : '/register?intent=learn'
   const teachHref = isSignedIn ? '/teach' : '/register?intent=teach'
   const reduceMotion = useReducedMotion()
 
