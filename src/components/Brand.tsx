@@ -32,24 +32,46 @@ export function SiteHeader() {
         </Link>
         {session ? (
           <>
-            <Link className="nav-link" to="/dashboard/companions">
-              Khám phá skill mới
-            </Link>
-            <Link className="nav-link" to="/dashboard/skills/marketplace">
-              Tìm buổi học
-            </Link>
-            <Link className="nav-link" to="/teach">
-              Dạy học
-            </Link>
-            <Link className="nav-link" to="/dashboard/wallet">
-              Ví điểm
-            </Link>
-            <Link className="nav-link" to="/dashboard/profile">
-              Hồ sơ
-            </Link>
-            <Link className="nav-link highlighted" to="/dashboard">
-              Trang của tôi
-            </Link>
+            {session.roles.includes('admin') ? (
+              <>
+                <Link className="nav-link" to="/dashboard/admin/skills">
+                  Quản lý kỹ năng
+                </Link>
+                <Link className="nav-link" to="/dashboard/admin/session-wallet">
+                  Quản trị ví điểm
+                </Link>
+                <Link className="nav-link" to="/dashboard/wallet">
+                  Ví điểm
+                </Link>
+                <Link className="nav-link" to="/dashboard/profile">
+                  Hồ sơ
+                </Link>
+                <Link className="nav-link highlighted" to="/dashboard">
+                  Trang của tôi
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link className="nav-link" to="/dashboard/companions">
+                  Khám phá skill mới
+                </Link>
+                <Link className="nav-link" to="/dashboard/skills/marketplace">
+                  Tìm buổi học
+                </Link>
+                <Link className="nav-link" to="/teach">
+                  Dạy học
+                </Link>
+                <Link className="nav-link" to="/dashboard/wallet">
+                  Ví điểm
+                </Link>
+                <Link className="nav-link" to="/dashboard/profile">
+                  Hồ sơ
+                </Link>
+                <Link className="nav-link highlighted" to="/dashboard">
+                  Trang của tôi
+                </Link>
+              </>
+            )}
           </>
         ) : (
           <>

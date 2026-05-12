@@ -48,27 +48,6 @@ export function DashboardShell({
             <Link className="button secondary" to={profileHref}>
               Cập nhật hồ sơ
             </Link>
-            <Link className="button secondary" to="/dashboard/wallet">
-              Ví điểm
-            </Link>
-            <Link className="button secondary" to="/dashboard/skills/marketplace">
-              Tìm buổi học
-            </Link>
-            {roles.includes('learner') ? (
-              <Link className="button secondary" to="/dashboard/skills/learning">
-                Buổi học của tôi
-              </Link>
-            ) : null}
-            {roles.includes('companion') ? (
-              <>
-                <Link className="button secondary" to="/dashboard/skills/teaching">
-                  Lịch dạy của tôi
-                </Link>
-                <Link className="button secondary" to="/dashboard/skills/new">
-                  Mở buổi học
-                </Link>
-              </>
-            ) : null}
             {roles.includes('admin') ? (
               <>
                 <Link className="button secondary" to="/dashboard/admin/session-wallet">
@@ -78,7 +57,31 @@ export function DashboardShell({
                   Quản lý kỹ năng
                 </Link>
               </>
-            ) : null}
+            ) : (
+              <>
+                <Link className="button secondary" to="/dashboard/wallet">
+                  Ví điểm
+                </Link>
+                <Link className="button secondary" to="/dashboard/skills/marketplace">
+                  Tìm buổi học
+                </Link>
+                {roles.includes('learner') ? (
+                  <Link className="button secondary" to="/dashboard/skills/learning">
+                    Buổi học của tôi
+                  </Link>
+                ) : null}
+                {roles.includes('companion') ? (
+                  <>
+                    <Link className="button secondary" to="/dashboard/skills/teaching">
+                      Lịch dạy của tôi
+                    </Link>
+                    <Link className="button secondary" to="/dashboard/skills/new">
+                      Mở buổi học
+                    </Link>
+                  </>
+                ) : null}
+              </>
+            )}
           </div>
         </div>
         <motion.button
@@ -143,26 +146,41 @@ export function DashboardShell({
         </div>
       </section>
       <section className="dashboard-quick-links">
-        <Link className="dashboard-quick-link" to="/dashboard/wallet">
-          <strong>Ví điểm</strong>
-          <span>Theo dõi số dư, điểm đang giữ và mọi thay đổi gần đây.</span>
-        </Link>
-        <Link className="dashboard-quick-link" to="/dashboard/skills/marketplace">
-          <strong>Tìm buổi học</strong>
-          <span>Xem các buổi học đang mở và chọn lịch phù hợp với bạn.</span>
-        </Link>
-        {roles.includes('learner') ? (
-          <Link className="dashboard-quick-link" to="/dashboard/skills/learning">
-            <strong>Buổi học của tôi</strong>
-            <span>Theo dõi các buổi học bạn đã đăng ký và những việc cần xác nhận.</span>
-          </Link>
-        ) : null}
-        {roles.includes('companion') ? (
-          <Link className="dashboard-quick-link" to="/dashboard/skills/teaching">
-            <strong>Lịch dạy của tôi</strong>
-            <span>Quản lý buổi học, xác nhận lịch và mở thêm buổi học mới.</span>
-          </Link>
-        ) : null}
+        {roles.includes('admin') ? (
+          <>
+            <Link className="dashboard-quick-link" to="/dashboard/admin/session-wallet">
+              <strong>Quản trị ví điểm</strong>
+              <span>Cấu hình hệ thống điểm và cấp phát điểm hàng loạt.</span>
+            </Link>
+            <Link className="dashboard-quick-link" to="/dashboard/admin/skills">
+              <strong>Quản lý kỹ năng</strong>
+              <span>Quản lý danh mục kỹ năng và cấu hình hệ thống.</span>
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link className="dashboard-quick-link" to="/dashboard/wallet">
+              <strong>Ví điểm</strong>
+              <span>Theo dõi số dư, điểm đang giữ và mọi thay đổi gần đây.</span>
+            </Link>
+            <Link className="dashboard-quick-link" to="/dashboard/skills/marketplace">
+              <strong>Tìm buổi học</strong>
+              <span>Xem các buổi học đang mở và chọn lịch phù hợp với bạn.</span>
+            </Link>
+            {roles.includes('learner') ? (
+              <Link className="dashboard-quick-link" to="/dashboard/skills/learning">
+                <strong>Buổi học của tôi</strong>
+                <span>Theo dõi các buổi học bạn đã đăng ký và những việc cần xác nhận.</span>
+              </Link>
+            ) : null}
+            {roles.includes('companion') ? (
+              <Link className="dashboard-quick-link" to="/dashboard/skills/teaching">
+                <strong>Lịch dạy của tôi</strong>
+                <span>Quản lý buổi học, xác nhận lịch và mở thêm buổi học mới.</span>
+              </Link>
+            ) : null}
+          </>
+        )}
       </section>
     </MotionPage>
   )
