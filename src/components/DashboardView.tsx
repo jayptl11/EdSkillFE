@@ -12,8 +12,6 @@ export function DashboardShell({
   roles,
   dailyReminderNeeded,
   primaryRole,
-  onLogout,
-  profileHref,
   getCardCopy,
 }: {
   username: string
@@ -21,8 +19,6 @@ export function DashboardShell({
   roles: string[]
   dailyReminderNeeded: boolean
   primaryRole: string
-  onLogout: () => void
-  profileHref: string
   getCardCopy: (card: string, role: string) => string
 }) {
   return (
@@ -39,52 +35,7 @@ export function DashboardShell({
             Mọi thứ bạn cần để học, dạy và theo dõi tiến trình đang ở đây. Chọn đúng việc
             tiếp theo để bắt đầu nhanh hơn.
           </p>
-          <div className="dashboard-hero-links">
-            <Link className="button secondary" to={profileHref}>
-              Cập nhật hồ sơ
-            </Link>
-            {roles.includes('admin') ? (
-              <>
-                <Link className="button secondary" to="/dashboard/admin/session-wallet">
-                  Quản trị ví điểm
-                </Link>
-                <Link className="button secondary" to="/dashboard/admin/skills">
-                  Quản lý kỹ năng
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link className="button secondary" to="/dashboard/wallet">
-                  Ví điểm
-                </Link>
-                {roles.includes('learner') ? (
-                  <Link className="button secondary" to="/dashboard/skills/learning">
-                    Buổi học của tôi
-                  </Link>
-                ) : null}
-                {roles.includes('companion') ? (
-                  <>
-                    <Link className="button secondary" to="/dashboard/skills/teaching">
-                      Lịch dạy của tôi
-                    </Link>
-                    <Link className="button secondary" to="/dashboard/skills/new">
-                      Mở buổi học
-                    </Link>
-                  </>
-                ) : null}
-              </>
-            )}
-          </div>
         </div>
-        <motion.button
-          className="button secondary logout-button"
-          onClick={onLogout}
-          whileHover={{ y: -3 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <LogOut size={18} />
-          Đăng xuất
-        </motion.button>
       </section>
       <motion.section
         animate="visible"

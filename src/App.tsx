@@ -31,7 +31,7 @@ import { LearningHero } from './components/LearningHero'
 import { MotionPage } from './components/MotionPage'
 import { ToastViewport } from './components/Toast'
 import { showToast } from './components/toastEvents'
-import { CompanionOnboardingPage } from './features/profile/CompanionOnboardingPage'
+
 import { OwnerProfilePage, PublicProfilePage } from './features/profile/ProfilePages'
 import { profileApi } from './features/profile/profileApi'
 import { PolicyConsentGate } from './features/policies/PolicyConsentGate'
@@ -87,14 +87,6 @@ function App() {
           <Route path="/verify-otp" element={<VerifyOtpPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route
-            path="/teach/onboarding"
-            element={
-              <ProtectedRoute>
-                <CompanionOnboardingPage />
-              </ProtectedRoute>
-            }
-          />
           <Route
             path="/dashboard"
             element={
@@ -290,7 +282,7 @@ function TeachAccessRedirect() {
       return
     }
 
-    navigate(profile.isCompanionOnboardingComplete ? '/dashboard/skills/teaching' : '/teach/onboarding', {
+    navigate(profile.isCompanionOnboardingComplete ? '/dashboard/skills/teaching' : '/dashboard/profile?intent=teach', {
       replace: true,
     })
   }, [enableMutation, navigate, profileQuery.data])
@@ -301,7 +293,7 @@ function TeachAccessRedirect() {
       return
     }
 
-    navigate(profile.isCompanionOnboardingComplete ? '/dashboard/skills/teaching' : '/teach/onboarding', {
+    navigate(profile.isCompanionOnboardingComplete ? '/dashboard/skills/teaching' : '/dashboard/profile?intent=teach', {
       replace: true,
     })
   }, [enableMutation.data, navigate])
@@ -948,25 +940,8 @@ function ResetPasswordPage() {
 }
 
 function DashboardPage() {
-  const navigate = useNavigate()
   const session = useAppStore((state) => state.session)
-  const clearSession = useAppStore((state) => state.clearSession)
   const primaryRole = getPrimaryRole(session?.roles ?? [])
-
-  const handleLogout = async () => {
-    try {
-      await logout()
-    } catch (error) {
-      showToast({ kind: 'info', message: getErrorMessage(error) })
-    } finally {
-      clearSession()
-      queryClient.clear()
-      navigate('/login', {
-        replace: true,
-        state: { message: 'Bạn đã đăng xuất thành công.' },
-      })
-    }
-  }
 
   if (!session) {
     return <Navigate replace to="/login" />
@@ -977,9 +952,7 @@ function DashboardPage() {
       dailyReminderNeeded={session.shouldPromptDailyReminderTime}
       email={session.email}
       getCardCopy={getDashboardCopy}
-      onLogout={handleLogout}
       primaryRole={primaryRole}
-      profileHref="/dashboard/profile"
       roles={session.roles}
       username={session.username}
     />
@@ -1095,7 +1068,7 @@ function buildIntentSearch(intent: SignupIntent) {
 }
 
 function getPostAuthRoute(intent: SignupIntent) {
-  return intent === 'teach' ? '/teach' : '/dashboard'
+  return '/dashboard'
 }
 
 function getAuthCopy() {

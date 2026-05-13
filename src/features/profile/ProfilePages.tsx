@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
@@ -58,6 +58,9 @@ const emptyForm: ProfileFormValues = {
 export function OwnerProfilePage() {
   const session = useAppStore((state) => state.session)
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const intent = searchParams.get('intent')
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const degreeFileInputRef = useRef<HTMLInputElement | null>(null)
   const previewUrlRef = useRef<string | null>(null)
@@ -79,7 +82,13 @@ export function OwnerProfilePage() {
     mutationFn: profileApi.updateMyProfile,
     onSuccess: (profile) => {
       applyProfileSnapshot(profile)
-      showToast({ kind: 'success', message: 'Hồ sơ đã được cập nhật.' })
+      
+      if (intent === 'teach' && profile.isCompanionOnboardingComplete) {
+        showToast({ kind: 'success', message: 'Hồ sơ dạy học đã sẵn sàng. Bạn có thể mở buổi học ngay.' })
+        navigate('/dashboard/skills/teaching', { replace: true })
+      } else {
+        showToast({ kind: 'success', message: 'Hồ sơ đã được cập nhật.' })
+      }
     },
     onError: (error) => {
       if (isApiError(error) && error.code === 'VALIDATION_ERROR') {
@@ -381,6 +390,16 @@ export function OwnerProfilePage() {
           <div>
             <h2>Không thể tải hồ sơ</h2>
             <p>{getErrorMessage(profileQuery.error)}</p>
+          </div>
+        </section>
+      ) : null}
+
+      {profileQuery.data && intent === 'teach' && !profileQuery.data.isCompanionOnboardingComplete ? (
+        <section className="profile-state-card warning" style={{ backgroundColor: 'var(--soft-gold)', color: 'var(--sapphire)' }}>
+          <Info size={22} />
+          <div>
+            <h2>Cần hoàn thiện hồ sơ để dạy học</h2>
+            <p>Để bắt đầu dạy học, bạn cần điền đầy đủ các thông tin bắt buộc dưới đây (Tên hiển thị, Ngày sinh, Số điện thoại, Tiểu sử dài hơn 40 từ, Kỹ năng muốn dạy và có Ảnh đại diện).</p>
           </div>
         </section>
       ) : null}
