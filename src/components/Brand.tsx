@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'motion/react'
-import { BookOpen, CalendarRange, GraduationCap, LogOut, PlusCircle, User, Wallet } from 'lucide-react'
+import { BookOpen, CalendarRange, Coins, GraduationCap, LogOut, PlusCircle, Settings, User, Wallet } from 'lucide-react'
 import edSkillLogo from '../assets/edskill-logo.png'
 import { useAppStore } from '../store/useAppStore'
 import { walletApi, walletKeys } from '../features/wallet/walletApi'
@@ -83,6 +83,22 @@ function UserNavDropdown() {
             
             <div className="dropdown-divider" />
             
+            {session.roles.includes('admin') && (
+              <>
+                <div className="dropdown-section">
+                  <Link className="dropdown-item" onClick={close} to="/dashboard/admin/skills">
+                    <Settings size={16} />
+                    Quản lý kỹ năng
+                  </Link>
+                  <Link className="dropdown-item" onClick={close} to="/dashboard/admin/session-wallet">
+                    <Coins size={16} />
+                    Quản lý điểm thưởng
+                  </Link>
+                </div>
+                <div className="dropdown-divider" />
+              </>
+            )}
+            
             <div className="dropdown-section">
               {session.roles.includes('companion') && (
                 <>
@@ -142,16 +158,7 @@ export function SiteHeader() {
         </Link>
         {session ? (
           <>
-            {session.roles.includes('admin') ? (
-              <>
-                <Link className="nav-link" to="/dashboard/admin/skills">
-                  Quản lý kỹ năng
-                </Link>
-                <Link className="nav-link" to="/dashboard/admin/session-wallet">
-                  Quản trị ví điểm
-                </Link>
-              </>
-            ) : (
+            {!session.roles.includes('admin') && (
               <>
                 <Link className="nav-link" to="/dashboard/companions">
                   Khám phá skill mới

@@ -85,18 +85,7 @@ export function DashboardShell({
         </div>
       </section>
       <section className="dashboard-quick-links">
-        {roles.includes('admin') ? (
-          <>
-            <Link className="dashboard-quick-link" to="/dashboard/admin/session-wallet">
-              <strong>Quản trị ví điểm</strong>
-              <span>Cấu hình hệ thống điểm và cấp phát điểm hàng loạt.</span>
-            </Link>
-            <Link className="dashboard-quick-link" to="/dashboard/admin/skills">
-              <strong>Quản lý kỹ năng</strong>
-              <span>Quản lý danh mục kỹ năng và cấu hình hệ thống.</span>
-            </Link>
-          </>
-        ) : (
+        {!roles.includes('admin') && (
           <>
             <Link className="dashboard-quick-link" to="/dashboard/wallet">
               <strong>Ví điểm</strong>
