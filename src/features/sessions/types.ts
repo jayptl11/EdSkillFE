@@ -24,6 +24,21 @@ export interface SessionPricingPreviewDto {
   maxPlatformFeePoints: number
 }
 
+/** Exact pricing breakdown per duration option — dùng trong modal chọn thời lượng */
+export interface DurationPricingOptionDto {
+  durationMinutes: number
+  /** Số điểm learner phải trả — field chính cần hiển thị khi user chọn option này */
+  learnerChargePoints: number
+  /** Internal — không hiển thị trong modal book */
+  companionPayoutPoints: number
+  /** Internal — không hiển thị trong modal book */
+  platformFeePoints: number
+  /** Internal — không render trong UI cơ bản */
+  durationMultiplierPercent: number
+  /** BE đánh dấu cho session đã book; FE dùng local state làm source chính */
+  isSelected: boolean
+}
+
 export interface SessionPricingBreakdownDto {
   learnerChargePoints: number
   companionPayoutPoints: number
@@ -45,6 +60,8 @@ export interface SessionDto {
   pointCost: number
   pricingModel: SessionPricingModel
   durationOptions: number[]
+  /** Danh sách exact pricing per option — source chính cho modal chọn thời lượng */
+  durationPricingOptions: DurationPricingOptionDto[]
   selectedDurationMinutes: number | null
   pricingPreview: SessionPricingPreviewDto | null
   pricingBreakdown: SessionPricingBreakdownDto | null

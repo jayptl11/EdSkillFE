@@ -37,9 +37,9 @@ import type {
   AllowedDurationMinutes,
   BookSessionRequest,
   CreateSessionRequest,
+  DurationPricingOptionDto,
   SessionDeliveryMode,
   SessionDto,
-  SessionPricingPreviewDto,
   SessionStatus,
 } from './types'
 
@@ -769,10 +769,35 @@ function DurationPickerModal({
   onConfirm: (duration: AllowedDurationMinutes) => void
   onClose: () => void
 }) {
-  const [selected, setSelected] = useState<AllowedDurationMinutes | null>(
-    session.durationOptions.length === 1 ? (session.durationOptions[0] as AllowedDurationMinutes) : null,
+  const pricingOptions = session.durationPricingOptions
+  const hasExactPricing = pricingOptions.length > 0
+
+  // Fallback sang durationOptions nếu session cũ không có durationPricingOptions
+  const legacyOptions = session.durationOptions
+
+  const [selectedOption, setSelectedOption] = useState<DurationPricingOptionDto | null>(
+    () => {
+      if (hasExactPricing && pricingOptions.length === 1) return pricingOptions[0]
+      return null
+    },
   )
+
+  // Legacy fallback: chưa có durationPricingOptions
+  const [legacySelected, setLegacySelected] = useState<AllowedDurationMinutes | null>(
+    () => (!hasExactPricing && legacyOptions.length === 1 ? (legacyOptions[0] as AllowedDurationMinutes) : null),
+  )
+
   const preview = session.pricingPreview
+
+  const handleConfirm = () => {
+    if (hasExactPricing && selectedOption) {
+      onConfirm(selectedOption.durationMinutes as AllowedDurationMinutes)
+    } else if (!hasExactPricing && legacySelected !== null) {
+      onConfirm(legacySelected)
+    }
+  }
+
+  const canSubmit = hasExactPricing ? selectedOption !== null : legacySelected !== null
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -789,29 +814,61 @@ function DurationPickerModal({
             Kỹ năng: <strong>{session.skill}</strong>
           </p>
 
-          {preview ? (
-            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
-              Dự kiến chi phí:{' '}
-              <strong>
-                {preview.minLearnerChargePoints === preview.maxLearnerChargePoints
-                  ? `${preview.minLearnerChargePoints} điểm`
-                  : `${preview.minLearnerChargePoints} – ${preview.maxLearnerChargePoints} điểm`}
-              </strong>
-            </p>
-          ) : null}
-
-          <div className="session-duration-options">
-            {session.durationOptions.map((d) => (
-              <button
-                className={`session-duration-option ${selected === d ? 'active' : ''}`}
-                key={d}
-                onClick={() => setSelected(d as AllowedDurationMinutes)}
-                type="button"
+          {hasExactPricing ? (
+            <>
+              <div className="session-duration-options">
+                {pricingOptions.map((opt) => (
+                  <button
+                    className={`session-duration-option ${selectedOption?.durationMinutes === opt.durationMinutes ? 'active' : ''}`}
+                    key={opt.durationMinutes}
+                    onClick={() => setSelectedOption(opt)}
+                    type="button"
+                  >
+                    {opt.durationMinutes} phút
+                  </button>
+                ))}
+              </div>
+              <p
+                style={{
+                  fontSize: '0.875rem',
+                  marginTop: '1rem',
+                  color: selectedOption ? 'var(--color-text-primary, inherit)' : 'var(--color-text-secondary)',
+                  fontWeight: selectedOption ? 600 : 400,
+                  minHeight: '1.5em',
+                }}
               >
-                {d} phút
-              </button>
-            ))}
-          </div>
+                {selectedOption
+                  ? `Chi phí: ${selectedOption.learnerChargePoints} điểm`
+                  : 'Chọn thời lượng để xem điểm cần trả'}
+              </p>
+            </>
+          ) : (
+            // Legacy fallback: session cũ không có durationPricingOptions
+            <>
+              {preview ? (
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
+                  Dự kiến chi phí:{' '}
+                  <strong>
+                    {preview.minLearnerChargePoints === preview.maxLearnerChargePoints
+                      ? `${preview.minLearnerChargePoints} điểm`
+                      : `${preview.minLearnerChargePoints} – ${preview.maxLearnerChargePoints} điểm`}
+                  </strong>
+                </p>
+              ) : null}
+              <div className="session-duration-options">
+                {legacyOptions.map((d) => (
+                  <button
+                    className={`session-duration-option ${legacySelected === d ? 'active' : ''}`}
+                    key={d}
+                    onClick={() => setLegacySelected(d as AllowedDurationMinutes)}
+                    type="button"
+                  >
+                    {d} phút
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="modal-footer">
@@ -820,8 +877,8 @@ function DurationPickerModal({
           </button>
           <button
             className="button primary"
-            disabled={selected === null || isPending}
-            onClick={() => selected !== null && onConfirm(selected)}
+            disabled={!canSubmit || isPending}
+            onClick={handleConfirm}
             type="button"
           >
             {isPending ? <LoaderCircle className="spin" size={16} /> : null}
@@ -832,7 +889,3 @@ function DurationPickerModal({
     </div>
   )
 }
-
-// helper tạm cho type narrowing
-function _unused(_p: SessionPricingPreviewDto | null) { return _p }
-void _unused

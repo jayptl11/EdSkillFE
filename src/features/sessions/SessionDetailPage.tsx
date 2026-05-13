@@ -32,7 +32,7 @@ import {
 } from './sessionUtils'
 import { sessionsApi, sessionKeys } from './sessionsApi'
 import { reviewApi } from './reviewApi'
-import type { AllowedDurationMinutes, BookSessionRequest, SessionDto, SessionStatusDto } from './types'
+import type { AllowedDurationMinutes, BookSessionRequest, DurationPricingOptionDto, SessionDto, SessionStatusDto } from './types'
 
 export function SessionDetailPage() {
   const { sessionId = '' } = useParams()
@@ -214,7 +214,9 @@ export function SessionDetailPage() {
                 </span>
                 <h2>{sessionData.skill}</h2>
               </div>
-              <div className="session-detail-points">{formatSessionPoints(sessionData.pointCost)}</div>
+              {sessionData.pricingModel !== 'FormulaV1' ? (
+                <div className="session-detail-points">{formatSessionPoints(sessionData.pointCost)}</div>
+              ) : null}
             </div>
 
             <p className="session-detail-description">
@@ -459,6 +461,7 @@ const emptySession: SessionDto = {
   pointCost: 0,
   pricingModel: 'LegacyManual',
   durationOptions: [],
+  durationPricingOptions: [],
   selectedDurationMinutes: null,
   pricingPreview: null,
   pricingBreakdown: null,
@@ -490,15 +493,35 @@ function SessionDetailBookModal({
   onConfirm: (duration: AllowedDurationMinutes) => void
   onClose: () => void
 }) {
-  const [selected, setSelected] = useState<AllowedDurationMinutes | null>(
-    session.durationOptions.length === 1 ? (session.durationOptions[0] as AllowedDurationMinutes) : null,
-  )
-  const preview = session.pricingPreview
+  const pricingOptions = session.durationPricingOptions
+  const hasExactPricing = pricingOptions.length > 0
   const isFormula = session.pricingModel === 'FormulaV1'
+  const legacyOptions = session.durationOptions
+  const preview = session.pricingPreview
 
-  // LegacyManual hoặc không có options: không cần modal, confirm với durationMinutes cố định
-  if (!isFormula || session.durationOptions.length === 0) {
+  const [selectedOption, setSelectedOption] = useState<DurationPricingOptionDto | null>(() => {
+    if (hasExactPricing && pricingOptions.length === 1) return pricingOptions[0]
     return null
+  })
+
+  const [legacySelected, setLegacySelected] = useState<AllowedDurationMinutes | null>(() => {
+    if (!hasExactPricing && legacyOptions.length === 1) return legacyOptions[0] as AllowedDurationMinutes
+    return null
+  })
+
+  // LegacyManual hoặc không có options: không cần modal
+  if (!isFormula || (legacyOptions.length === 0 && !hasExactPricing)) {
+    return null
+  }
+
+  const canSubmit = hasExactPricing ? selectedOption !== null : legacySelected !== null
+
+  const handleConfirm = () => {
+    if (hasExactPricing && selectedOption) {
+      onConfirm(selectedOption.durationMinutes as AllowedDurationMinutes)
+    } else if (!hasExactPricing && legacySelected !== null) {
+      onConfirm(legacySelected)
+    }
   }
 
   return (
@@ -514,28 +537,62 @@ function SessionDetailBookModal({
           <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
             Kỹ năng: <strong>{session.skill}</strong>
           </p>
-          {preview ? (
-            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
-              Dự kiến chi phí:{' '}
-              <strong>
-                {preview.minLearnerChargePoints === preview.maxLearnerChargePoints
-                  ? `${preview.minLearnerChargePoints} điểm`
-                  : `${preview.minLearnerChargePoints} – ${preview.maxLearnerChargePoints} điểm`}
-              </strong>
-            </p>
-          ) : null}
-          <div className="session-duration-options">
-            {session.durationOptions.map((d) => (
-              <button
-                className={`session-duration-option ${selected === d ? 'active' : ''}`}
-                key={d}
-                onClick={() => setSelected(d as AllowedDurationMinutes)}
-                type="button"
+
+          {hasExactPricing ? (
+            <>
+              <div className="session-duration-options">
+                {pricingOptions.map((opt) => (
+                  <button
+                    className={`session-duration-option ${selectedOption?.durationMinutes === opt.durationMinutes ? 'active' : ''}`}
+                    key={opt.durationMinutes}
+                    onClick={() => setSelectedOption(opt)}
+                    type="button"
+                  >
+                    {opt.durationMinutes} phút
+                  </button>
+                ))}
+              </div>
+              <p
+                style={{
+                  fontSize: '0.875rem',
+                  marginTop: '1rem',
+                  color: selectedOption ? 'var(--color-text-primary, inherit)' : 'var(--color-text-secondary)',
+                  fontWeight: selectedOption ? 600 : 400,
+                  minHeight: '1.5em',
+                }}
               >
-                {d} phút
-              </button>
-            ))}
-          </div>
+                {selectedOption
+                  ? `Chi phí: ${selectedOption.learnerChargePoints} điểm`
+                  : 'Chọn thời lượng để xem điểm cần trả'}
+              </p>
+            </>
+          ) : (
+            // Legacy fallback: session cũ không có durationPricingOptions
+            <>
+              {preview ? (
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
+                  Dự kiến chi phí:{' '}
+                  <strong>
+                    {preview.minLearnerChargePoints === preview.maxLearnerChargePoints
+                      ? `${preview.minLearnerChargePoints} điểm`
+                      : `${preview.minLearnerChargePoints} – ${preview.maxLearnerChargePoints} điểm`}
+                  </strong>
+                </p>
+              ) : null}
+              <div className="session-duration-options">
+                {legacyOptions.map((d) => (
+                  <button
+                    className={`session-duration-option ${legacySelected === d ? 'active' : ''}`}
+                    key={d}
+                    onClick={() => setLegacySelected(d as AllowedDurationMinutes)}
+                    type="button"
+                  >
+                    {d} phút
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
         <div className="modal-footer">
           <button className="button secondary" disabled={isPending} onClick={onClose} type="button">
@@ -543,8 +600,8 @@ function SessionDetailBookModal({
           </button>
           <button
             className="button primary"
-            disabled={selected === null || isPending}
-            onClick={() => selected !== null && onConfirm(selected)}
+            disabled={!canSubmit || isPending}
+            onClick={handleConfirm}
             type="button"
           >
             {isPending ? <LoaderCircle className="spin" size={16} /> : null}
