@@ -27,6 +27,7 @@ interface SkillFormValues {
   name: string
   slug: string
   category: string
+  basePointCost: number
   aliases: string[]
   isActive: boolean
 }
@@ -35,6 +36,7 @@ const emptyForm: SkillFormValues = {
   name: '',
   slug: '',
   category: '',
+  basePointCost: 0,
   aliases: [],
   isActive: true,
 }
@@ -131,10 +133,15 @@ export function AdminSkillsPage() {
     }
 
     if (!selectedSkill) {
+      if (formValues.basePointCost <= 0) {
+        showToast({ kind: 'error', message: 'Điểm cơ bản (Base Points) phải lớn hơn 0.' })
+        return
+      }
       createSkillMutation.mutate({
         name: trimmedName,
         slug: formValues.slug.trim() || undefined,
         category: formValues.category.trim() || undefined,
+        basePointCost: formValues.basePointCost,
         aliases: normalizeTags(formValues.aliases),
       })
       return
@@ -302,6 +309,9 @@ export function AdminSkillsPage() {
                           <strong>{skill.name}</strong>
                           <span>{skill.slug}</span>
                           <small>{skill.category || 'Uncategorized'}</small>
+                          <small style={{ color: 'var(--color-accent, #6366f1)', fontWeight: 600 }}>
+                            {skill.basePointCost} điểm cơ bản
+                          </small>
                         </div>
                         <span className={`admin-skill-status ${skill.isActive ? 'active' : 'inactive'}`}>
                           {skill.isActive ? 'Active' : 'Hidden'}
@@ -378,6 +388,22 @@ export function AdminSkillsPage() {
                   }
                   value={formValues.category}
                 />
+              </label>
+
+              <label className="profile-field">
+                <span>Điểm cơ bản (Base Points) *</span>
+                <input
+                  min={1}
+                  onChange={(event) =>
+                    setFormValues((current) => ({ ...current, basePointCost: Number(event.target.value) }))
+                  }
+                  placeholder="Ví dụ: 100"
+                  type="number"
+                  value={formValues.basePointCost || ''}
+                />
+                <small style={{ color: 'var(--color-text-secondary)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                  Dùng để tính giá tự động theo công thức Formula Pricing.
+                </small>
               </label>
 
               <div className="profile-field admin-field-switch">
@@ -466,6 +492,7 @@ function toFormValues(skill: AdminSkill): SkillFormValues {
     name: skill.name,
     slug: skill.slug,
     category: skill.category ?? '',
+    basePointCost: skill.basePointCost,
     aliases: skill.aliases ?? [],
     isActive: skill.isActive,
   }
@@ -494,6 +521,10 @@ function buildSkillPatch(formValues: SkillFormValues, skill: AdminSkill): Update
 
   if (formValues.isActive !== skill.isActive) {
     payload.isActive = formValues.isActive
+  }
+
+  if (formValues.basePointCost > 0 && formValues.basePointCost !== skill.basePointCost) {
+    payload.basePointCost = formValues.basePointCost
   }
 
   return payload

@@ -1,8 +1,9 @@
 import { apiGet, apiPost, apiPut } from '../../api/client'
 import type {
   AvatarUploadUrlDto,
+  CredentialUploadUrlDto,
   GenerateAvatarUploadUrlRequest,
-  GenerateDegreeUploadUrlRequest,
+  GenerateCredentialUploadUrlRequest,
   ProfileDto,
   UpdateMyProfilePayload,
 } from './types'
@@ -25,8 +26,8 @@ export const profileApi = {
   createAvatarUploadUrl: (payload: GenerateAvatarUploadUrlRequest) =>
     apiPost<AvatarUploadUrlDto>('/api/profile/me/avatar-upload-url', payload, { auth: true }),
 
-  createDegreeUploadUrl: (payload: GenerateDegreeUploadUrlRequest) =>
-    apiPost<AvatarUploadUrlDto>('/api/profile/me/degree-upload-url', payload, { auth: true }),
+  createCredentialUploadUrl: (payload: GenerateCredentialUploadUrlRequest) =>
+    apiPost<CredentialUploadUrlDto>('/api/profile/me/credential-upload-url', payload, { auth: true }),
 }
 
 export function requestAvatarUploadUrl(file: File): Promise<AvatarUploadUrlDto> {
@@ -37,10 +38,10 @@ export function requestAvatarUploadUrl(file: File): Promise<AvatarUploadUrlDto> 
   })
 }
 
-export function requestDegreeUploadUrl(file: File): Promise<AvatarUploadUrlDto> {
-  return profileApi.createDegreeUploadUrl({
+export function requestCredentialUploadUrl(file: File): Promise<CredentialUploadUrlDto> {
+  return profileApi.createCredentialUploadUrl({
     fileName: file.name,
-    contentType: file.type as GenerateDegreeUploadUrlRequest['contentType'],
+    contentType: file.type as GenerateCredentialUploadUrlRequest['contentType'],
     fileSize: file.size,
   })
 }
@@ -73,17 +74,9 @@ export async function uploadFileToPresignedUrl(uploadUrl: string, file: File): P
 }
 
 export function saveAvatarUrl(publicUrl: string): Promise<ProfileDto> {
-  return profileApi.updateMyProfile({ avatarUrl: publicUrl, hasAvatarUrl: true })
+  return profileApi.updateMyProfile({ avatarUrl: publicUrl })
 }
 
 export function clearSavedAvatar(): Promise<ProfileDto> {
-  return profileApi.updateMyProfile({ avatarUrl: null, hasAvatarUrl: true })
-}
-
-export function saveDegreeUrl(publicUrl: string): Promise<ProfileDto> {
-  return profileApi.updateMyProfile({ degreeUrl: publicUrl, hasDegreeUrl: true })
-}
-
-export function clearSavedDegree(): Promise<ProfileDto> {
-  return profileApi.updateMyProfile({ degreeUrl: null, hasDegreeUrl: true })
+  return profileApi.updateMyProfile({ avatarUrl: null })
 }

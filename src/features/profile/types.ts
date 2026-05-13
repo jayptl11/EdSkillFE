@@ -10,6 +10,8 @@ export interface ProfileDto {
   dateOfBirth: string | null
   phone: string | null
   degreeUrl: string | null
+  credentialUrls: string[]
+  credentialCount: number
   skillsToTeach: string[]
   skillsToLearn: string[]
   isPublic: boolean
@@ -27,37 +29,47 @@ export interface AvatarUploadUrlDto {
   expiresAt: string
 }
 
+export interface CredentialUploadUrlDto {
+  uploadUrl: string
+  publicUrl: string
+  objectKey: string
+  expiresAt: string
+}
+
 export interface GenerateAvatarUploadUrlRequest {
   fileName: string
   contentType: 'image/jpeg' | 'image/png' | 'image/webp'
   fileSize: number
 }
 
+export interface GenerateCredentialUploadUrlRequest {
+  fileName: string
+  contentType: 'application/pdf' | 'image/jpeg' | 'image/png' | 'image/webp'
+  fileSize: number
+}
+
+/** @deprecated Dùng GenerateCredentialUploadUrlRequest thay thế */
 export interface GenerateDegreeUploadUrlRequest {
   fileName: string
   contentType: 'application/pdf' | 'image/jpeg' | 'image/png' | 'image/webp'
   fileSize: number
 }
 
+/**
+ * Partial update – chỉ gửi field muốn thay đổi.
+ * Omit field = BE giữ nguyên.
+ * Gửi null cho bio/phone/avatarUrl = BE xóa giá trị đó.
+ */
 export interface UpdateMyProfilePayload {
-  displayName?: string
-  hasDisplayName?: boolean
+  displayName?: string | null
   bio?: string | null
-  hasBio?: boolean
   dateOfBirth?: string | null
-  hasDateOfBirth?: boolean
   phone?: string | null
-  hasPhone?: boolean
-  degreeUrl?: string | null
-  hasDegreeUrl?: boolean
+  credentialUrls?: string[] | null
   skillsToTeach?: string[] | null
-  hasSkillsToTeach?: boolean
   skillsToLearn?: string[] | null
-  hasSkillsToLearn?: boolean
   avatarUrl?: string | null
-  hasAvatarUrl?: boolean
   isPublic?: boolean
-  hasIsPublic?: boolean
 }
 
 export interface ProfileFormValues {
@@ -65,7 +77,7 @@ export interface ProfileFormValues {
   bio: string
   dateOfBirth: string
   phone: string
-  degreeUrl: string | null
+  credentialUrls: string[]
   skillsToTeach: string[]
   skillsToLearn: string[]
   isPublic: boolean
@@ -78,6 +90,7 @@ export type ProfileField =
   | 'dateOfBirth'
   | 'phone'
   | 'degreeUrl'
+  | 'credentialUrls'
   | 'skillsToTeach'
   | 'skillsToLearn'
   | 'avatarUrl'

@@ -2,6 +2,7 @@ import { apiGet, apiPost } from '../../api/client'
 import { toQueryString } from '../../api/query'
 import type { PaginatedResponse } from '../../api/types'
 import type {
+  BookSessionRequest,
   CancelSessionPayload,
   CreateSessionRequest,
   LeaveSessionPayload,
@@ -29,7 +30,8 @@ export const sessionsApi = {
 
   getById: (sessionId: string) => apiGet<SessionDto>(`/api/sessions/${sessionId}`, { auth: true }),
 
-  book: (sessionId: string) => apiPost<SessionDto>(`/api/sessions/${sessionId}/book`, undefined, { auth: true }),
+  book: (sessionId: string, payload: BookSessionRequest) =>
+    apiPost<SessionDto>(`/api/sessions/${sessionId}/book`, payload, { auth: true }),
 
   confirm: (sessionId: string) =>
     apiPost<SessionDto>(`/api/sessions/${sessionId}/confirm`, undefined, { auth: true }),

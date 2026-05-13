@@ -12,6 +12,8 @@ export interface CompanionSearchParams {
   limit?: number
 }
 
+import type { SessionPricingPreviewDto } from './types'
+
 export interface CompanionSearchItemDto {
   companionId: string
   displayName: string
@@ -22,6 +24,7 @@ export interface CompanionSearchItemDto {
   totalReviews: number
   matchingSessionCount: number
   lowestPointCost: number
+  pricingPreview: SessionPricingPreviewDto | null
   nextScheduledAt: string
 }
 

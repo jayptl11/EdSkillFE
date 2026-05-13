@@ -11,6 +11,7 @@ import {
   Sparkles,
   UserRound,
   Video,
+  X,
 } from 'lucide-react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { getErrorMessage } from '../../api/client'
@@ -32,7 +33,17 @@ import {
   toDateTimeLocalValue,
 } from './sessionUtils'
 import { sessionsApi, sessionKeys } from './sessionsApi'
-import type { CreateSessionRequest, SessionDeliveryMode, SessionDto, SessionStatus } from './types'
+import type {
+  AllowedDurationMinutes,
+  BookSessionRequest,
+  CreateSessionRequest,
+  SessionDeliveryMode,
+  SessionDto,
+  SessionPricingPreviewDto,
+  SessionStatus,
+} from './types'
+
+const ALLOWED_DURATIONS: AllowedDurationMinutes[] = [30, 45, 60, 90, 120]
 
 type SessionBoardMode = 'learning' | 'teaching'
 
@@ -123,13 +134,13 @@ export function CreateSessionOfferPage() {
       return
     }
 
-    if (!formValues.scheduledAt) {
-      showToast({ kind: 'error', message: 'Vui lòng chọn thời gian bắt đầu.' })
+    if (formValues.durationOptions.length === 0) {
+      showToast({ kind: 'error', message: 'Vui lòng chọn ít nhất một thời lượng cho buổi học.' })
       return
     }
 
-    if (formValues.pointCost <= 0) {
-      showToast({ kind: 'error', message: 'Số điểm cần lớn hơn 0.' })
+    if (!formValues.scheduledAt) {
+      showToast({ kind: 'error', message: 'Vui lòng chọn thời gian bắt đầu.' })
       return
     }
 
@@ -144,8 +155,7 @@ export function CreateSessionOfferPage() {
       description: formValues.description.trim() || null,
       deliveryMode: formValues.deliveryMode,
       location: formValues.deliveryMode === 'Offline' ? formValues.location.trim() : null,
-      durationMinutes: formValues.durationMinutes as 30 | 45 | 60 | 90 | 120,
-      pointCost: formValues.pointCost,
+      durationOptions: formValues.durationOptions,
       scheduledAt: scheduledDate.toISOString(),
     })
   }
@@ -251,39 +261,34 @@ export function CreateSessionOfferPage() {
                 />
               </label>
 
-              <label className="profile-field">
-                <span>Thời lượng</span>
-                <select
-                  onChange={(event) =>
-                    setFormValues((current) => ({
-                      ...current,
-                      durationMinutes: Number(event.target.value) as 30 | 45 | 60 | 90 | 120,
-                    }))
-                  }
-                  value={formValues.durationMinutes}
-                >
-                  <option value={30}>30 phút</option>
-                  <option value={45}>45 phút</option>
-                  <option value={60}>60 phút</option>
-                  <option value={90}>90 phút</option>
-                  <option value={120}>120 phút</option>
-                </select>
-              </label>
-
-              <label className="profile-field">
-                <span>Số điểm</span>
-                <input
-                  min={1}
-                  onChange={(event) =>
-                    setFormValues((current) => ({
-                      ...current,
-                      pointCost: Number(event.target.value),
-                    }))
-                  }
-                  type="number"
-                  value={formValues.pointCost}
-                />
-              </label>
+              <div className="profile-field full">
+                <span className="profile-field-label">Thời lượng cho phép *</span>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', margin: '0 0 0.5rem' }}>
+                  Người học sẽ chọn một trong các thời lượng này khi đặt buổi học. Giá sẽ được tính tự động.
+                </p>
+                <div className="session-duration-options">
+                  {ALLOWED_DURATIONS.map((d) => {
+                    const selected = formValues.durationOptions.includes(d)
+                    return (
+                      <button
+                        className={`session-duration-option ${selected ? 'active' : ''}`}
+                        key={d}
+                        onClick={() =>
+                          setFormValues((current) => ({
+                            ...current,
+                            durationOptions: selected
+                              ? current.durationOptions.filter((o) => o !== d)
+                              : [...current.durationOptions, d].sort((a, b) => a - b),
+                          }))
+                        }
+                        type="button"
+                      >
+                        {d} phút
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
 
               <label className="profile-field full">
                 <span>Mô tả buổi học</span>
@@ -303,7 +308,8 @@ export function CreateSessionOfferPage() {
           <ul>
             <li>Đặt tên kỹ năng rõ như người học thường tìm kiếm.</li>
             <li>Nêu ngắn gọn đầu ra sau buổi học thay vì mô tả quá dài.</li>
-            <li>Chọn thời gian thực sự sẵn sàng để tránh phải hủy buổi học.</li>
+            <li>Chọn nhiều thời lượng để người học linh hoạt hơn khi đặt lịch.</li>
+            <li>Giá sẽ được hệ thống tính tự động dựa trên kỹ năng và chứng chỉ của bạn.</li>
           </ul>
         </aside>
       </section>
@@ -339,10 +345,14 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
       }),
   })
 
+  const [bookingTarget, setBookingTarget] = useState<SessionDto | null>(null)
+
   const bookMutation = useMutation({
-    mutationFn: (sessionId: string) => sessionsApi.book(sessionId),
+    mutationFn: ({ sessionId, payload }: { sessionId: string; payload: BookSessionRequest }) =>
+      sessionsApi.book(sessionId, payload),
     onSuccess: async (bookedSession) => {
-      showToast({ kind: 'success', message: 'Đăng ký thành công. Ví điểm sẽ được cập nhật.' })
+      showToast({ kind: 'success', message: 'Đặt buổi học thành công. Ví điểm sẽ được cập nhật.' })
+      setBookingTarget(null)
       await Promise.all([
         invalidateSessionQueries(queryClient, bookedSession.sessionId),
         invalidateWalletQueries(queryClient),
@@ -480,7 +490,9 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
               <section className="session-empty-state">
                 <h3>Chưa có buổi học nào phù hợp.</h3>
                 <p>
-                  Hiện chưa có buổi học nào khớp với bộ lọc bạn đang chọn.
+                  {mode === 'learning'
+                    ? 'Bạn chưa đặt buổi học nào.'
+                    : 'Bạn chưa tạo lịch học nào.'}
                 </p>
               </section>
             ) : (
@@ -488,15 +500,26 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
                 {sessions.map((item) => (
                   <SessionCard
                     canBook={false}
-                    isBooking={bookMutation.isPending && bookMutation.variables === item.sessionId}
+                    isBooking={bookMutation.isPending && bookMutation.variables?.sessionId === item.sessionId}
                     key={item.sessionId}
-                    onBook={() => bookMutation.mutate(item.sessionId)}
+                    onBook={() => setBookingTarget(item)}
                     session={item}
                     viewerId={session.userId}
                   />
                 ))}
               </div>
             )}
+
+            {bookingTarget ? (
+              <DurationPickerModal
+                isPending={bookMutation.isPending}
+                onClose={() => setBookingTarget(null)}
+                onConfirm={(dur) =>
+                  bookMutation.mutate({ sessionId: bookingTarget.sessionId, payload: { selectedDurationMinutes: dur } })
+                }
+                session={bookingTarget}
+              />
+            ) : null}
 
             <PaginationControls currentPage={page} onPageChange={setPage} totalPages={totalPages} />
           </>
@@ -523,6 +546,14 @@ function SessionCard({
   const isOnline = session.deliveryMode === 'Online'
   const canJoin = isOnline && session.jitsiRoomId !== null
   const joinUrl = session.jitsiRoomId ? buildJitsiUrl(session.jitsiRoomId) : null
+  const isFormula = session.pricingModel === 'FormulaV1'
+  const preview = session.pricingPreview
+  const priceLabel =
+    isFormula && preview && session.selectedDurationMinutes === null
+      ? preview.minLearnerChargePoints === preview.maxLearnerChargePoints
+        ? `${preview.minLearnerChargePoints} điểm`
+        : `${preview.minLearnerChargePoints} – ${preview.maxLearnerChargePoints} điểm`
+      : formatSessionPoints(session.pointCost)
   const companionQuery = useQuery({
     queryKey: [...profileKeys.user(session.companionId), 'session-card'],
     queryFn: () => profileApi.getUserProfile(session.companionId),
@@ -541,7 +572,7 @@ function SessionCard({
             {isOnline ? <Video size={12} /> : <MapPin size={12} />}
             {isOnline ? 'Online' : 'Trực tiếp'}
           </span>
-          <span className="session-cost-chip">{formatSessionPoints(session.pointCost)}</span>
+          <span className="session-cost-chip">{priceLabel}</span>
         </div>
       </div>
 
@@ -576,7 +607,13 @@ function SessionCard({
         </div>
         <div>
           <dt>Thời lượng</dt>
-          <dd>{session.durationMinutes} phút</dd>
+          <dd>
+            {isFormula && session.selectedDurationMinutes
+              ? `${session.selectedDurationMinutes} phút (đã chọn)`
+              : isFormula && session.durationOptions.length > 0
+              ? session.durationOptions.map((d) => `${d} ph`).join(' / ')
+              : `${session.durationMinutes} phút`}
+          </dd>
         </div>
         <div>
           <dt>Vai trò của bạn</dt>
@@ -632,7 +669,7 @@ function TeachingSoftGate() {
           </p>
         </div>
         <div className="profile-hero-actions">
-          <Link className="button primary" to="/teach/onboarding">
+          <Link className="button primary" to="/dashboard/profile?intent=teach">
             Hoàn thiện hồ sơ dạy học
           </Link>
         </div>
@@ -714,8 +751,88 @@ function createInitialOfferForm() {
     deliveryMode: '' as SessionDeliveryMode | '',
     location: '',
     description: '',
-    durationMinutes: 60 as 30 | 45 | 60 | 90 | 120,
-    pointCost: 100,
+    durationOptions: [60] as AllowedDurationMinutes[],
     scheduledAt: toDateTimeLocalValue(new Date(Date.now() + 24 * 60 * 60 * 1000)),
   }
 }
+
+// ── Duration Picker Modal ──────────────────────────────────────────────────────
+
+function DurationPickerModal({
+  session,
+  isPending,
+  onConfirm,
+  onClose,
+}: {
+  session: SessionDto
+  isPending: boolean
+  onConfirm: (duration: AllowedDurationMinutes) => void
+  onClose: () => void
+}) {
+  const [selected, setSelected] = useState<AllowedDurationMinutes | null>(
+    session.durationOptions.length === 1 ? (session.durationOptions[0] as AllowedDurationMinutes) : null,
+  )
+  const preview = session.pricingPreview
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Chọn thời lượng buổi học</h3>
+          <button aria-label="Đóng" className="modal-close" onClick={onClose} type="button">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="modal-body">
+          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
+            Kỹ năng: <strong>{session.skill}</strong>
+          </p>
+
+          {preview ? (
+            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
+              Dự kiến chi phí:{' '}
+              <strong>
+                {preview.minLearnerChargePoints === preview.maxLearnerChargePoints
+                  ? `${preview.minLearnerChargePoints} điểm`
+                  : `${preview.minLearnerChargePoints} – ${preview.maxLearnerChargePoints} điểm`}
+              </strong>
+            </p>
+          ) : null}
+
+          <div className="session-duration-options">
+            {session.durationOptions.map((d) => (
+              <button
+                className={`session-duration-option ${selected === d ? 'active' : ''}`}
+                key={d}
+                onClick={() => setSelected(d as AllowedDurationMinutes)}
+                type="button"
+              >
+                {d} phút
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="modal-footer">
+          <button className="button secondary" disabled={isPending} onClick={onClose} type="button">
+            Hủy
+          </button>
+          <button
+            className="button primary"
+            disabled={selected === null || isPending}
+            onClick={() => selected !== null && onConfirm(selected)}
+            type="button"
+          >
+            {isPending ? <LoaderCircle className="spin" size={16} /> : null}
+            Xác nhận đặt lịch
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// helper tạm cho type narrowing
+function _unused(_p: SessionPricingPreviewDto | null) { return _p }
+void _unused

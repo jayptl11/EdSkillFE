@@ -7,8 +7,8 @@ const MAX_SKILLS_PER_LIST = 20
 const MAX_SKILL_LENGTH = 50
 const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
 const ALLOWED_AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
-const MAX_DEGREE_SIZE_BYTES = 10 * 1024 * 1024
-const ALLOWED_DEGREE_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
+const MAX_CREDENTIAL_SIZE_BYTES = 10 * 1024 * 1024
+const ALLOWED_CREDENTIAL_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
 
 export type ProfileFieldErrors = Partial<Record<ProfileField, string>>
 
@@ -16,9 +16,9 @@ export function toProfileFormValues(profile: ProfileDto): ProfileFormValues {
   return {
     displayName: profile.displayName ?? '',
     bio: profile.bio ?? '',
-    dateOfBirth: profile.dateOfBirth ?? '',
+    dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.slice(0, 10) : '',
     phone: profile.phone ?? '',
-    degreeUrl: profile.degreeUrl,
+    credentialUrls: profile.credentialUrls ?? [],
     skillsToTeach: profile.skillsToTeach ?? [],
     skillsToLearn: profile.skillsToLearn ?? [],
     isPublic: profile.isPublic,
@@ -26,6 +26,10 @@ export function toProfileFormValues(profile: ProfileDto): ProfileFormValues {
   }
 }
 
+/**
+ * Partial update – chỉ gửi field có thay đổi so với initial.
+ * BE dùng presence để quyết định update hay bỏ qua.
+ */
 export function buildProfileUpdatePayload(
   current: ProfileFormValues,
   initial: ProfileFormValues,
@@ -36,55 +40,46 @@ export function buildProfileUpdatePayload(
   const initialDisplayName = initial.displayName.trim()
   if (currentDisplayName !== initialDisplayName) {
     payload.displayName = currentDisplayName
-    payload.hasDisplayName = true
   }
 
   const currentBio = current.bio.trim()
   const initialBio = initial.bio.trim()
   if (currentBio !== initialBio) {
     payload.bio = currentBio || null
-    payload.hasBio = true
   }
 
   if (current.dateOfBirth !== initial.dateOfBirth) {
     payload.dateOfBirth = current.dateOfBirth || null
-    payload.hasDateOfBirth = true
   }
 
   const currentPhone = current.phone.trim()
   const initialPhone = initial.phone.trim()
   if (currentPhone !== initialPhone) {
     payload.phone = currentPhone || null
-    payload.hasPhone = true
   }
 
-  if (current.degreeUrl !== initial.degreeUrl) {
-    payload.degreeUrl = current.degreeUrl
-    payload.hasDegreeUrl = true
+  if (!areStringArraysEqual(current.credentialUrls, initial.credentialUrls)) {
+    payload.credentialUrls = current.credentialUrls.length > 0 ? current.credentialUrls : null
   }
 
   const currentTeach = normalizeSkills(current.skillsToTeach)
   const initialTeach = normalizeSkills(initial.skillsToTeach)
   if (!areStringArraysEqual(currentTeach, initialTeach)) {
     payload.skillsToTeach = currentTeach
-    payload.hasSkillsToTeach = true
   }
 
   const currentLearn = normalizeSkills(current.skillsToLearn)
   const initialLearn = normalizeSkills(initial.skillsToLearn)
   if (!areStringArraysEqual(currentLearn, initialLearn)) {
     payload.skillsToLearn = currentLearn
-    payload.hasSkillsToLearn = true
   }
 
   if (current.isPublic !== initial.isPublic) {
     payload.isPublic = current.isPublic
-    payload.hasIsPublic = true
   }
 
   if (current.avatarUrl !== initial.avatarUrl) {
     payload.avatarUrl = current.avatarUrl
-    payload.hasAvatarUrl = true
   }
 
   return payload
@@ -169,17 +164,20 @@ export function validateAvatarFile(file: File) {
   return ''
 }
 
-export function validateDegreeFile(file: File) {
-  if (!ALLOWED_DEGREE_TYPES.has(file.type)) {
-    return 'Bằng cấp chỉ hỗ trợ định dạng PDF, JPG, PNG hoặc WEBP.'
+export function validateCredentialFile(file: File) {
+  if (!ALLOWED_CREDENTIAL_TYPES.has(file.type)) {
+    return 'Chứng chỉ chỉ hỗ trợ định dạng PDF, JPG, PNG hoặc WEBP.'
   }
 
-  if (file.size > MAX_DEGREE_SIZE_BYTES) {
-    return 'Tệp bằng cấp phải nhỏ hơn hoặc bằng 10 MB.'
+  if (file.size > MAX_CREDENTIAL_SIZE_BYTES) {
+    return 'Tệp chứng chỉ phải nhỏ hơn hoặc bằng 10 MB.'
   }
 
   return ''
 }
+
+/** @deprecated Dùng validateCredentialFile thay thế */
+export const validateDegreeFile = validateCredentialFile
 
 export function normalizeSkills(skills: string[]) {
   const uniqueSkills = new Set<string>()
@@ -271,7 +269,7 @@ function mapApiPropertyToField(property?: string): ProfileField | null {
     Bio: 'bio',
     DateOfBirth: 'dateOfBirth',
     Phone: 'phone',
-    DegreeUrl: 'degreeUrl',
+    CredentialUrls: 'credentialUrls',
     SkillsToTeach: 'skillsToTeach',
     SkillsToLearn: 'skillsToLearn',
     AvatarUrl: 'avatarUrl',

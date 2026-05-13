@@ -21,13 +21,11 @@ import { useAppStore } from '../../store/useAppStore'
 import { SkillAutocomplete } from '../skills/SkillAutocomplete'
 import {
   clearSavedAvatar,
-  clearSavedDegree,
   profileApi,
   profileKeys,
   requestAvatarUploadUrl,
-  requestDegreeUploadUrl,
+  requestCredentialUploadUrl,
   saveAvatarUrl,
-  saveDegreeUrl,
   uploadFileToPresignedUrl,
 } from './profileApi'
 import {
@@ -37,7 +35,7 @@ import {
   getRoleBadgeLabel,
   toProfileFormValues,
   validateAvatarFile,
-  validateDegreeFile,
+  validateCredentialFile,
   validateProfileForm,
   type ProfileFieldErrors,
 } from './profileUtils'
@@ -48,7 +46,7 @@ const emptyForm: ProfileFormValues = {
   bio: '',
   dateOfBirth: '',
   phone: '',
-  degreeUrl: null,
+  credentialUrls: [],
   skillsToTeach: [],
   skillsToLearn: [],
   isPublic: true,
@@ -70,7 +68,7 @@ export function OwnerProfilePage() {
   const [fieldErrors, setFieldErrors] = useState<ProfileFieldErrors>({})
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
-  const [isUploadingDegree, setIsUploadingDegree] = useState(false)
+  const [isUploadingCredential, setIsUploadingCredential] = useState(false)
 
   const profileQuery = useQuery({
     queryKey: profileKeys.me(),
@@ -253,22 +251,24 @@ export function OwnerProfilePage() {
     }
   }
 
-  async function handleDegreeChange(file: File) {
-    const validationMessage = validateDegreeFile(file)
+  async function handleCredentialChange(file: File) {
+    const validationMessage = validateCredentialFile(file)
     if (validationMessage) {
       throw new Error(validationMessage)
     }
 
-    const uploadMeta = await requestDegreeUploadUrl(file)
+    const uploadMeta = await requestCredentialUploadUrl(file)
     await uploadFileToPresignedUrl(uploadMeta.uploadUrl, file)
 
-    setFormValues((current) => ({ ...current, degreeUrl: uploadMeta.publicUrl }))
-
-    const profile = await saveDegreeUrl(uploadMeta.publicUrl)
-    applyProfileSnapshot(profile)
+    // Thêm URL mới vào array credentialUrls
+    const newUrl = uploadMeta.publicUrl
+    const updated = await profileApi.updateMyProfile({
+      credentialUrls: [...(formValues.credentialUrls), newUrl],
+    })
+    applyProfileSnapshot(updated)
   }
 
-  const handleDegreeInputChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleCredentialInputChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     event.target.value = ''
 
@@ -276,40 +276,40 @@ export function OwnerProfilePage() {
       return
     }
 
-    const previousDegreeUrl = formValues.degreeUrl
-
-    setIsUploadingDegree(true)
-    clearFieldError('degreeUrl')
+    setIsUploadingCredential(true)
+    clearFieldError('credentialUrls')
 
     try {
-      await handleDegreeChange(file)
-      showToast({ kind: 'success', message: 'Bằng cấp đã được tải lên thành công.' })
+      await handleCredentialChange(file)
+      showToast({ kind: 'success', message: 'Chứng chỉ đã được tải lên thành công.' })
     } catch (error) {
-      setFormValues((current) => ({ ...current, degreeUrl: previousDegreeUrl }))
       showToast({
         kind: 'error',
         message:
           error instanceof Error
             ? error.message
-            : 'Tải bằng cấp thất bại. Vui lòng thử lại.',
+            : 'Tải chứng chỉ thất bại. Vui lòng thử lại.',
       })
     } finally {
-      setIsUploadingDegree(false)
+      setIsUploadingCredential(false)
     }
   }
 
-  const handleRemoveDegree = async () => {
-    setIsUploadingDegree(true)
-    clearFieldError('degreeUrl')
+  const handleRemoveCredential = async (urlToRemove: string) => {
+    setIsUploadingCredential(true)
+    clearFieldError('credentialUrls')
 
     try {
-      const profile = await clearSavedDegree()
-      applyProfileSnapshot(profile)
-      showToast({ kind: 'success', message: 'Bằng cấp đã được xóa khỏi hồ sơ.' })
+      const nextUrls = formValues.credentialUrls.filter((u) => u !== urlToRemove)
+      const updated = await profileApi.updateMyProfile({
+        credentialUrls: nextUrls.length > 0 ? nextUrls : null,
+      })
+      applyProfileSnapshot(updated)
+      showToast({ kind: 'success', message: 'Chứng chỉ đã được xóa khỏi hồ sơ.' })
     } catch (error) {
       showToast({ kind: 'error', message: getErrorMessage(error) })
     } finally {
-      setIsUploadingDegree(false)
+      setIsUploadingCredential(false)
     }
   }
 
@@ -610,45 +610,52 @@ export function OwnerProfilePage() {
 
                 <Field
                   className="full"
-                  error={fieldErrors.degreeUrl}
-                  helper="Tải lên bằng cấp hoặc chứng chỉ (PDF, JPG, PNG, WEBP). Tối đa 10 MB."
-                  label="Bằng cấp / Chứng chỉ"
+                  error={fieldErrors.credentialUrls}
+                  helper="Tải lên bằng cấp hoặc chứng chỉ (PDF, JPG, PNG, WEBP). Tối đa 10 MB mỗi tệp."
+                  label="Chứng chỉ / Bằng cấp"
                 >
                   <input
                     accept="application/pdf,image/jpeg,image/png,image/webp"
                     className="profile-file-input"
-                    onChange={handleDegreeInputChange}
+                    onChange={handleCredentialInputChange}
                     ref={degreeFileInputRef}
                     type="file"
                   />
                   <div className="profile-avatar-actions">
                     <button
                       className="button secondary"
-                      disabled={isUploadingDegree}
+                      disabled={isUploadingCredential}
                       onClick={() => degreeFileInputRef.current?.click()}
                       type="button"
                     >
-                      {isUploadingDegree ? <LoaderCircle className="spin" size={18} /> : <Upload size={18} />}
-                      {isUploadingDegree ? 'Đang tải...' : formValues.degreeUrl ? 'Thay đổi' : 'Tải lên'}
+                      {isUploadingCredential ? <LoaderCircle className="spin" size={18} /> : <Upload size={18} />}
+                      {isUploadingCredential ? 'Đang tải...' : 'Tải lên chứng chỉ'}
                     </button>
-                    {formValues.degreeUrl ? (
-                      <button
-                        className="button secondary ghost"
-                        disabled={isUploadingDegree}
-                        onClick={() => {
-                          void handleRemoveDegree()
-                        }}
-                        type="button"
-                      >
-                        <Trash2 size={18} />
-                        Xóa
-                      </button>
-                    ) : null}
                   </div>
-                  {formValues.degreeUrl ? (
-                    <a className="profile-degree-link" href={formValues.degreeUrl} rel="noopener noreferrer" target="_blank">
-                      Xem bằng cấp đã tải lên
-                    </a>
+                  {formValues.credentialUrls.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
+                      {formValues.credentialUrls.map((url, idx) => (
+                        <div key={url} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <a
+                            className="profile-degree-link"
+                            href={url}
+                            rel="noopener noreferrer"
+                            target="_blank"
+                          >
+                            Chứng chỉ #{idx + 1}
+                          </a>
+                          <button
+                            className="button secondary ghost"
+                            disabled={isUploadingCredential}
+                            onClick={() => void handleRemoveCredential(url)}
+                            style={{ padding: '4px 8px', fontSize: '12px' }}
+                            type="button"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   ) : null}
                 </Field>
               </div>

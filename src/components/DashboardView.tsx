@@ -53,7 +53,7 @@ export function DashboardShell({
         ))}
       </motion.section>
       <section className="learning-summary">
-        <div className="next-step-card">
+        <Link className="next-step-card" to="/dashboard/profile">
           <span className="summary-icon">
             <CalendarCheck2 size={22} />
           </span>
@@ -64,7 +64,7 @@ export function DashboardShell({
           <span className="summary-progress">
             <span />
           </span>
-        </div>
+        </Link>
         <div className="session-panel">
           <h2>Thông tin tài khoản</h2>
           <dl>

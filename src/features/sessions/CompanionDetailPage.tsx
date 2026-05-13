@@ -13,7 +13,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { getErrorMessage } from '../../api/client'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
-import { formatSessionDateTime, formatSessionPoints } from '../sessions/sessionUtils'
+import { formatSessionDateTime } from '../sessions/sessionUtils'
 import { companionApi, companionKeys } from '../sessions/companionApi'
 import type { SessionDeliveryMode } from '../sessions/types'
 
@@ -156,6 +156,13 @@ export function CompanionDetailPage() {
                 <div className="session-card-grid" style={{ marginTop: '1rem' }}>
                   {companion.sessions.map((s) => {
                     const isOnline = s.deliveryMode === 'Online'
+                    const isFormula = s.pricingModel === 'FormulaV1'
+                    const preview = s.pricingPreview
+                    const priceLabel = isFormula && preview
+                      ? preview.minLearnerChargePoints === preview.maxLearnerChargePoints
+                        ? `${preview.minLearnerChargePoints} điểm`
+                        : `${preview.minLearnerChargePoints} – ${preview.maxLearnerChargePoints} điểm`
+                      : `${s.pointCost} điểm`
                     return (
                       <article className="session-card" key={s.sessionId}>
                         <div className="session-card-top">
@@ -163,7 +170,7 @@ export function CompanionDetailPage() {
                             {isOnline ? <Video size={12} /> : <MapPin size={12} />}
                             {isOnline ? 'Online' : 'Trực tiếp'}
                           </span>
-                          <span className="session-cost-chip">{formatSessionPoints(s.pointCost)}</span>
+                          <span className="session-cost-chip">{priceLabel}</span>
                         </div>
                         <p>{s.description || 'Người dạy chưa thêm mô tả.'}</p>
                         {!isOnline && s.location ? (
@@ -184,7 +191,17 @@ export function CompanionDetailPage() {
                           </div>
                           <div>
                             <dt>Thời lượng</dt>
-                            <dd>{s.durationMinutes} phút</dd>
+                            <dd>
+                              {isFormula && s.durationOptions.length > 0 ? (
+                                <span style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                  {s.durationOptions.map((d) => (
+                                    <span className="session-duration-chip" key={d}>{d} ph</span>
+                                  ))}
+                                </span>
+                              ) : (
+                                `${s.durationMinutes} phút`
+                              )}
+                            </dd>
                           </div>
                         </dl>
                         <div className="session-card-actions">

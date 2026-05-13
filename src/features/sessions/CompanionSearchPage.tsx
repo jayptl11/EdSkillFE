@@ -191,6 +191,19 @@ export function CompanionSearchPage() {
                       <p className="discovery-hero-bio">
                         {companion.bio || 'Hồ sơ đang được cập nhật. Giáo viên chưa có thông tin giới thiệu chi tiết.'}
                       </p>
+                      <div className="discovery-hero-pricing">
+                        {companion.pricingPreview ? (
+                          companion.pricingPreview.minLearnerChargePoints === companion.pricingPreview.maxLearnerChargePoints ? (
+                            <span className="session-cost-chip">{companion.pricingPreview.minLearnerChargePoints} điểm</span>
+                          ) : (
+                            <span className="session-cost-chip">
+                              {companion.pricingPreview.minLearnerChargePoints} – {companion.pricingPreview.maxLearnerChargePoints} điểm
+                            </span>
+                          )
+                        ) : (
+                          <span className="session-cost-chip">từ {companion.lowestPointCost} điểm</span>
+                        )}
+                      </div>
                     </div>
                   </Link>
                 </article>

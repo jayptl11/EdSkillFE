@@ -10,8 +10,28 @@ export type SessionStatus =
 
 export type SessionDeliveryMode = 'Online' | 'Offline'
 
+export type SessionPricingModel = 'FormulaV1' | 'LegacyManual'
+
 export type SessionRoleFilter = 'learner' | 'companion'
 export type SessionActorRole = SessionRoleFilter | 'viewer'
+
+export interface SessionPricingPreviewDto {
+  minCompanionPayoutPoints: number
+  maxCompanionPayoutPoints: number
+  minLearnerChargePoints: number
+  maxLearnerChargePoints: number
+  minPlatformFeePoints: number
+  maxPlatformFeePoints: number
+}
+
+export interface SessionPricingBreakdownDto {
+  learnerChargePoints: number
+  companionPayoutPoints: number
+  platformFeePoints: number
+  skillBasePoints: number | null
+  credentialBonusPoints: number | null
+  durationMultiplierPercent: number | null
+}
 
 export interface SessionDto {
   sessionId: string
@@ -23,6 +43,11 @@ export interface SessionDto {
   location: string | null
   durationMinutes: number
   pointCost: number
+  pricingModel: SessionPricingModel
+  durationOptions: number[]
+  selectedDurationMinutes: number | null
+  pricingPreview: SessionPricingPreviewDto | null
+  pricingBreakdown: SessionPricingBreakdownDto | null
   scheduledAt: string
   status: SessionStatus
   jitsiRoomId: string | null
@@ -53,14 +78,19 @@ export interface CreateSessionPayload {
   scheduledAt: string
 }
 
+export type AllowedDurationMinutes = 30 | 45 | 60 | 90 | 120
+
 export interface CreateSessionRequest {
   skillId: string
   description?: string | null
   deliveryMode: SessionDeliveryMode
   location?: string | null
-  durationMinutes: 30 | 45 | 60 | 90 | 120
-  pointCost: number
+  durationOptions: AllowedDurationMinutes[]
   scheduledAt: string
+}
+
+export interface BookSessionRequest {
+  selectedDurationMinutes: AllowedDurationMinutes
 }
 
 export interface SessionsListParams {

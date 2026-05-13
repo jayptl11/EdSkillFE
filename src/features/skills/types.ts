@@ -12,6 +12,7 @@ export interface SearchSkillsParams {
 }
 
 export interface AdminSkill extends SkillOption {
+  basePointCost: number
   aliases: string[]
   isActive: boolean
 }
@@ -23,15 +24,17 @@ export interface GetAdminSkillsParams {
 
 export interface CreateAdminSkillPayload {
   name: string
-  slug?: string
-  category?: string
-  aliases?: string[]
+  slug?: string | null
+  category?: string | null
+  basePointCost: number
+  aliases?: string[] | null
 }
 
 export interface UpdateAdminSkillPayload {
   name?: string
   slug?: string
-  category?: string
-  aliases?: string[]
+  category?: string | null
+  basePointCost?: number
+  aliases?: string[] | null
   isActive?: boolean
 }

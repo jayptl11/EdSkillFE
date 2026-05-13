@@ -9,6 +9,7 @@ import {
   RefreshCcw,
   Star,
   Video,
+  X,
   XCircle,
 } from 'lucide-react'
 import { Link, Navigate, useParams } from 'react-router-dom'
@@ -31,7 +32,7 @@ import {
 } from './sessionUtils'
 import { sessionsApi, sessionKeys } from './sessionsApi'
 import { reviewApi } from './reviewApi'
-import type { SessionDto, SessionStatusDto } from './types'
+import type { AllowedDurationMinutes, BookSessionRequest, SessionDto, SessionStatusDto } from './types'
 
 export function SessionDetailPage() {
   const { sessionId = '' } = useParams()
@@ -67,9 +68,18 @@ export function SessionDetailPage() {
     }
   }, [detailQuery.data, queryClient, sessionId, statusQuery.data])
 
+  const [bookingOpen, setBookingOpen] = useState(false)
+
   const bookMutation = useMutation({
-    mutationFn: () => sessionsApi.book(sessionId),
-    onSuccess: handleWalletSessionSuccess('Đăng ký buổi học thành công.'),
+    mutationFn: (payload: BookSessionRequest) => sessionsApi.book(sessionId, payload),
+    onSuccess: async (updated) => {
+      setBookingOpen(false)
+      showToast({ kind: 'success', message: 'Đặt buổi học thành công. Ví điểm sẽ được cập nhật.' })
+      await Promise.all([
+        invalidateSessionQueries(queryClient, updated.sessionId),
+        invalidateWalletQueries(queryClient),
+      ])
+    },
     onError: handleActionError,
   })
 
@@ -145,7 +155,8 @@ export function SessionDetailPage() {
   }
 
   return (
-    <MotionPage className="page dashboard-page profile-page session-hub-page">
+    <>
+      <MotionPage className="page dashboard-page profile-page session-hub-page">
       <SiteHeader />
       <section className="dashboard-hero profile-hero">
         <div>
@@ -270,7 +281,7 @@ export function SessionDetailPage() {
 
               <div className="session-action-stack">
                 {canBookSession(sessionData, authSession.userId) && authSession.roles.includes('learner') ? (
-                  <button className="button primary" disabled={bookMutation.isPending} onClick={() => bookMutation.mutate()} type="button">
+                  <button className="button primary" disabled={bookMutation.isPending} onClick={() => setBookingOpen(true)} type="button">
                     {bookMutation.isPending ? <LoaderCircle className="spin" size={18} /> : 'Đăng ký'}
                   </button>
                 ) : null}
@@ -398,9 +409,18 @@ export function SessionDetailPage() {
         </section>
       ) : null}
     </MotionPage>
+
+      {bookingOpen && sessionData ? (
+        <SessionDetailBookModal
+          isPending={bookMutation.isPending}
+          onClose={() => setBookingOpen(false)}
+          onConfirm={(dur) => bookMutation.mutate({ selectedDurationMinutes: dur })}
+          session={sessionData}
+        />
+      ) : null}
+    </>
   )
 }
-
 function DetailItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
@@ -437,6 +457,11 @@ const emptySession: SessionDto = {
   location: null,
   durationMinutes: 0,
   pointCost: 0,
+  pricingModel: 'LegacyManual',
+  durationOptions: [],
+  selectedDurationMinutes: null,
+  pricingPreview: null,
+  pricingBreakdown: null,
   scheduledAt: new Date(0).toISOString(),
   status: 'Available',
   jitsiRoomId: null,
@@ -450,6 +475,85 @@ const emptySession: SessionDto = {
   disbursedAt: null,
   createdAt: new Date(0).toISOString(),
   updatedAt: new Date(0).toISOString(),
+}
+
+// ─── Detail Book Modal ──────────────────────────────────────────────────────
+
+function SessionDetailBookModal({
+  session,
+  isPending,
+  onConfirm,
+  onClose,
+}: {
+  session: SessionDto
+  isPending: boolean
+  onConfirm: (duration: AllowedDurationMinutes) => void
+  onClose: () => void
+}) {
+  const [selected, setSelected] = useState<AllowedDurationMinutes | null>(
+    session.durationOptions.length === 1 ? (session.durationOptions[0] as AllowedDurationMinutes) : null,
+  )
+  const preview = session.pricingPreview
+  const isFormula = session.pricingModel === 'FormulaV1'
+
+  // LegacyManual hoặc không có options: không cần modal, confirm với durationMinutes cố định
+  if (!isFormula || session.durationOptions.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Chọn thời lượng buổi học</h3>
+          <button aria-label="Đóng" className="modal-close" onClick={onClose} type="button">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="modal-body">
+          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
+            Kỹ năng: <strong>{session.skill}</strong>
+          </p>
+          {preview ? (
+            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
+              Dự kiến chi phí:{' '}
+              <strong>
+                {preview.minLearnerChargePoints === preview.maxLearnerChargePoints
+                  ? `${preview.minLearnerChargePoints} điểm`
+                  : `${preview.minLearnerChargePoints} – ${preview.maxLearnerChargePoints} điểm`}
+              </strong>
+            </p>
+          ) : null}
+          <div className="session-duration-options">
+            {session.durationOptions.map((d) => (
+              <button
+                className={`session-duration-option ${selected === d ? 'active' : ''}`}
+                key={d}
+                onClick={() => setSelected(d as AllowedDurationMinutes)}
+                type="button"
+              >
+                {d} phút
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="button secondary" disabled={isPending} onClick={onClose} type="button">
+            Hủy
+          </button>
+          <button
+            className="button primary"
+            disabled={selected === null || isPending}
+            onClick={() => selected !== null && onConfirm(selected)}
+            type="button"
+          >
+            {isPending ? <LoaderCircle className="spin" size={16} /> : null}
+            Xác nhận đặt lịch
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ─── Review Form ────────────────────────────────────────────────────────────
