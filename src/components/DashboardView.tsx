@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarCheck2, Clock3, LogOut, Sparkles, type LucideIcon } from 'lucide-react'
+import { CalendarCheck2, Clock3, Sparkles, type LucideIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { SiteHeader } from './Brand'
 import { MotionPage } from './MotionPage'

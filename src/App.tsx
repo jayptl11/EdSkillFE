@@ -15,7 +15,6 @@ import {
   getErrorMessage,
   isApiError,
   login,
-  logout,
   normalizeSession,
   register,
   resendOtp,
@@ -346,7 +345,7 @@ function LoginPage() {
       const response = await login({ identifier: identifier.trim(), password })
       setSession(normalizeSession(response))
       rememberIntent(intent)
-      navigate(getPostAuthRoute(intent), { replace: true })
+      navigate(getPostAuthRoute(), { replace: true })
     } catch (error) {
       showToast({ kind: 'error', message: getErrorMessage(error) })
     } finally {
@@ -1067,7 +1066,7 @@ function buildIntentSearch(intent: SignupIntent) {
   return intent === 'teach' ? '?intent=teach' : ''
 }
 
-function getPostAuthRoute(intent: SignupIntent) {
+function getPostAuthRoute() {
   return '/dashboard'
 }
 
