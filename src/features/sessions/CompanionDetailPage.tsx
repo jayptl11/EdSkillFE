@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   AlertCircle,
+  Award,
   CalendarDays,
   LoaderCircle,
-  MapPin,
   Star,
   UserRound,
   Video,
@@ -15,30 +15,38 @@ import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { formatSessionDateTime } from '../sessions/sessionUtils'
 import { companionApi, companionKeys } from '../sessions/companionApi'
-import type { SessionDeliveryMode } from '../sessions/types'
+import type { CredentialCountGroup } from '../sessions/companionApi'
 
 export function CompanionDetailPage() {
   const { companionId = '' } = useParams()
   const [searchParams] = useSearchParams()
   const [reviewPage, setReviewPage] = useState(1)
 
+  // Đọc skill + 3 filter params từ URL (được truyền từ search page)
   const skillId = searchParams.get('skillId') ?? ''
-  const deliveryMode = (searchParams.get('deliveryMode') ?? '') as SessionDeliveryMode | ''
-  const location = searchParams.get('location') ?? ''
+  const minimumDurationMinutes = searchParams.get('minimumDurationMinutes')
+    ? (Number(searchParams.get('minimumDurationMinutes')) as 30 | 45 | 60 | 90 | 120)
+    : undefined
+  const maxLearnerChargePoints = searchParams.get('maxLearnerChargePoints')
+    ? Number(searchParams.get('maxLearnerChargePoints'))
+    : undefined
+  const credentialCountGroup = (searchParams.get('credentialCountGroup') as CredentialCountGroup | null) ?? undefined
 
   const detailQuery = useQuery({
     queryKey: companionKeys.detail(companionId, {
       skillId,
-      deliveryMode: deliveryMode || undefined,
-      location: location || undefined,
+      minimumDurationMinutes,
+      maxLearnerChargePoints,
+      credentialCountGroup,
       reviewPage,
       reviewLimit: 10,
     }),
     queryFn: () =>
       companionApi.getDetail(companionId, {
         skillId,
-        deliveryMode: deliveryMode || undefined,
-        location: location || undefined,
+        minimumDurationMinutes,
+        maxLearnerChargePoints,
+        credentialCountGroup,
         reviewPage,
         reviewLimit: 10,
       }),
@@ -63,6 +71,7 @@ export function CompanionDetailPage() {
     <MotionPage className="page dashboard-page profile-page session-hub-page">
       <SiteHeader />
 
+      {/* ── Page header ── */}
       <section className="dashboard-hero profile-hero">
         <div>
           <span className="eyebrow">
@@ -78,6 +87,7 @@ export function CompanionDetailPage() {
         </div>
       </section>
 
+      {/* ── Loading ── */}
       {detailQuery.isLoading ? (
         <section className="profile-state-card">
           <LoaderCircle className="spin" size={24} />
@@ -85,6 +95,7 @@ export function CompanionDetailPage() {
         </section>
       ) : null}
 
+      {/* ── Error ── */}
       {detailQuery.isError ? (
         <section className="profile-state-card error">
           <AlertCircle size={22} />
@@ -92,10 +103,12 @@ export function CompanionDetailPage() {
         </section>
       ) : null}
 
+      {/* ── Content ── */}
       {companion ? (
         <section className="session-detail-layout">
-          {/* ── Header ── */}
           <article className="profile-form-card session-detail-card">
+
+            {/* ── Profile header ── */}
             <div className="session-teacher-row" style={{ marginBottom: '1.5rem' }}>
               {companion.avatarUrl ? (
                 <img
@@ -114,9 +127,18 @@ export function CompanionDetailPage() {
                 <p style={{ margin: '0.25rem 0 0', color: 'var(--color-text-secondary)' }}>
                   {companion.bio || 'Hồ sơ đang được cập nhật'}
                 </p>
+
+                {/* Credential badge */}
+                {companion.credentialCount > 0 ? (
+                  <div className="companion-credential-badge" style={{ marginTop: '0.5rem' }}>
+                    <Award size={14} />
+                    <span>{companion.credentialCount} chứng chỉ đã xác minh</span>
+                  </div>
+                ) : null}
               </div>
             </div>
 
+            {/* ── Stats ── */}
             <dl className="session-detail-grid">
               <div>
                 <dt>Đánh giá</dt>
@@ -133,6 +155,7 @@ export function CompanionDetailPage() {
               </div>
             </dl>
 
+            {/* ── Kỹ năng ── */}
             {companion.skillsToTeach.length > 0 ? (
               <div style={{ marginTop: '1rem' }}>
                 <p style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
@@ -146,40 +169,43 @@ export function CompanionDetailPage() {
               </div>
             ) : null}
 
-            {/* ── Lịch học phù hợp ── */}
+            {/* ── Lịch học ── */}
             {companion.sessions.length > 0 ? (
               <div style={{ marginTop: '2rem' }}>
                 <h3>Lịch học đang mở</h3>
                 <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
-                  Chỉ hiển thị lịch khớp với kỹ năng và hình thức bạn đang tìm.
+                  Chỉ hiển thị lịch khớp với kỹ năng và điều kiện bạn đang tìm.
                 </p>
                 <div className="session-card-grid" style={{ marginTop: '1rem' }}>
                   {companion.sessions.map((s) => {
-                    const isOnline = s.deliveryMode === 'Online'
                     const isFormula = s.pricingModel === 'FormulaV1'
-                    const preview = s.pricingPreview
-                    const priceLabel = isFormula && preview
-                      ? preview.minLearnerChargePoints === preview.maxLearnerChargePoints
-                        ? `${preview.minLearnerChargePoints} điểm`
-                        : `${preview.minLearnerChargePoints} – ${preview.maxLearnerChargePoints} điểm`
+                    const hasDurationPricing = isFormula && s.durationPricingOptions.length > 0
+
+                    // Giá hiển thị: lấy từ durationPricingOptions nếu formula, fallback pointCost
+                    const priceLabel = hasDurationPricing
+                      ? (() => {
+                          const points = s.durationPricingOptions.map((o) => o.learnerChargePoints)
+                          const min = Math.min(...points)
+                          const max = Math.max(...points)
+                          return min === max ? `${min} điểm` : `${min} – ${max} điểm`
+                        })()
                       : `${s.pointCost} điểm`
+
                     return (
                       <article className="session-card" key={s.sessionId}>
                         <div className="session-card-top">
-                          <span className={`session-delivery-badge ${isOnline ? 'online' : 'offline'}`}>
-                            {isOnline ? <Video size={12} /> : <MapPin size={12} />}
-                            {isOnline ? 'Online' : 'Trực tiếp'}
+                          {/* Chỉ online — không render offline badge */}
+                          <span className="session-delivery-badge online">
+                            <Video size={12} />
+                            Online
                           </span>
                           <span className="session-cost-chip">{priceLabel}</span>
                         </div>
+
                         <p>{s.description || 'Người dạy chưa thêm mô tả.'}</p>
-                        {!isOnline && s.location ? (
-                          <div className="session-location-row">
-                            <MapPin size={13} />
-                            <span>{s.location}</span>
-                          </div>
-                        ) : null}
+
                         <dl className="session-card-meta">
+                          {/* Thời gian */}
                           <div>
                             <dt>Thời gian</dt>
                             <dd>
@@ -189,21 +215,27 @@ export function CompanionDetailPage() {
                               </span>
                             </dd>
                           </div>
+
+                          {/* Thời lượng — dùng durationPricingOptions nếu formula */}
                           <div>
                             <dt>Thời lượng</dt>
                             <dd>
-                              {isFormula && s.durationOptions.length > 0 ? (
-                                <span style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                  {s.durationOptions.map((d) => (
-                                    <span className="session-duration-chip" key={d}>{d} ph</span>
+                              {hasDurationPricing ? (
+                                <div className="session-duration-pricing-list">
+                                  {s.durationPricingOptions.map((opt) => (
+                                    <span className="session-duration-price-chip" key={opt.durationMinutes}>
+                                      <span className="duration-label">{opt.durationMinutes} ph</span>
+                                      <span className="duration-price">{opt.learnerChargePoints} đ</span>
+                                    </span>
                                   ))}
-                                </span>
+                                </div>
                               ) : (
                                 `${s.durationMinutes} phút`
                               )}
                             </dd>
                           </div>
                         </dl>
+
                         <div className="session-card-actions">
                           <Link className="button primary" to={`/dashboard/skills/${s.sessionId}`}>
                             Đặt buổi học
@@ -284,6 +316,7 @@ export function CompanionDetailPage() {
                 </div>
               ) : null}
             </div>
+
           </article>
         </section>
       ) : null}
