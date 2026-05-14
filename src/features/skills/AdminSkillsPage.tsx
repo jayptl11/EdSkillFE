@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { createElement, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
@@ -19,6 +19,12 @@ import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
 import { useAppStore } from '../../store/useAppStore'
 import { skillApi, skillKeys } from './skillApi'
+import {
+  getSkillIcon,
+  isValidSkillIconKey,
+  normalizeSkillIconKey,
+  resolveSkillIcon,
+} from './skillIcons'
 import type { AdminSkill, CreateAdminSkillPayload, UpdateAdminSkillPayload } from './types'
 
 const SEARCH_DEBOUNCE_MS = 250
@@ -27,6 +33,7 @@ interface SkillFormValues {
   name: string
   slug: string
   category: string
+  iconKey: string
   basePointCost: number
   aliases: string[]
   isActive: boolean
@@ -36,6 +43,7 @@ const emptyForm: SkillFormValues = {
   name: '',
   slug: '',
   category: '',
+  iconKey: '',
   basePointCost: 0,
   aliases: [],
   isActive: true,
@@ -122,6 +130,12 @@ export function AdminSkillsPage() {
   }
 
   const isSaving = createSkillMutation.isPending || updateSkillMutation.isPending
+  const normalizedFormIconKey = normalizeSkillIconKey(formValues.iconKey)
+  const iconKeyError =
+    normalizedFormIconKey && !isValidSkillIconKey(normalizedFormIconKey)
+      ? 'Icon key tối đa 50 ký tự và chỉ gồm chữ thường, số, dấu gạch ngang.'
+      : ''
+  const PreviewSkillIcon = normalizedFormIconKey ? resolveSkillIcon(normalizedFormIconKey) : null
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -132,15 +146,22 @@ export function AdminSkillsPage() {
       return
     }
 
+    if (iconKeyError) {
+      showToast({ kind: 'error', message: iconKeyError })
+      return
+    }
+
     if (!selectedSkill) {
       if (formValues.basePointCost <= 0) {
         showToast({ kind: 'error', message: 'Điểm cơ bản (Base Points) phải lớn hơn 0.' })
         return
       }
+
       createSkillMutation.mutate({
         name: trimmedName,
         slug: formValues.slug.trim() || undefined,
         category: formValues.category.trim() || undefined,
+        iconKey: normalizedFormIconKey ?? undefined,
         basePointCost: formValues.basePointCost,
         aliases: normalizeTags(formValues.aliases),
       })
@@ -173,19 +194,20 @@ export function AdminSkillsPage() {
     const confirmed = window.confirm(
       `Bạn có chắc chắn muốn xóa kỹ năng "${skill.name}"? Người dùng sẽ không thể chọn kỹ năng này nữa.`,
     )
+
     if (confirmed) {
       deleteSkillMutation.mutate(skill.id)
     }
   }
 
   const handleAddAlias = () => {
-    const normalized = aliasDraft.trim()
-    if (!normalized) {
+    const normalizedAlias = aliasDraft.trim()
+    if (!normalizedAlias) {
       return
     }
 
     const alreadyExists = formValues.aliases.some(
-      (alias) => alias.trim().toLowerCase() === normalized.toLowerCase(),
+      (alias) => alias.trim().toLowerCase() === normalizedAlias.toLowerCase(),
     )
 
     if (alreadyExists) {
@@ -195,7 +217,7 @@ export function AdminSkillsPage() {
 
     setFormValues((current) => ({
       ...current,
-      aliases: [...current.aliases, normalized],
+      aliases: [...current.aliases, normalizedAlias],
     }))
     setAliasDraft('')
   }
@@ -294,24 +316,23 @@ export function AdminSkillsPage() {
               ) : (
                 adminSkillsQuery.data.map((skill) => {
                   const isSelected = skill.id === selectedSkillId
+                  const SkillListIcon = getSkillIcon(skill.iconKey)
 
                   return (
-                    <article
-                      className={`admin-skill-item ${isSelected ? 'selected' : ''}`}
-                      key={skill.id}
-                    >
-                      <button
-                        className="admin-skill-main"
-                        onClick={() => handleSelectSkill(skill)}
-                        type="button"
-                      >
-                        <div className="admin-skill-copy">
-                          <strong>{skill.name}</strong>
-                          <span>{skill.slug}</span>
-                          <small>{skill.category || 'Uncategorized'}</small>
-                          <small style={{ color: 'var(--color-accent, #6366f1)', fontWeight: 600 }}>
-                            {skill.basePointCost} điểm cơ bản
-                          </small>
+                    <article className={`admin-skill-item ${isSelected ? 'selected' : ''}`} key={skill.id}>
+                      <button className="admin-skill-main" onClick={() => handleSelectSkill(skill)} type="button">
+                        <div className="admin-skill-main-copy">
+                          <span aria-hidden="true" className="admin-skill-icon">
+                            <SkillListIcon size={18} />
+                          </span>
+                          <div className="admin-skill-copy">
+                            <strong>{skill.name}</strong>
+                            <span>{skill.slug}</span>
+                            <small>{skill.category || 'Uncategorized'}</small>
+                            <small style={{ color: 'var(--color-accent, #6366f1)', fontWeight: 600 }}>
+                              {skill.basePointCost} điểm cơ bản
+                            </small>
+                          </div>
                         </div>
                         <span className={`admin-skill-status ${skill.isActive ? 'active' : 'inactive'}`}>
                           {skill.isActive ? 'Active' : 'Hidden'}
@@ -327,11 +348,7 @@ export function AdminSkillsPage() {
                           {skill.isActive ? <EyeOff size={16} /> : <Eye size={16} />}
                           {skill.isActive ? 'Ẩn' : 'Hiện'}
                         </button>
-                        <button
-                          className="button danger ghost"
-                          onClick={() => handleDelete(skill)}
-                          type="button"
-                        >
+                        <button className="button danger ghost" onClick={() => handleDelete(skill)} type="button">
                           <Trash2 size={16} />
                           Xóa
                         </button>
@@ -383,9 +400,7 @@ export function AdminSkillsPage() {
               <label className="profile-field">
                 <span>Category</span>
                 <input
-                  onChange={(event) =>
-                    setFormValues((current) => ({ ...current, category: event.target.value }))
-                  }
+                  onChange={(event) => setFormValues((current) => ({ ...current, category: event.target.value }))}
                   value={formValues.category}
                 />
               </label>
@@ -406,6 +421,52 @@ export function AdminSkillsPage() {
                 </small>
               </label>
 
+              <label className="profile-field full">
+                <span>Icon key</span>
+                <input
+                  onChange={(event) => setFormValues((current) => ({ ...current, iconKey: event.target.value }))}
+                  placeholder="Ví dụ: languages, code, book-open"
+                  value={formValues.iconKey}
+                />
+                <small style={{ color: 'var(--color-text-secondary)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                  Nhập mã icon do FE quy ước, ví dụ: languages, code, book-open.
+                </small>
+                {iconKeyError ? <p className="profile-field-error">{iconKeyError}</p> : null}
+              </label>
+
+              <div className="profile-field full">
+                <span className="profile-field-label">Preview icon</span>
+                <div className="admin-skill-icon-preview">
+                  {normalizedFormIconKey ? (
+                    PreviewSkillIcon ? (
+                      <div className="admin-skill-icon-preview-card">
+                        <span aria-hidden="true" className="admin-skill-icon large">
+                          {createElement(PreviewSkillIcon, { size: 20 })}
+                        </span>
+                        <div className="admin-skill-icon-preview-copy">
+                          <strong>{normalizedFormIconKey}</strong>
+                          <small>Preview từ local icon map.</small>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="admin-skill-icon-note">Không có preview cho icon key này trong local map.</p>
+                    )
+                  ) : (
+                    <p className="admin-skill-icon-note">Chưa chọn icon key.</p>
+                  )}
+
+                  {selectedSkill ? (
+                    <button
+                      className="button secondary ghost"
+                      onClick={() => setFormValues((current) => ({ ...current, iconKey: '' }))}
+                      type="button"
+                    >
+                      Clear icon
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
               <div className="profile-field admin-field-switch">
                 <span>Trạng thái hiển thị</span>
                 <label className="profile-switch">
@@ -423,8 +484,8 @@ export function AdminSkillsPage() {
                   <span className="profile-switch-copy">
                     <strong>{formValues.isActive ? 'Active' : 'Hidden'}</strong>
                     <small>
-                      Skill inactive sẽ không xuất hiện trong public search và không gắn mới vào
-                      profile được.
+                      Skill inactive sẽ không xuất hiện trong public search và không gắn mới vào profile
+                      được.
                     </small>
                   </span>
                 </label>
@@ -492,6 +553,7 @@ function toFormValues(skill: AdminSkill): SkillFormValues {
     name: skill.name,
     slug: skill.slug,
     category: skill.category ?? '',
+    iconKey: skill.iconKey ?? '',
     basePointCost: skill.basePointCost,
     aliases: skill.aliases ?? [],
     isActive: skill.isActive,
@@ -502,17 +564,23 @@ function buildSkillPatch(formValues: SkillFormValues, skill: AdminSkill): Update
   const payload: UpdateAdminSkillPayload = {}
   const normalizedAliases = normalizeTags(formValues.aliases)
   const currentAliases = normalizeTags(skill.aliases ?? [])
+  const normalizedIconKey = normalizeSkillIconKey(formValues.iconKey)
+  const currentIconKey = normalizeSkillIconKey(skill.iconKey)
 
   if (formValues.name.trim() !== skill.name) {
     payload.name = formValues.name.trim()
   }
 
   if (formValues.slug.trim() !== skill.slug) {
-    payload.slug = formValues.slug.trim()
+    payload.slug = formValues.slug.trim() || null
   }
 
   if ((formValues.category.trim() || '') !== (skill.category ?? '')) {
-    payload.category = formValues.category.trim()
+    payload.category = formValues.category.trim() || null
+  }
+
+  if (normalizedIconKey !== currentIconKey) {
+    payload.iconKey = normalizedIconKey
   }
 
   if (JSON.stringify(normalizedAliases) !== JSON.stringify(currentAliases)) {
@@ -535,18 +603,18 @@ function normalizeTags(values: string[]) {
   const normalizedValues: string[] = []
 
   for (const value of values) {
-    const normalized = value.trim()
-    if (!normalized) {
+    const normalizedValue = value.trim()
+    if (!normalizedValue) {
       continue
     }
 
-    const key = normalized.toLowerCase()
+    const key = normalizedValue.toLowerCase()
     if (deduped.has(key)) {
       continue
     }
 
     deduped.add(key)
-    normalizedValues.push(normalized)
+    normalizedValues.push(normalizedValue)
   }
 
   return normalizedValues

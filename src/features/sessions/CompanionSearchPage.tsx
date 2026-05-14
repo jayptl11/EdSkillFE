@@ -1,17 +1,14 @@
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   AlertCircle,
   Award,
-  BookOpen,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Clock,
-  Code,
   Coins,
-  Globe,
-  LineChart,
   LoaderCircle,
-  Palette,
   Star,
   UserRound,
   X,
@@ -20,17 +17,19 @@ import { Link } from 'react-router-dom'
 import { getErrorMessage } from '../../api/client'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
+import { skillApi, skillKeys } from '../skills/skillApi'
+import { getSkillIcon } from '../skills/skillIcons'
 import { SkillAutocomplete } from '../skills/SkillAutocomplete'
 import {
   companionApi,
   companionKeys,
   type CompanionSearchParams,
+  type CompanionValidationError,
   type CredentialCountGroup,
 } from '../sessions/companionApi'
 
-// ─── Constants ───────────────────────────────────────────────────────────────
-
 const COMPANION_LIMIT = 12
+const QUICK_SKILLS_WINDOW = 5
 
 const DURATION_OPTIONS: { value: 30 | 45 | 60 | 90 | 120; label: string }[] = [
   { value: 30, label: '30 phút' },
@@ -46,8 +45,6 @@ const CREDENTIAL_OPTIONS: { value: CredentialCountGroup; label: string }[] = [
   { value: 'Two', label: '2 chứng chỉ' },
   { value: 'ThreeOrMore', label: '3+ chứng chỉ' },
 ]
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function mapValidationError(errorCode: string): string {
   switch (errorCode) {
@@ -65,35 +62,50 @@ function mapValidationError(errorCode: string): string {
   }
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
-
 export function CompanionSearchPage() {
-  // Skill
   const [skillId, setSkillId] = useState('')
   const [skillName, setSkillName] = useState('')
-
-  // 3 filter mới
-  const [minimumDurationMinutes, setMinimumDurationMinutes] = useState<30 | 45 | 60 | 90 | 120 | undefined>(undefined)
-  const [maxLearnerChargePoints, setMaxLearnerChargePoints] = useState<string>('')
+  const [minimumDurationMinutes, setMinimumDurationMinutes] = useState<30 | 45 | 60 | 90 | 120 | undefined>(
+    undefined,
+  )
+  const [maxLearnerChargePoints, setMaxLearnerChargePoints] = useState('')
   const [credentialCountGroup, setCredentialCountGroup] = useState<CredentialCountGroup | undefined>(undefined)
-
-  // Dropdown state
   const [openDropdown, setOpenDropdown] = useState<'duration' | 'points' | 'credential' | null>(null)
+  const [searchParams, setSearchParams] = useState<CompanionSearchParams | null>(null)
+  const [quickSkillsStartIndex, setQuickSkillsStartIndex] = useState(0)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Close dropdown on outside click
   useEffect(() => {
-    if (!openDropdown) return
-    const handleClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+    if (!openDropdown) {
+      return
+    }
+
+    const handleClick = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setOpenDropdown(null)
       }
     }
+
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [openDropdown])
 
-  const hasActiveFilters = minimumDurationMinutes || (maxLearnerChargePoints && Number(maxLearnerChargePoints) > 0) || credentialCountGroup
+  const searchQuery = useQuery({
+    queryKey: companionKeys.search(searchParams!),
+    queryFn: () => companionApi.search(searchParams!),
+    enabled: searchParams !== null,
+  })
+
+  const quickSkillsQuery = useQuery({
+    queryKey: skillKeys.search({ limit: 100 }),
+    queryFn: () => skillApi.search({ limit: 100 }),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const hasActiveFilters =
+    minimumDurationMinutes ||
+    (maxLearnerChargePoints && Number(maxLearnerChargePoints) > 0) ||
+    credentialCountGroup
 
   const clearAllFilters = () => {
     setMinimumDurationMinutes(undefined)
@@ -102,19 +114,10 @@ export function CompanionSearchPage() {
     setOpenDropdown(null)
   }
 
-  // Search state
-  const [searchParams, setSearchParams] = useState<CompanionSearchParams | null>(null)
-
-  const searchQuery = useQuery({
-    queryKey: companionKeys.search(searchParams!),
-    queryFn: () => companionApi.search(searchParams!),
-    enabled: searchParams !== null,
-  })
-
-  // ─── Handlers ──────────────────────────────────────────────────────────
-
   const handleSearch = () => {
-    if (!skillId) return
+    if (!skillId) {
+      return
+    }
 
     const pointsNum = maxLearnerChargePoints ? Number(maxLearnerChargePoints) : undefined
 
@@ -140,54 +143,69 @@ export function CompanionSearchPage() {
   }
 
   const buildDetailLink = (companionId: string) => {
-    const qs = new URLSearchParams({ skillId })
-    if (minimumDurationMinutes) qs.set('minimumDurationMinutes', String(minimumDurationMinutes))
-    if (maxLearnerChargePoints && Number(maxLearnerChargePoints) > 0)
-      qs.set('maxLearnerChargePoints', maxLearnerChargePoints)
-    if (credentialCountGroup) qs.set('credentialCountGroup', credentialCountGroup)
-    return `/dashboard/companions/${companionId}?${qs.toString()}`
+    const queryString = new URLSearchParams({ skillId })
+
+    if (minimumDurationMinutes) {
+      queryString.set('minimumDurationMinutes', String(minimumDurationMinutes))
+    }
+
+    if (maxLearnerChargePoints && Number(maxLearnerChargePoints) > 0) {
+      queryString.set('maxLearnerChargePoints', maxLearnerChargePoints)
+    }
+
+    if (credentialCountGroup) {
+      queryString.set('credentialCountGroup', credentialCountGroup)
+    }
+
+    return `/dashboard/companions/${companionId}?${queryString.toString()}`
   }
 
-  // ─── Derived ───────────────────────────────────────────────────────────
-
   const companions = searchQuery.data?.data ?? []
+  const quickSkills = quickSkillsQuery.data ?? []
+  const visibleQuickSkills = quickSkills.slice(quickSkillsStartIndex, quickSkillsStartIndex + QUICK_SKILLS_WINDOW)
+  const canShowPreviousQuickSkills = quickSkillsStartIndex > 0
+  const canShowNextQuickSkills = quickSkillsStartIndex + QUICK_SKILLS_WINDOW < quickSkills.length
 
-  // Extract user-friendly error messages from 422
   const validationMessages: string[] = (() => {
-    if (!searchQuery.isError) return []
-    const err = searchQuery.error as any
-    if (err?.statusCode === 422 && Array.isArray(err?.errors)) {
-      return err.errors.map((e: any) => mapValidationError(e.errorCode))
+    if (!searchQuery.isError) {
+      return []
     }
+
+    const error = searchQuery.error as unknown as CompanionValidationError | undefined
+    if (error?.statusCode === 422 && Array.isArray(error?.errors)) {
+      return error.errors.map((item) => mapValidationError(item.errorCode))
+    }
+
     return []
   })()
-
-  // ─── Render ────────────────────────────────────────────────────────────
 
   return (
     <MotionPage className="page dashboard-page profile-page session-hub-page">
       <SiteHeader />
 
-      {/* ── Hero ── */}
       <section className="discovery-hero-section">
         <div className="discovery-hero-content">
           <h1>Tìm người dạy giỏi nhất</h1>
 
-          {/* Search pill */}
           <div className="discovery-search-pill">
             <div className="discovery-search-skill-wrap">
               <SkillAutocomplete
                 helperText=""
                 label=""
                 mode="single"
-                onRemove={() => { setSkillId(''); setSkillName('') }}
+                onRemove={() => {
+                  setSkillId('')
+                  setSkillName('')
+                }}
                 onSelect={(name) => setSkillName(name)}
-                onSelectWithId={(id, name) => { setSkillId(id); setSkillName(name) }}
+                onSelectWithId={(id, name) => {
+                  setSkillId(id)
+                  setSkillName(name)
+                }}
                 placeholder="Hãy thử học thêm..."
                 selectedSkills={skillName ? [skillName] : []}
               />
             </div>
-
 
             <button
               className="button primary discovery-search-btn"
@@ -199,9 +217,7 @@ export function CompanionSearchPage() {
             </button>
           </div>
 
-          {/* Chip filter bar */}
           <div className="discovery-chip-filters" ref={dropdownRef}>
-            {/* Duration chip */}
             <div className="dfilter-chip-wrap">
               <button
                 className={`dfilter-chip${minimumDurationMinutes ? ' dfilter-chip--active' : ''}`}
@@ -213,79 +229,93 @@ export function CompanionSearchPage() {
                 {minimumDurationMinutes ? (
                   <span
                     className="dfilter-chip-clear"
-                    onClick={(e) => { e.stopPropagation(); setMinimumDurationMinutes(undefined) }}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setMinimumDurationMinutes(undefined)
+                    }}
                   >
                     <X size={12} />
                   </span>
                 ) : (
-                  <ChevronDown size={13} className="dfilter-chip-chevron" />
+                  <ChevronDown className="dfilter-chip-chevron" size={13} />
                 )}
               </button>
-              {openDropdown === 'duration' && (
+
+              {openDropdown === 'duration' ? (
                 <div className="dfilter-dropdown">
                   <button
                     className={`dfilter-dropdown-opt${!minimumDurationMinutes ? ' dfilter-dropdown-opt--selected' : ''}`}
-                    onClick={() => { setMinimumDurationMinutes(undefined); setOpenDropdown(null) }}
+                    onClick={() => {
+                      setMinimumDurationMinutes(undefined)
+                      setOpenDropdown(null)
+                    }}
                     type="button"
                   >
                     Tất cả
                   </button>
-                  {DURATION_OPTIONS.map((o) => (
+                  {DURATION_OPTIONS.map((option) => (
                     <button
-                      className={`dfilter-dropdown-opt${minimumDurationMinutes === o.value ? ' dfilter-dropdown-opt--selected' : ''}`}
-                      key={o.value}
-                      onClick={() => { setMinimumDurationMinutes(o.value); setOpenDropdown(null) }}
+                      className={`dfilter-dropdown-opt${minimumDurationMinutes === option.value ? ' dfilter-dropdown-opt--selected' : ''}`}
+                      key={option.value}
+                      onClick={() => {
+                        setMinimumDurationMinutes(option.value)
+                        setOpenDropdown(null)
+                      }}
                       type="button"
                     >
-                      {o.label}
+                      {option.label}
                     </button>
                   ))}
                 </div>
-              )}
+              ) : null}
             </div>
 
-            {/* Points chip */}
             <div className="dfilter-chip-wrap">
               <button
-                className={`dfilter-chip${maxLearnerChargePoints && Number(maxLearnerChargePoints) > 0 ? ' dfilter-chip--active' : ''}`}
+                className={`dfilter-chip${
+                  maxLearnerChargePoints && Number(maxLearnerChargePoints) > 0 ? ' dfilter-chip--active' : ''
+                }`}
                 onClick={() => setOpenDropdown(openDropdown === 'points' ? null : 'points')}
                 type="button"
               >
                 <Coins size={14} />
-                <span>{maxLearnerChargePoints && Number(maxLearnerChargePoints) > 0 ? `≤ ${maxLearnerChargePoints} điểm` : 'Điểm tối đa'}</span>
+                <span>
+                  {maxLearnerChargePoints && Number(maxLearnerChargePoints) > 0
+                    ? `≤ ${maxLearnerChargePoints} điểm`
+                    : 'Điểm tối đa'}
+                </span>
                 {maxLearnerChargePoints && Number(maxLearnerChargePoints) > 0 ? (
                   <span
                     className="dfilter-chip-clear"
-                    onClick={(e) => { e.stopPropagation(); setMaxLearnerChargePoints('') }}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setMaxLearnerChargePoints('')
+                    }}
                   >
                     <X size={12} />
                   </span>
                 ) : (
-                  <ChevronDown size={13} className="dfilter-chip-chevron" />
+                  <ChevronDown className="dfilter-chip-chevron" size={13} />
                 )}
               </button>
-              {openDropdown === 'points' && (
+
+              {openDropdown === 'points' ? (
                 <div className="dfilter-dropdown dfilter-dropdown--input">
                   <label className="dfilter-dropdown-label">Nhập điểm tối đa</label>
                   <input
                     className="dfilter-dropdown-input"
                     min={1}
-                    onChange={(e) => setMaxLearnerChargePoints(e.target.value)}
+                    onChange={(event) => setMaxLearnerChargePoints(event.target.value)}
                     type="number"
                     value={maxLearnerChargePoints}
                   />
-                  <button
-                    className="dfilter-dropdown-apply"
-                    onClick={() => setOpenDropdown(null)}
-                    type="button"
-                  >
+                  <button className="dfilter-dropdown-apply" onClick={() => setOpenDropdown(null)} type="button">
                     Áp dụng
                   </button>
                 </div>
-              )}
+              ) : null}
             </div>
 
-            {/* Credential chip */}
             <div className="dfilter-chip-wrap">
               <button
                 className={`dfilter-chip${credentialCountGroup ? ' dfilter-chip--active' : ''}`}
@@ -293,87 +323,122 @@ export function CompanionSearchPage() {
                 type="button"
               >
                 <Award size={14} />
-                <span>{credentialCountGroup ? CREDENTIAL_OPTIONS.find(o => o.value === credentialCountGroup)?.label ?? 'Chứng chỉ' : 'Chứng chỉ'}</span>
+                <span>
+                  {credentialCountGroup
+                    ? CREDENTIAL_OPTIONS.find((option) => option.value === credentialCountGroup)?.label ?? 'Chứng chỉ'
+                    : 'Chứng chỉ'}
+                </span>
                 {credentialCountGroup ? (
                   <span
                     className="dfilter-chip-clear"
-                    onClick={(e) => { e.stopPropagation(); setCredentialCountGroup(undefined) }}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setCredentialCountGroup(undefined)
+                    }}
                   >
                     <X size={12} />
                   </span>
                 ) : (
-                  <ChevronDown size={13} className="dfilter-chip-chevron" />
+                  <ChevronDown className="dfilter-chip-chevron" size={13} />
                 )}
               </button>
-              {openDropdown === 'credential' && (
+
+              {openDropdown === 'credential' ? (
                 <div className="dfilter-dropdown">
                   <button
                     className={`dfilter-dropdown-opt${!credentialCountGroup ? ' dfilter-dropdown-opt--selected' : ''}`}
-                    onClick={() => { setCredentialCountGroup(undefined); setOpenDropdown(null) }}
+                    onClick={() => {
+                      setCredentialCountGroup(undefined)
+                      setOpenDropdown(null)
+                    }}
                     type="button"
                   >
                     Tất cả
                   </button>
-                  {CREDENTIAL_OPTIONS.map((o) => (
+                  {CREDENTIAL_OPTIONS.map((option) => (
                     <button
-                      className={`dfilter-dropdown-opt${credentialCountGroup === o.value ? ' dfilter-dropdown-opt--selected' : ''}`}
-                      key={o.value}
-                      onClick={() => { setCredentialCountGroup(o.value); setOpenDropdown(null) }}
+                      className={`dfilter-dropdown-opt${credentialCountGroup === option.value ? ' dfilter-dropdown-opt--selected' : ''}`}
+                      key={option.value}
+                      onClick={() => {
+                        setCredentialCountGroup(option.value)
+                        setOpenDropdown(null)
+                      }}
                       type="button"
                     >
-                      {o.label}
+                      {option.label}
                     </button>
                   ))}
                 </div>
-              )}
+              ) : null}
             </div>
 
-            {/* Clear all */}
-            {hasActiveFilters && (
+            {hasActiveFilters ? (
               <button className="dfilter-clear-all" onClick={clearAllFilters} type="button">
                 <X size={14} />
                 <span>Xóa bộ lọc</span>
               </button>
-            )}
+            ) : null}
           </div>
 
-          {/* Quick skills */}
-          <div className="discovery-quick-skills">
-            <button className="quick-skill-chip" onClick={() => { setSkillId('Tiếng Anh'); setSkillName('Tiếng Anh') }} type="button">
-              <Globe size={18} />
-              <span>Tiếng Anh</span>
-            </button>
-            <button className="quick-skill-chip" onClick={() => { setSkillId('Lập trình'); setSkillName('Lập trình') }} type="button">
-              <Code size={18} />
-              <span>Lập trình</span>
-            </button>
-            <button className="quick-skill-chip" onClick={() => { setSkillId('Thiết kế'); setSkillName('Thiết kế') }} type="button">
-              <Palette size={18} />
-              <span>Thiết kế</span>
-            </button>
-            <button className="quick-skill-chip" onClick={() => { setSkillId('Toán học'); setSkillName('Toán học') }} type="button">
-              <LineChart size={18} />
-              <span>Toán học</span>
-            </button>
-            <button className="quick-skill-chip" onClick={() => { setSkillId('Kỹ năng mềm'); setSkillName('Kỹ năng mềm') }} type="button">
-              <BookOpen size={18} />
-              <span>Kỹ năng mềm</span>
-            </button>
-          </div>
+          {!quickSkillsQuery.isLoading && !quickSkillsQuery.isError && visibleQuickSkills.length > 0 ? (
+            <div className="discovery-quick-skills">
+              <button
+                aria-hidden={!canShowPreviousQuickSkills}
+                aria-label="Hiển thị kỹ năng trước"
+                className={`quick-skill-chip quick-skill-chip-more ${!canShowPreviousQuickSkills ? 'is-hidden' : ''}`}
+                disabled={!canShowPreviousQuickSkills}
+                onClick={() => setQuickSkillsStartIndex((current) => Math.max(0, current - 1))}
+                type="button"
+              >
+                <ChevronLeft size={18} />
+              </button>
+
+              <div className="discovery-quick-skills-track">
+                {visibleQuickSkills.map((skill) => {
+                  const SkillIcon = getSkillIcon(skill.iconKey)
+
+                  return (
+                    <button
+                      className="quick-skill-chip"
+                      key={skill.id}
+                      onClick={() => {
+                        setSkillId(skill.id)
+                        setSkillName(skill.name)
+                      }}
+                      type="button"
+                    >
+                      <SkillIcon size={18} />
+                      <span>{skill.name}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              <button
+                aria-hidden={!canShowNextQuickSkills}
+                aria-label="Hiển thị thêm kỹ năng"
+                className={`quick-skill-chip quick-skill-chip-more ${!canShowNextQuickSkills ? 'is-hidden' : ''}`}
+                disabled={!canShowNextQuickSkills}
+                onClick={() => setQuickSkillsStartIndex((current) => current + 1)}
+                type="button"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          ) : null}
         </div>
       </section>
 
-      {/* ── Results ── */}
       {searchQuery.data || searchQuery.isError ? (
         <section className="session-board-shell" style={{ marginTop: '20px' }}>
-
-          {/* Validation errors từ BE */}
           {validationMessages.length > 0 ? (
             <section className="profile-state-card error">
               <AlertCircle size={20} />
               <div>
-                {validationMessages.map((msg, i) => (
-                  <p key={i} style={{ margin: '0.25rem 0' }}>{msg}</p>
+                {validationMessages.map((message, index) => (
+                  <p key={index} style={{ margin: '0.25rem 0' }}>
+                    {message}
+                  </p>
                 ))}
               </div>
             </section>
@@ -384,7 +449,6 @@ export function CompanionSearchPage() {
             </section>
           ) : null}
 
-          {/* Empty state */}
           {searchQuery.data && companions.length === 0 ? (
             <section className="session-empty-state">
               <h3>Không tìm thấy người dạy phù hợp.</h3>
@@ -392,7 +456,6 @@ export function CompanionSearchPage() {
             </section>
           ) : null}
 
-          {/* Companion cards */}
           {companions.length > 0 ? (
             <div
               className="discovery-hz-grid"
@@ -412,7 +475,8 @@ export function CompanionSearchPage() {
                     : `${companion.pricingPreview.minLearnerChargePoints} – ${companion.pricingPreview.maxLearnerChargePoints} điểm`
                   : `${companion.lowestPointCost} điểm`
 
-                const featuredSkill = companion.skillsToTeach?.[0] || skillName || 'Táº¥t cáº£ ká»¹ nÄƒng'
+                const featuredSkill = companion.skillsToTeach?.[0] || skillName || 'Tất cả kỹ năng'
+
                 return (
                   <article
                     className="discovery-hz-card"
@@ -424,31 +488,26 @@ export function CompanionSearchPage() {
                       minWidth: 0,
                     }}
                   >
-                    <Link
-                      className="discovery-hz-card-link"
-                      to={buildDetailLink(companion.companionId)}
-                    >
-                      {/* Image block */}
+                    <Link className="discovery-hz-card-link" to={buildDetailLink(companion.companionId)}>
                       <div className="discovery-hz-image">
                         {companion.avatarUrl ? (
                           <img alt={companion.displayName} src={companion.avatarUrl} />
                         ) : (
                           <div className="discovery-hz-placeholder">
-                            <UserRound size={48} color="#9ca3af" />
+                            <UserRound color="#9ca3af" size={48} />
                           </div>
                         )}
                       </div>
 
-                      {/* Info block */}
                       <div className="discovery-hz-info">
                         <div className="discovery-hz-header">
                           <span className="discovery-hz-points">{priceLabel}</span>
                         </div>
-                        
+
                         <div className="discovery-hz-name">
                           <strong>{companion.displayName}</strong>
                         </div>
-                        
+
                         <div className="discovery-hz-rating">
                           {companion.totalReviews > 0 ? (
                             <>
@@ -462,7 +521,7 @@ export function CompanionSearchPage() {
                         </div>
 
                         <div className="discovery-hz-skill" title={featuredSkill}>
-                           {companion.skillsToTeach?.[0] || skillName || 'Tất cả kỹ năng'}
+                          {featuredSkill}
                         </div>
 
                         <p className="discovery-hz-bio">
@@ -470,17 +529,27 @@ export function CompanionSearchPage() {
                         </p>
 
                         <div className="discovery-hz-tags">
-                           {companion.skillsToTeach?.slice(0, 3).map((s, idx) => (
-                             <span className="hz-tag" key={idx}>{s}</span>
-                           ))}
-                           {(!companion.skillsToTeach || companion.skillsToTeach.length === 0) && (
-                             <span className="hz-tag">Kỹ năng chung</span>
-                           )}
+                          {companion.skillsToTeach?.slice(0, 3).map((skill) => (
+                            <span className="hz-tag" key={skill}>
+                              {skill}
+                            </span>
+                          ))}
+                          {(!companion.skillsToTeach || companion.skillsToTeach.length === 0) && (
+                            <span className="hz-tag">Kỹ năng chung</span>
+                          )}
                         </div>
 
                         <div className="discovery-hz-actions">
                           <span className="hz-btn-view">Xem chi tiết</span>
-                          <span className="hz-btn-book" onClick={(e) => { e.preventDefault(); e.stopPropagation(); /* TODO booking */ }}>Đăng Kí</span>
+                          <span
+                            className="hz-btn-book"
+                            onClick={(event) => {
+                              event.preventDefault()
+                              event.stopPropagation()
+                            }}
+                          >
+                            Đăng Kí
+                          </span>
                         </div>
                       </div>
                     </Link>

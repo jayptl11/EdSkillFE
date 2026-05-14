@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, LoaderCircle, Search, X } from 'lucide-react'
 import { skillApi, skillKeys } from './skillApi'
+import { getSkillIcon } from './skillIcons'
 import type { SkillOption } from './types'
 
 const SEARCH_LIMIT = 20
@@ -43,15 +44,6 @@ export function SkillAutocomplete({
     return () => window.clearTimeout(timeoutId)
   }, [draft])
 
-  useEffect(() => {
-    if (mode === 'single' && !isOpen && selectedSkills[0] && draft !== selectedSkills[0]) {
-      setDraft(selectedSkills[0])
-    }
-    if (mode === 'single' && !isOpen && !selectedSkills[0] && draft) {
-      setDraft('')
-    }
-  }, [mode, isOpen, selectedSkills, draft])
-
   const searchQuery = useQuery({
     queryKey: skillKeys.search({ q: debouncedDraft, limit: SEARCH_LIMIT }),
     queryFn: () => skillApi.search({ q: debouncedDraft, limit: SEARCH_LIMIT }),
@@ -62,6 +54,7 @@ export function SkillAutocomplete({
   const options = (searchQuery.data ?? []).filter((option) => !selectedSet.has(option.name.toLowerCase()))
   const hasInteractiveOptions = options.length > 0
   const currentActiveIndex = activeIndex < options.length ? activeIndex : 0
+  const inputValue = mode === 'single' && !isOpen ? (selectedSkills[0] ?? '') : draft
 
   const addOption = (option: SkillOption) => {
     onSelect(option.name)
@@ -164,7 +157,7 @@ export function SkillAutocomplete({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             role="combobox"
-            value={draft}
+            value={inputValue}
           />
           <button
             aria-label="Hiển thị gợi ý kỹ năng"
@@ -190,22 +183,31 @@ export function SkillAutocomplete({
 
             {!searchQuery.isLoading ? (
               <div className="skill-autocomplete-list" id={listboxId} role="listbox">
-                {options.map((option, index) => (
-                  <button
-                    aria-selected={index === currentActiveIndex}
-                    className={`skill-autocomplete-option ${index === currentActiveIndex ? 'active' : ''}`}
-                    key={option.id}
-                    onMouseDown={(event) => {
-                      event.preventDefault()
-                      addOption(option)
-                    }}
-                    role="option"
-                    type="button"
-                  >
-                    <span>{option.name}</span>
-                    <small>{option.category || 'Uncategorized'}</small>
-                  </button>
-                ))}
+                {options.map((option, index) => {
+                  const SkillIcon = getSkillIcon(option.iconKey)
+
+                  return (
+                    <button
+                      aria-selected={index === currentActiveIndex}
+                      className={`skill-autocomplete-option ${index === currentActiveIndex ? 'active' : ''}`}
+                      key={option.id}
+                      onMouseDown={(event) => {
+                        event.preventDefault()
+                        addOption(option)
+                      }}
+                      role="option"
+                      type="button"
+                    >
+                      <span aria-hidden="true" className="skill-autocomplete-option-icon">
+                        <SkillIcon size={16} />
+                      </span>
+                      <span className="skill-autocomplete-option-copy">
+                        <span>{option.name}</span>
+                        <small>{option.category || 'Uncategorized'}</small>
+                      </span>
+                    </button>
+                  )
+                })}
 
                 {showEmptyState ? (
                   <div className="skill-autocomplete-state empty">

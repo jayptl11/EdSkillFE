@@ -1,8 +1,11 @@
+export type SkillIconKey = string | null
+
 export interface SkillOption {
   id: string
   name: string
   slug: string
   category: string | null
+  iconKey: SkillIconKey
 }
 
 export interface SearchSkillsParams {
@@ -26,14 +29,16 @@ export interface CreateAdminSkillPayload {
   name: string
   slug?: string | null
   category?: string | null
+  iconKey?: string | null
   basePointCost: number
   aliases?: string[] | null
 }
 
 export interface UpdateAdminSkillPayload {
   name?: string
-  slug?: string
+  slug?: string | null
   category?: string | null
+  iconKey?: string | null
   basePointCost?: number
   aliases?: string[] | null
   isActive?: boolean

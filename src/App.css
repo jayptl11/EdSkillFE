@@ -2429,12 +2429,14 @@
 .skill-autocomplete-state {
   width: 100%;
   display: grid;
-  gap: 4px;
+  gap: 12px;
   padding: 13px 16px;
   text-align: left;
 }
 
 .skill-autocomplete-option {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
   background: transparent;
   cursor: pointer;
   transition: background 0.16s ease;
@@ -2445,12 +2447,29 @@
   background: rgba(30, 136, 229, 0.08);
 }
 
-.skill-autocomplete-option span {
+.skill-autocomplete-option-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(30, 136, 229, 0.1);
+  color: var(--blue-dark);
+}
+
+.skill-autocomplete-option-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.skill-autocomplete-option-copy span {
   color: var(--sapphire);
   font-weight: 900;
 }
 
-.skill-autocomplete-option small,
+.skill-autocomplete-option-copy small,
 .skill-autocomplete-state span {
   color: var(--muted);
   font-weight: 700;
@@ -2736,7 +2755,33 @@
   cursor: pointer;
 }
 
+.admin-skill-main-copy {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.admin-skill-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(30, 136, 229, 0.12);
+  color: var(--blue-dark);
+}
+
+.admin-skill-icon.large {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+}
+
 .admin-skill-copy {
+  min-width: 0;
   display: grid;
   gap: 4px;
 }
@@ -2789,6 +2834,43 @@
   border-radius: 14px;
   padding: 16px;
   gap: 14px;
+}
+
+.admin-skill-icon-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border: 1px dashed rgba(0, 45, 114, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.58);
+  padding: 14px 16px;
+}
+
+.admin-skill-icon-preview-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-skill-icon-preview-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-skill-icon-preview-copy strong {
+  color: var(--sapphire);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.admin-skill-icon-preview-copy small,
+.admin-skill-icon-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .admin-field-switch .profile-switch {
@@ -4516,17 +4598,26 @@
 }
 
 .discovery-quick-skills {
-  display: flex;
+  width: min(100%, 920px);
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 72px;
+  align-items: stretch;
   gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
   margin-top: 16px;
+}
+
+.discovery-quick-skills-track {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .quick-skill-chip {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   background: white;
   border: 1px solid rgba(0, 45, 114, 0.06);
@@ -4534,11 +4625,39 @@
   padding: 16px 20px;
   min-width: 110px;
   color: var(--sapphire);
-  font-size: 13px;
-  font-weight: 800;
+  font: inherit;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 45, 114, 0.02);
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.quick-skill-chip span {
+  max-width: 100%;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.quick-skill-chip-more {
+  width: 72px;
+  min-width: 72px;
+  height: 72px;
+  min-height: 72px;
+  padding: 0;
+  gap: 0;
+  flex-direction: row;
+  flex-shrink: 0;
+}
+
+.quick-skill-chip-more.is-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.quick-skill-chip-more svg {
+  flex: 0 0 auto;
 }
 
 .quick-skill-chip:hover {
@@ -4549,6 +4668,29 @@
 }
 
 @media (max-width: 720px) {
+  .discovery-quick-skills {
+    grid-template-columns: 56px minmax(0, 1fr) 56px;
+    gap: 8px;
+  }
+
+  .discovery-quick-skills-track {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .quick-skill-chip {
+    min-width: 0;
+    padding: 14px 12px;
+  }
+
+  .quick-skill-chip-more {
+    width: 56px;
+    min-width: 56px;
+    height: 56px;
+    min-height: 56px;
+    padding: 0;
+  }
+
   .discovery-search-pill {
     flex-direction: column;
     border-radius: 20px;

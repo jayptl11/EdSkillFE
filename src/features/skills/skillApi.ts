@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '../../api/client'
+import { toQueryString } from '../../api/query'
 import type {
   AdminSkill,
   CreateAdminSkillPayload,
@@ -28,19 +29,4 @@ export const skillApi = {
 
   deleteAdminSkill: (skillId: string) =>
     apiDelete(`/api/admin/skills/${skillId}`, { auth: true }),
-}
-
-function toQueryString(params: object) {
-  const searchParams = new URLSearchParams()
-
-  for (const [key, value] of Object.entries(params)) {
-    if (value === undefined || value === '') {
-      continue
-    }
-
-    searchParams.set(key, String(value))
-  }
-
-  const query = searchParams.toString()
-  return query ? `?${query}` : ''
 }
