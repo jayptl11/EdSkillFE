@@ -14,8 +14,6 @@ import {
   Palette,
   Star,
   UserRound,
-  Heart,
-  Sparkles,
   X,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -396,7 +394,17 @@ export function CompanionSearchPage() {
 
           {/* Companion cards */}
           {companions.length > 0 ? (
-            <div className="discovery-hz-grid">
+            <div
+              className="discovery-hz-grid"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gridAutoFlow: 'row',
+                alignItems: 'stretch',
+                gap: '22px',
+                width: '100%',
+              }}
+            >
               {companions.map((companion) => {
                 const priceLabel = companion.pricingPreview
                   ? companion.pricingPreview.minLearnerChargePoints === companion.pricingPreview.maxLearnerChargePoints
@@ -404,8 +412,18 @@ export function CompanionSearchPage() {
                     : `${companion.pricingPreview.minLearnerChargePoints} – ${companion.pricingPreview.maxLearnerChargePoints} điểm`
                   : `${companion.lowestPointCost} điểm`
 
+                const featuredSkill = companion.skillsToTeach?.[0] || skillName || 'Táº¥t cáº£ ká»¹ nÄƒng'
                 return (
-                  <article className="discovery-hz-card" key={companion.companionId}>
+                  <article
+                    className="discovery-hz-card"
+                    key={companion.companionId}
+                    style={{
+                      gridColumn: 'auto / span 1',
+                      width: '100%',
+                      maxWidth: '100%',
+                      minWidth: 0,
+                    }}
+                  >
                     <Link
                       className="discovery-hz-card-link"
                       to={buildDetailLink(companion.companionId)}
@@ -443,7 +461,7 @@ export function CompanionSearchPage() {
                           )}
                         </div>
 
-                        <div className="discovery-hz-skill">
+                        <div className="discovery-hz-skill" title={featuredSkill}>
                            {companion.skillsToTeach?.[0] || skillName || 'Tất cả kỹ năng'}
                         </div>
 
