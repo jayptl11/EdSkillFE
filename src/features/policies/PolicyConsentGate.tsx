@@ -7,7 +7,7 @@ import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
 import { policyApi, policyKeys } from './policyApi'
-import { buildAcceptedPoliciesFromRequirements, getPolicyLabel } from './policyUtils'
+import { buildAcceptedPoliciesFromRequirements, getPolicyLabel, isRequiredConsentPolicyType } from './policyUtils'
 
 export function PolicyConsentGate({ children }: { children: ReactNode }) {
   const consentQuery = useQuery({
@@ -85,22 +85,32 @@ export function PolicyConsentGate({ children }: { children: ReactNode }) {
   }
 
   const pendingPolicies = getPendingPolicies(consentQuery.data?.requiredPolicies ?? [])
-  const modalKey = pendingPolicies
+  const actionablePolicies = pendingPolicies.filter((policy) => isRequiredConsentPolicyType(policy.policyType))
+
+  if (actionablePolicies.length === 0) {
+    console.warn('Policy consent gate received no actionable policies; rendering children to avoid blocking UI.', {
+      missingRequiredTypes: consentQuery.data?.missingRequiredTypes ?? [],
+      requiredPolicies: consentQuery.data?.requiredPolicies ?? [],
+    })
+    return children
+  }
+
+  const modalKey = actionablePolicies
     .map((policy) => `${policy.policyType}:${policy.requiredVersion}:${policy.acceptedVersion ?? 'none'}`)
     .join('|')
 
   return (
-    <>
-      {children}
-      <div className="policy-consent-overlay" role="presentation">
+    <MotionPage className="page dashboard-page policy-loading-page">
+      <SiteHeader />
+      <section className="policy-loading-shell">
         <PolicyConsentDialog
           acceptPending={acceptMutation.isPending}
           key={modalKey}
           onAccept={() => acceptMutation.mutate()}
-          policies={pendingPolicies}
+          policies={actionablePolicies}
         />
-      </div>
-    </>
+      </section>
+    </MotionPage>
   )
 }
 

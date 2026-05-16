@@ -1,28 +1,32 @@
-import { useState, type FormEvent } from 'react'
+﻿import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
   CalendarDays,
+  ChevronDown,
   Clock3,
   LoaderCircle,
   MapPin,
   Plus,
   RefreshCcw,
+  Search,
   Sparkles,
   UserRound,
   Video,
   X,
 } from 'lucide-react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { getErrorMessage } from '../../api/client'
+import { getErrorMessage, isApiError } from '../../api/client'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
 import { profileApi, profileKeys } from '../profile/profileApi'
 import { formatLastActive } from '../profile/profileUtils'
-import { SkillAutocomplete } from '../skills/SkillAutocomplete'
+import type { ProfileField, ProfileSkillDto } from '../profile/types'
+import { getSkillIcon } from '../skills/skillIcons'
 import { useAppStore } from '../../store/useAppStore'
 import {
+  buildCreateSessionPayload,
   buildJitsiUrl,
   formatSessionDateTime,
   formatSessionPoints,
@@ -38,7 +42,6 @@ import type {
   BookSessionRequest,
   CreateSessionRequest,
   DurationPricingOptionDto,
-  SessionDeliveryMode,
   SessionDto,
   SessionStatus,
 } from './types'
@@ -46,19 +49,21 @@ import type {
 const ALLOWED_DURATIONS: AllowedDurationMinutes[] = [30, 45, 60, 90, 120]
 
 type SessionBoardMode = 'learning' | 'teaching'
+type CreateSessionField = 'skillId' | 'durationOptions' | 'scheduledAt'
+type CreateSessionFieldErrors = Partial<Record<CreateSessionField, string>>
 
 const SESSION_LIMIT = 12
 
 const sessionStatusOptions: Array<{ label: string; value: SessionStatus | '' }> = [
-  { label: 'Tất cả trạng thái', value: '' },
-  { label: 'Đang mở đăng ký', value: 'Available' },
-  { label: 'Chờ xác nhận', value: 'Pending' },
-  { label: 'Đã xác nhận', value: 'Confirmed' },
-  { label: 'Đang diễn ra', value: 'InProgress' },
-  { label: 'Chờ xác nhận hoàn tất', value: 'PendingReview' },
-  { label: 'Đã hoàn tất', value: 'Completed' },
-  { label: 'Đã hủy', value: 'Cancelled' },
-  { label: 'Cần hỗ trợ', value: 'Disputed' },
+  { label: 'Táº¥t cáº£ tráº¡ng thÃ¡i', value: '' },
+  { label: 'Äang má»Ÿ Ä‘Äƒng kÃ½', value: 'Available' },
+  { label: 'Chá» xÃ¡c nháº­n', value: 'Pending' },
+  { label: 'ÄÃ£ xÃ¡c nháº­n', value: 'Confirmed' },
+  { label: 'Äang diá»…n ra', value: 'InProgress' },
+  { label: 'Chá» xÃ¡c nháº­n hoÃ n táº¥t', value: 'PendingReview' },
+  { label: 'ÄÃ£ hoÃ n táº¥t', value: 'Completed' },
+  { label: 'ÄÃ£ há»§y', value: 'Cancelled' },
+  { label: 'Cáº§n há»— trá»£', value: 'Disputed' },
 ]
 
 export function LearningSessionsPage() {
@@ -74,20 +79,59 @@ export function CreateSessionOfferPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [formValues, setFormValues] = useState(createInitialOfferForm)
+  const [fieldErrors, setFieldErrors] = useState<CreateSessionFieldErrors>({})
   const profileQuery = useQuery({
     queryKey: profileKeys.me(),
     queryFn: profileApi.getMyProfile,
     enabled: Boolean(session?.accessToken),
   })
+  const teachingSkills = profileQuery.data?.teachingSkills ?? []
+  const hasOwnedTeachingSkills = teachingSkills.length > 0
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateSessionRequest) => sessionsApi.create(payload),
     onSuccess: async (createdSession) => {
-      showToast({ kind: 'success', message: 'Buổi học đã được mở.' })
+      setFieldErrors({})
+      showToast({ kind: 'success', message: 'Tạo lịch học thành công.' })
       await invalidateSessionQueries(queryClient, createdSession.sessionId)
       navigate(`/dashboard/skills/${createdSession.sessionId}`)
     },
-    onError: (error) => {
+    onError: async (error) => {
+      if (isApiError(error)) {
+        if (error.code === 'COMPANION_PROFILE_INCOMPLETE') {
+          setFieldErrors({})
+          await profileQuery.refetch()
+          return
+        }
+
+        if (error.code === 'COMPANION_SKILL_NOT_OWNED' || error.code === 'SKILL_NOT_FOUND') {
+          setFieldErrors((current) => ({
+            ...current,
+            skillId:
+              error.code === 'COMPANION_SKILL_NOT_OWNED'
+                ? 'Bạn chỉ được mở buổi học với kỹ năng đang sở hữu trong hồ sơ dạy học.'
+                : 'Kỹ năng không tồn tại.',
+          }))
+          return
+        }
+
+        if (error.code === 'INVALID_DURATION_OPTIONS') {
+          setFieldErrors((current) => ({
+            ...current,
+            durationOptions: 'Chỉ được chọn 30, 45, 60, 90 hoặc 120 phút và không được trùng.',
+          }))
+          return
+        }
+
+        if (error.code === 'SESSION_TIME_CONFLICT') {
+          setFieldErrors((current) => ({
+            ...current,
+            scheduledAt: 'Khung giờ này trùng với lịch khác.',
+          }))
+          return
+        }
+      }
+
       showToast({ kind: 'error', message: getErrorMessage(error) })
     },
   })
@@ -112,52 +156,61 @@ export function CreateSessionOfferPage() {
     )
   }
 
-  if (profileQuery.data && !profileQuery.data.isCompanionOnboardingComplete) {
-    return <TeachingSoftGate />
+  if (profileQuery.isError) {
+    return (
+      <MotionPage className="page dashboard-page profile-page session-hub-page">
+        <SiteHeader />
+        <section className="profile-state-card error">
+          <AlertCircle size={24} />
+          <div>
+            <h2>Không thể tải hồ sơ dạy học</h2>
+            <p>{getErrorMessage(profileQuery.error)}</p>
+          </div>
+        </section>
+      </MotionPage>
+    )
+  }
+
+  if (!profileQuery.data) {
+    return null
+  }
+
+  if (!profileQuery.data.isCompanionOnboardingComplete) {
+    return <TeachingSoftGate missingFields={profileQuery.data.missingCompanionProfileFields} />
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setFieldErrors({})
+
+    if (!hasOwnedTeachingSkills) {
+      return
+    }
 
     if (!formValues.skillId) {
-      showToast({ kind: 'error', message: 'Hãy chọn kỹ năng cho buổi học này.' })
-      return
-    }
-
-    if (!formValues.deliveryMode) {
-      showToast({ kind: 'error', message: 'Vui lòng chọn hình thức học: Online hoặc Gặp trực tiếp.' })
-      return
-    }
-
-    if (formValues.deliveryMode === 'Offline' && !formValues.location.trim()) {
-      showToast({ kind: 'error', message: 'Vui lòng nhập địa điểm cho buổi học gặp trực tiếp.' })
-      return
-    }
-
-    if (formValues.durationOptions.length === 0) {
-      showToast({ kind: 'error', message: 'Vui lòng chọn ít nhất một thời lượng cho buổi học.' })
+      setFieldErrors({ skillId: 'Hãy chọn kỹ năng cho buổi học này.' })
       return
     }
 
     if (!formValues.scheduledAt) {
-      showToast({ kind: 'error', message: 'Vui lòng chọn thời gian bắt đầu.' })
+      setFieldErrors({ scheduledAt: 'Vui lòng chọn thời gian bắt đầu.' })
       return
     }
 
     const scheduledDate = new Date(formValues.scheduledAt)
     if (scheduledDate <= new Date()) {
-      showToast({ kind: 'error', message: 'Thời gian bắt đầu phải là thời gian trong tương lai.' })
+      setFieldErrors({ scheduledAt: 'Thời gian bắt đầu phải là thời gian trong tương lai.' })
       return
     }
 
-    createMutation.mutate({
-      skillId: formValues.skillId,
-      description: formValues.description.trim() || null,
-      deliveryMode: formValues.deliveryMode,
-      location: formValues.deliveryMode === 'Offline' ? formValues.location.trim() : null,
-      durationOptions: formValues.durationOptions,
-      scheduledAt: scheduledDate.toISOString(),
-    })
+    createMutation.mutate(
+      buildCreateSessionPayload({
+        selectedSkillId: formValues.skillId,
+        description: formValues.description,
+        selectedMaxDuration: formValues.selectedMaxDuration,
+        scheduledAtIso: scheduledDate.toISOString(),
+      }),
+    )
   }
 
   return (
@@ -170,10 +223,7 @@ export function CreateSessionOfferPage() {
             Mở buổi học mới
           </span>
           <h1>Tạo một buổi học rõ ràng để người học dễ quyết định đăng ký.</h1>
-          <p>
-            Nêu đúng kỹ năng, thời gian và mô tả ngắn gọn. Buổi học của bạn sẽ hiển thị trong khu
-            tìm buổi học ngay khi được mở.
-          </p>
+          <p>Nêu đúng kỹ năng, thời gian và mô tả ngắn gọn. Buổi học của bạn sẽ hiển thị trong khu tìm buổi học ngay khi được mở.</p>
         </div>
         <div className="profile-hero-actions">
           <Link className="button secondary" to="/dashboard/skills/teaching">
@@ -193,122 +243,94 @@ export function CreateSessionOfferPage() {
               <h2>Thông tin buổi học</h2>
             </div>
             <div className="profile-form-actions">
-              <button className="button primary" disabled={createMutation.isPending} type="submit">
-                {createMutation.isPending ? <LoaderCircle className="spin" size={18} /> : <Plus size={18} />}
-                Mở buổi học
-              </button>
+              {hasOwnedTeachingSkills ? (
+                <button className="button primary" disabled={createMutation.isPending} type="submit">
+                  {createMutation.isPending ? <LoaderCircle className="spin" size={18} /> : <Plus size={18} />}
+                  Mở buổi học
+                </button>
+              ) : (
+                <Link className="button secondary" to="/dashboard/profile?intent=teach">
+                  Cập nhật hồ sơ dạy học
+                </Link>
+              )}
             </div>
           </div>
 
           <section className="profile-section-card">
-            <div className="profile-form-grid">
-              <div className="profile-field full">
-                <SkillAutocomplete
-                  helperText="Chọn đúng kỹ năng để người học tìm thấy bạn dễ hơn."
-                  label="Kỹ năng *"
-                  onRemove={() => setFormValues((c) => ({ ...c, skillId: '', skillName: '' }))}
-                  onSelect={(name) => {
-                    // Lấy skillId từ API search khi user chọn
-                    // Dùng skillName để hiển thị, skillId để gửi lên server
-                    setFormValues((c) => ({ ...c, skillName: name, skillId: name }))
+            {hasOwnedTeachingSkills ? (
+              <div className="profile-form-grid">
+                <OwnedSkillPicker
+                  error={fieldErrors.skillId}
+                  onSelect={(skillId) => {
+                    setFieldErrors((current) => ({ ...current, skillId: undefined }))
+                    setFormValues((current) => ({ ...current, skillId }))
                   }}
-                  onSelectWithId={(id, name) => setFormValues((c) => ({ ...c, skillId: id, skillName: name }))}
-                  placeholder="Gõ tên kỹ năng để tìm kiếm..."
-                  selectedSkills={formValues.skillName ? [formValues.skillName] : []}
+                  options={teachingSkills}
+                  selectedSkillId={formValues.skillId}
                 />
-              </div>
 
-              <div className="profile-field full">
-                <span className="profile-field-label">Hình thức học *</span>
-                <div className="session-delivery-toggle">
-                  <button
-                    className={`session-delivery-option ${formValues.deliveryMode === 'Online' ? 'active' : ''}`}
-                    onClick={() => setFormValues((c) => ({ ...c, deliveryMode: 'Online', location: '' }))}
-                    type="button"
-                  >
-                    <Video size={16} />
-                    Online
-                  </button>
-                  <button
-                    className={`session-delivery-option ${formValues.deliveryMode === 'Offline' ? 'active' : ''}`}
-                    onClick={() => setFormValues((c) => ({ ...c, deliveryMode: 'Offline' }))}
-                    type="button"
-                  >
-                    <MapPin size={16} />
-                    Gặp trực tiếp
-                  </button>
-                </div>
-              </div>
-
-              {formValues.deliveryMode === 'Offline' ? (
-                <label className="profile-field full">
-                  <span>Địa điểm *</span>
+                <label className="profile-field">
+                  <span>Thời gian bắt đầu *</span>
                   <input
-                    maxLength={500}
-                    onChange={(event) => setFormValues((c) => ({ ...c, location: event.target.value }))}
-                    placeholder="Ví dụ: Quận 1, TP.HCM hoặc 123 Nguyễn Huệ, Q1"
-                    value={formValues.location}
+                    onChange={(event) => {
+                      setFieldErrors((current) => ({ ...current, scheduledAt: undefined }))
+                      setFormValues((current) => ({ ...current, scheduledAt: event.target.value }))
+                    }}
+                    type="datetime-local"
+                    value={formValues.scheduledAt}
+                  />
+                  {fieldErrors.scheduledAt ? <p className="profile-field-error">{fieldErrors.scheduledAt}</p> : null}
+                </label>
+
+                <div className="profile-field full">
+                  <span className="profile-field-label">Thời lượng tối đa *</span>
+                  <p className="profile-helper-copy">
+                    Chọn mốc lớn nhất bạn muốn mở. Hệ thống sẽ tự mở rộng các mốc ngắn hơn hợp lệ trong response.
+                  </p>
+                  <div className="session-duration-options">
+                    {ALLOWED_DURATIONS.map((duration) => {
+                      const selected = formValues.selectedMaxDuration === duration
+                      return (
+                        <button
+                          aria-pressed={selected}
+                          className={`session-duration-option ${selected ? 'active' : ''}`}
+                          key={duration}
+                          onClick={() => {
+                            setFieldErrors((current) => ({ ...current, durationOptions: undefined }))
+                            setFormValues((current) => ({ ...current, selectedMaxDuration: duration }))
+                          }}
+                          type="button"
+                        >
+                          {duration} phút
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {fieldErrors.durationOptions ? <p className="profile-field-error">{fieldErrors.durationOptions}</p> : null}
+                </div>
+
+                <label className="profile-field full">
+                  <span>Mô tả buổi học</span>
+                  <textarea
+                    onChange={(event) => setFormValues((current) => ({ ...current, description: event.target.value }))}
+                    placeholder="Bạn sẽ giúp người học đạt được điều gì trong buổi này?"
+                    rows={5}
+                    value={formValues.description}
                   />
                 </label>
-              ) : null}
-
-              <label className="profile-field">
-                <span>Thời gian bắt đầu *</span>
-                <input
-                  onChange={(event) => setFormValues((current) => ({ ...current, scheduledAt: event.target.value }))}
-                  type="datetime-local"
-                  value={formValues.scheduledAt}
-                />
-              </label>
-
-              <div className="profile-field full">
-                <span className="profile-field-label">Thời lượng cho phép *</span>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', margin: '0 0 0.5rem' }}>
-                  Người học sẽ chọn một trong các thời lượng này khi đặt buổi học. Giá sẽ được tính tự động.
-                </p>
-                <div className="session-duration-options">
-                  {ALLOWED_DURATIONS.map((d) => {
-                    const selected = formValues.durationOptions.includes(d)
-                    return (
-                      <button
-                        className={`session-duration-option ${selected ? 'active' : ''}`}
-                        key={d}
-                        onClick={() =>
-                          setFormValues((current) => ({
-                            ...current,
-                            durationOptions: selected
-                              ? current.durationOptions.filter((o) => o !== d)
-                              : [...current.durationOptions, d].sort((a, b) => a - b),
-                          }))
-                        }
-                        type="button"
-                      >
-                        {d} phút
-                      </button>
-                    )
-                  })}
-                </div>
               </div>
-
-              <label className="profile-field full">
-                <span>Mô tả buổi học</span>
-                <textarea
-                  onChange={(event) => setFormValues((current) => ({ ...current, description: event.target.value }))}
-                  placeholder="Bạn sẽ giúp người học đạt được điều gì trong buổi này?"
-                  rows={5}
-                  value={formValues.description}
-                />
-              </label>
-            </div>
+            ) : (
+              <CreateSessionEmptySkillsState />
+            )}
           </section>
         </form>
 
         <aside className="session-guide-card">
           <h3>Mẹo để buổi học dễ được chọn</h3>
           <ul>
-            <li>Đặt tên kỹ năng rõ như người học thường tìm kiếm.</li>
+            <li>Chỉ chọn kỹ năng đang có trong hồ sơ dạy học để người học tìm đúng chủ đề bạn đang mở.</li>
             <li>Nêu ngắn gọn đầu ra sau buổi học thay vì mô tả quá dài.</li>
-            <li>Chọn nhiều thời lượng để người học linh hoạt hơn khi đặt lịch.</li>
+            <li>Chọn mốc thời lượng lớn nhất phù hợp để hệ thống tự mở các lựa chọn ngắn hơn hợp lệ.</li>
             <li>Giá sẽ được hệ thống tính tự động dựa trên kỹ năng và chứng chỉ của bạn.</li>
           </ul>
         </aside>
@@ -316,7 +338,6 @@ export function CreateSessionOfferPage() {
     </MotionPage>
   )
 }
-
 function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
   const session = useAppStore((state) => state.session)
   const navigate = useNavigate()
@@ -351,7 +372,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
     mutationFn: ({ sessionId, payload }: { sessionId: string; payload: BookSessionRequest }) =>
       sessionsApi.book(sessionId, payload),
     onSuccess: async (bookedSession) => {
-      showToast({ kind: 'success', message: 'Đặt buổi học thành công. Ví điểm sẽ được cập nhật.' })
+      showToast({ kind: 'success', message: 'Äáº·t buá»•i há»c thÃ nh cÃ´ng. VÃ­ Ä‘iá»ƒm sáº½ Ä‘Æ°á»£c cáº­p nháº­t.' })
       setBookingTarget(null)
       await Promise.all([
         invalidateSessionQueries(queryClient, bookedSession.sessionId),
@@ -370,7 +391,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
         replace
         state={{
           intent: mode === 'teaching' ? 'teach' : undefined,
-          message: 'Vui lòng đăng nhập để tiếp tục.',
+          message: 'Vui lÃ²ng Ä‘Äƒng nháº­p Ä‘á»ƒ tiáº¿p tá»¥c.',
         }}
         to="/login"
       />
@@ -391,7 +412,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
         <SiteHeader />
         <section className="profile-state-card">
           <LoaderCircle className="spin" size={24} />
-          <p>Đang kiểm tra hồ sơ dạy học...</p>
+          <p>Äang kiá»ƒm tra há»“ sÆ¡ dáº¡y há»c...</p>
         </section>
       </MotionPage>
     )
@@ -419,12 +440,12 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
         </div>
         <div className="profile-hero-actions">
           <Link className="button secondary" to="/dashboard">
-            Về trang của tôi
+            Vá» trang cá»§a tÃ´i
           </Link>
           {mode === 'teaching' ? (
             <Link className="button primary" to="/dashboard/skills/new">
               <Plus size={18} />
-              Mở buổi học
+              Má»Ÿ buá»•i há»c
             </Link>
           ) : null}
         </div>
@@ -435,13 +456,13 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
           <div>
             <h2>{getBoardToolbarTitle(mode)}</h2>
             <p>
-              Mở từng buổi học để xác nhận lịch, tham gia phòng học hoặc xem chi tiết.
+              Má»Ÿ tá»«ng buá»•i há»c Ä‘á»ƒ xÃ¡c nháº­n lá»‹ch, tham gia phÃ²ng há»c hoáº·c xem chi tiáº¿t.
             </p>
           </div>
 
           <div className="session-filter-grid">
             <label className="session-filter-field">
-              <span>Trạng thái</span>
+              <span>Tráº¡ng thÃ¡i</span>
               <select
                 onChange={(event) => {
                   setStatusFilter(event.target.value as SessionStatus | '')
@@ -465,7 +486,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
               type="button"
             >
               <RefreshCcw size={18} />
-              Làm mới
+              LÃ m má»›i
             </button>
           </div>
         </div>
@@ -473,7 +494,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
         {listQuery.isLoading ? (
           <section className="profile-state-card">
             <LoaderCircle className="spin" size={20} />
-            <p>Đang tải danh sách buổi học...</p>
+            <p>Äang táº£i danh sÃ¡ch buá»•i há»c...</p>
           </section>
         ) : null}
 
@@ -488,11 +509,11 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
           <>
             {sessions.length === 0 ? (
               <section className="session-empty-state">
-                <h3>Chưa có buổi học nào phù hợp.</h3>
+                <h3>ChÆ°a cÃ³ buá»•i há»c nÃ o phÃ¹ há»£p.</h3>
                 <p>
                   {mode === 'learning'
-                    ? 'Bạn chưa đặt buổi học nào.'
-                    : 'Bạn chưa tạo lịch học nào.'}
+                    ? 'Báº¡n chÆ°a Ä‘áº·t buá»•i há»c nÃ o.'
+                    : 'Báº¡n chÆ°a táº¡o lá»‹ch há»c nÃ o.'}
                 </p>
               </section>
             ) : (
@@ -551,8 +572,8 @@ function SessionCard({
   const priceLabel =
     isFormula && preview && session.selectedDurationMinutes === null
       ? preview.minLearnerChargePoints === preview.maxLearnerChargePoints
-        ? `${preview.minLearnerChargePoints} điểm`
-        : `${preview.minLearnerChargePoints} – ${preview.maxLearnerChargePoints} điểm`
+        ? `${preview.minLearnerChargePoints} Ä‘iá»ƒm`
+        : `${preview.minLearnerChargePoints} â€“ ${preview.maxLearnerChargePoints} Ä‘iá»ƒm`
       : formatSessionPoints(session.pointCost)
   const companionQuery = useQuery({
     queryKey: [...profileKeys.user(session.companionId), 'session-card'],
@@ -570,7 +591,7 @@ function SessionCard({
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
           <span className={`session-delivery-badge ${isOnline ? 'online' : 'offline'}`}>
             {isOnline ? <Video size={12} /> : <MapPin size={12} />}
-            {isOnline ? 'Online' : 'Trực tiếp'}
+            {isOnline ? 'Online' : 'Trá»±c tiáº¿p'}
           </span>
           <span className="session-cost-chip">{priceLabel}</span>
         </div>
@@ -585,13 +606,13 @@ function SessionCard({
           </div>
         )}
         <div>
-          <strong>{companionProfile?.displayName || 'Người dạy trên EdSkill'}</strong>
-          <span>{companionProfile?.bio || 'Hồ sơ đang được cập nhật'}</span>
+          <strong>{companionProfile?.displayName || 'NgÆ°á»i dáº¡y trÃªn EdSkill'}</strong>
+          <span>{companionProfile?.bio || 'Há»“ sÆ¡ Ä‘ang Ä‘Æ°á»£c cáº­p nháº­t'}</span>
         </div>
       </div>
 
       <h3>{session.skill}</h3>
-      <p>{session.description || 'Người dạy sẽ giới thiệu rõ mục tiêu và cách đồng hành trong buổi học này.'}</p>
+      <p>{session.description || 'NgÆ°á»i dáº¡y sáº½ giá»›i thiá»‡u rÃµ má»¥c tiÃªu vÃ  cÃ¡ch Ä‘á»“ng hÃ nh trong buá»•i há»c nÃ y.'}</p>
 
       {!isOnline && session.location ? (
         <div className="session-location-row">
@@ -602,26 +623,26 @@ function SessionCard({
 
       <dl className="session-card-meta">
         <div>
-          <dt>Thời gian</dt>
+          <dt>Thá»i gian</dt>
           <dd>{formatSessionDateTime(session.scheduledAt)}</dd>
         </div>
         <div>
-          <dt>Thời lượng</dt>
+          <dt>Thá»i lÆ°á»£ng</dt>
           <dd>
             {isFormula && session.selectedDurationMinutes
-              ? `${session.selectedDurationMinutes} phút (đã chọn)`
+              ? `${session.selectedDurationMinutes} phÃºt (Ä‘Ã£ chá»n)`
               : isFormula && session.durationOptions.length > 0
               ? session.durationOptions.map((d) => `${d} ph`).join(' / ')
-              : `${session.durationMinutes} phút`}
+              : `${session.durationMinutes} phÃºt`}
           </dd>
         </div>
         <div>
-          <dt>Vai trò của bạn</dt>
-          <dd>{currentRole === 'viewer' ? 'Đang xem' : currentRole === 'learner' ? 'Người học' : 'Người dạy'}</dd>
+          <dt>Vai trÃ² cá»§a báº¡n</dt>
+          <dd>{currentRole === 'viewer' ? 'Äang xem' : currentRole === 'learner' ? 'NgÆ°á»i há»c' : 'NgÆ°á»i dáº¡y'}</dd>
         </div>
         <div>
-          <dt>Hoạt động gần đây</dt>
-          <dd>{companionProfile ? formatLastActive(companionProfile.lastActiveAt) : 'Đang tải'}</dd>
+          <dt>Hoáº¡t Ä‘á»™ng gáº§n Ä‘Ã¢y</dt>
+          <dd>{companionProfile ? formatLastActive(companionProfile.lastActiveAt) : 'Äang táº£i'}</dd>
         </div>
       </dl>
 
@@ -635,16 +656,16 @@ function SessionCard({
 
       <div className="session-card-actions">
         <Link className="button secondary" to={`/dashboard/skills/${session.sessionId}`}>
-          Xem chi tiết
+          Xem chi tiáº¿t
         </Link>
         {canBook ? (
           <button className="button primary" disabled={isBooking} onClick={onBook} type="button">
-            {isBooking ? <LoaderCircle className="spin" size={18} /> : 'Đăng ký'}
+            {isBooking ? <LoaderCircle className="spin" size={18} /> : 'ÄÄƒng kÃ½'}
           </button>
         ) : null}
         {session.status === 'Confirmed' && canJoin && joinUrl && currentRole !== 'viewer' ? (
           <a className="button secondary" href={joinUrl} rel="noreferrer" target="_blank">
-            Vào phòng học
+            VÃ o phÃ²ng há»c
           </a>
         ) : null}
       </div>
@@ -652,7 +673,217 @@ function SessionCard({
   )
 }
 
-function TeachingSoftGate() {
+function OwnedSkillPicker({
+  error,
+  onSelect,
+  options,
+  selectedSkillId,
+}: {
+  error?: string
+  onSelect: (skillId: string) => void
+  options: ProfileSkillDto[]
+  selectedSkillId: string
+}) {
+  const listboxId = useId()
+  const blurTimeoutRef = useRef<number | null>(null)
+  const [draft, setDraft] = useState('')
+  const [isOpen, setIsOpen] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(0)
+
+  const selectedOption = options.find((option) => option.skillId === selectedSkillId) ?? null
+  const normalizedDraft = draft.trim().toLowerCase()
+  const filteredOptions = normalizedDraft
+    ? options.filter((option) => option.name.toLowerCase().includes(normalizedDraft))
+    : options
+  const currentActiveIndex = activeIndex < filteredOptions.length ? activeIndex : 0
+
+  useEffect(() => {
+    setDraft(selectedOption?.name ?? '')
+  }, [selectedOption?.name])
+
+  const handleSelect = (option: ProfileSkillDto) => {
+    onSelect(option.skillId)
+    setDraft(option.name)
+    setIsOpen(false)
+    setActiveIndex(0)
+  }
+
+  const handleBlur = () => {
+    blurTimeoutRef.current = window.setTimeout(() => {
+      setIsOpen(false)
+      setDraft(selectedOption?.name ?? '')
+    }, 120)
+  }
+
+  const handleFocus = () => {
+    if (blurTimeoutRef.current !== null) {
+      window.clearTimeout(blurTimeoutRef.current)
+      blurTimeoutRef.current = null
+    }
+
+    setIsOpen(true)
+    setActiveIndex(0)
+  }
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isOpen && (event.key === 'ArrowDown' || event.key === 'Enter')) {
+      setIsOpen(true)
+      return
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      if (filteredOptions.length === 0) {
+        return
+      }
+      setActiveIndex((current) => (current + 1) % filteredOptions.length)
+      return
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      if (filteredOptions.length === 0) {
+        return
+      }
+      setActiveIndex((current) => (current - 1 + filteredOptions.length) % filteredOptions.length)
+      return
+    }
+
+    if (event.key === 'Escape') {
+      setIsOpen(false)
+      setDraft(selectedOption?.name ?? '')
+      return
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      const option = filteredOptions[currentActiveIndex] ?? filteredOptions[0]
+      if (option) {
+        handleSelect(option)
+      }
+    }
+  }
+
+  return (
+    <div className="profile-field full">
+      <span className="profile-field-label">Kỹ năng *</span>
+      <p className="profile-helper-copy">Gõ để lọc trong danh sách kỹ năng dạy hiện có của bạn.</p>
+      <div className="skill-autocomplete owned-skill-combobox">
+        <div className="skill-autocomplete-input-shell">
+          <Search size={17} />
+          <input
+            aria-autocomplete="list"
+            aria-controls={listboxId}
+            aria-expanded={isOpen}
+            onBlur={handleBlur}
+            onChange={(event) => {
+              setDraft(event.target.value)
+              setIsOpen(true)
+              setActiveIndex(0)
+            }}
+            onFocus={handleFocus}
+            onKeyDown={handleKeyDown}
+            placeholder="Tìm kỹ năng dạy..."
+            role="combobox"
+            value={draft}
+          />
+          <button
+            aria-label="Hiển thị danh sách kỹ năng dạy"
+            className="skill-autocomplete-toggle"
+            onMouseDown={(event) => {
+              event.preventDefault()
+              setIsOpen((current) => !current)
+            }}
+            type="button"
+          >
+            <ChevronDown size={18} />
+          </button>
+        </div>
+
+        {isOpen ? (
+          <div className="skill-autocomplete-popover owned-skill-popover" role="presentation">
+            <div className="skill-autocomplete-list" id={listboxId} role="listbox">
+              {filteredOptions.map((option, index) => {
+                const SkillIcon = getSkillIcon(option.iconKey)
+                return (
+                  <button
+                    aria-selected={option.skillId === selectedSkillId}
+                    className={`skill-autocomplete-option ${index === currentActiveIndex ? 'active' : ''}`}
+                    key={option.skillId}
+                    onMouseDown={(event) => {
+                      event.preventDefault()
+                      handleSelect(option)
+                    }}
+                    role="option"
+                    type="button"
+                  >
+                    <span aria-hidden="true" className="skill-autocomplete-option-icon">
+                      <SkillIcon size={16} />
+                    </span>
+                    <span className="skill-autocomplete-option-copy">
+                      <span>{option.name}</span>
+                      <small>{option.skillId === selectedSkillId ? 'Đang chọn' : 'Kỹ năng dạy của bạn'}</small>
+                    </span>
+                  </button>
+                )
+              })}
+
+              {filteredOptions.length === 0 ? (
+                <div className="skill-autocomplete-state empty">
+                  <span>Không tìm thấy kỹ năng phù hợp.</span>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </div>
+      {error ? <p className="profile-field-error">{error}</p> : null}
+    </div>
+  )
+}
+
+function CreateSessionEmptySkillsState() {
+  return (
+    <div className="session-note-banner info create-session-empty-state">
+      <strong>Chưa có kỹ năng dạy để mở buổi học</strong>
+      <p>Hãy cập nhật kỹ năng dạy trong hồ sơ trước khi tạo buổi học mới.</p>
+      <div>
+        <Link className="button secondary" to="/dashboard/profile?intent=teach">
+          Cập nhật hồ sơ dạy học
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+function getOnboardingFieldLabel(field: ProfileField | string) {
+  switch (field) {
+    case 'displayName':
+      return 'Tên hiển thị'
+    case 'bio':
+      return 'Tiểu sử'
+    case 'dateOfBirth':
+      return 'Ngày sinh'
+    case 'phone':
+      return 'Số điện thoại'
+    case 'degreeUrl':
+      return 'Bằng cấp'
+    case 'credentialUrls':
+      return 'Chứng chỉ'
+    case 'skillsToTeach':
+      return 'Kỹ năng muốn dạy'
+    case 'skillsToLearn':
+      return 'Kỹ năng muốn học'
+    case 'avatarUrl':
+      return 'Ảnh đại diện'
+    case 'isPublic':
+      return 'Trạng thái công khai hồ sơ'
+    default:
+      return 'Thông tin hồ sơ cần bổ sung'
+  }
+}
+
+function TeachingSoftGate({ missingFields = [] }: { missingFields?: Array<ProfileField | string> }) {
   return (
     <MotionPage className="page dashboard-page profile-page session-hub-page">
       <SiteHeader />
@@ -663,16 +894,53 @@ function TeachingSoftGate() {
             Hoàn thiện hồ sơ trước khi dạy
           </span>
           <h1>Bạn cần hoàn thiện hồ sơ dạy học trước khi mở hoặc quản lý buổi học.</h1>
-          <p>
-            EdSkill sẽ chỉ cho người học thấy hồ sơ rõ ràng, công khai và đủ thông tin để họ yên
-            tâm đăng ký.
-          </p>
+          <p>EdSkill chỉ cho phép mở buổi học khi hồ sơ dạy học đã đầy đủ theo kiểm tra của backend.</p>
         </div>
         <div className="profile-hero-actions">
           <Link className="button primary" to="/dashboard/profile?intent=teach">
             Hoàn thiện hồ sơ dạy học
           </Link>
         </div>
+      </section>
+
+      <section className="session-form-layout">
+        <section className="profile-form-card session-create-card">
+          <div className="profile-form-heading">
+            <div>
+              <span className="eyebrow">
+                <AlertCircle size={15} />
+                Chưa thể mở buổi học
+              </span>
+              <h2>Checklist hồ sơ cần bổ sung</h2>
+            </div>
+          </div>
+
+          <section className="profile-section-card">
+            <div className="session-note-banner danger">
+              <strong>Hồ sơ dạy học chưa hoàn tất</strong>
+              <p>Vui lòng bổ sung các mục còn thiếu dưới đây trước khi tạo buổi học.</p>
+            </div>
+
+            {missingFields.length > 0 ? (
+              <ul className="session-onboarding-checklist">
+                {missingFields.map((field) => (
+                  <li key={field}>{getOnboardingFieldLabel(field)}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="profile-empty-copy">Hệ thống chưa cung cấp danh sách mục cần bổ sung.</p>
+            )}
+          </section>
+        </section>
+
+        <aside className="session-guide-card">
+          <h3>Lưu ý</h3>
+          <ul>
+            <li>Trạng thái onboarding được backend quyết định.</li>
+            <li>Danh sách trên chỉ hiển thị các mục cần thiết cho người dùng cuối.</li>
+            <li>Sau khi cập nhật hồ sơ, bạn có thể quay lại để mở buổi học.</li>
+          </ul>
+        </aside>
       </section>
     </MotionPage>
   )
@@ -695,7 +963,7 @@ function PaginationControls({
         onClick={() => onPageChange(currentPage - 1)}
         type="button"
       >
-        Trang trước
+        Trang trÆ°á»›c
       </button>
       <span>
         Trang {currentPage} / {totalPages}
@@ -714,49 +982,46 @@ function PaginationControls({
 
 function getBoardEyebrow(mode: SessionBoardMode) {
   if (mode === 'learning') {
-    return 'Buổi học của tôi'
+    return 'Buá»•i há»c cá»§a tÃ´i'
   }
 
-  return 'Khu dạy học'
+  return 'Khu dáº¡y há»c'
 }
 
 function getBoardTitle(mode: SessionBoardMode) {
   if (mode === 'learning') {
-    return 'Theo dõi các buổi học bạn đã đăng ký.'
+    return 'Theo dÃµi cÃ¡c buá»•i há»c báº¡n Ä‘Ã£ Ä‘Äƒng kÃ½.'
   }
 
-  return 'Quản lý những buổi học bạn đang mở và đang dạy.'
+  return 'Quáº£n lÃ½ nhá»¯ng buá»•i há»c báº¡n Ä‘ang má»Ÿ vÃ  Ä‘ang dáº¡y.'
 }
 
 function getBoardDescription(mode: SessionBoardMode) {
   if (mode === 'learning') {
-    return 'Xem lại lịch học, trạng thái xác nhận và đường vào phòng học của bạn.'
+    return 'Xem láº¡i lá»‹ch há»c, tráº¡ng thÃ¡i xÃ¡c nháº­n vÃ  Ä‘Æ°á»ng vÃ o phÃ²ng há»c cá»§a báº¡n.'
   }
 
-  return 'Kiểm tra buổi học nào đang chờ xác nhận, đang diễn ra hoặc đã hoàn tất.'
+  return 'Kiá»ƒm tra buá»•i há»c nÃ o Ä‘ang chá» xÃ¡c nháº­n, Ä‘ang diá»…n ra hoáº·c Ä‘Ã£ hoÃ n táº¥t.'
 }
 
 function getBoardToolbarTitle(mode: SessionBoardMode) {
   if (mode === 'learning') {
-    return 'Lịch học của tôi'
+    return 'Lá»‹ch há»c cá»§a tÃ´i'
   }
 
-  return 'Lịch dạy của tôi'
+  return 'Lá»‹ch dáº¡y cá»§a tÃ´i'
 }
 
 function createInitialOfferForm() {
   return {
     skillId: '',
-    skillName: '',
-    deliveryMode: '' as SessionDeliveryMode | '',
-    location: '',
     description: '',
-    durationOptions: [60] as AllowedDurationMinutes[],
+    selectedMaxDuration: 60 as AllowedDurationMinutes,
     scheduledAt: toDateTimeLocalValue(new Date(Date.now() + 24 * 60 * 60 * 1000)),
   }
 }
 
-// ── Duration Picker Modal ──────────────────────────────────────────────────────
+// â”€â”€ Duration Picker Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function DurationPickerModal({
   session,
@@ -772,7 +1037,7 @@ function DurationPickerModal({
   const pricingOptions = session.durationPricingOptions
   const hasExactPricing = pricingOptions.length > 0
 
-  // Fallback sang durationOptions nếu session cũ không có durationPricingOptions
+  // Fallback sang durationOptions náº¿u session cÅ© khÃ´ng cÃ³ durationPricingOptions
   const legacyOptions = session.durationOptions
 
   const [selectedOption, setSelectedOption] = useState<DurationPricingOptionDto | null>(
@@ -782,7 +1047,7 @@ function DurationPickerModal({
     },
   )
 
-  // Legacy fallback: chưa có durationPricingOptions
+  // Legacy fallback: chÆ°a cÃ³ durationPricingOptions
   const [legacySelected, setLegacySelected] = useState<AllowedDurationMinutes | null>(
     () => (!hasExactPricing && legacyOptions.length === 1 ? (legacyOptions[0] as AllowedDurationMinutes) : null),
   )
@@ -803,15 +1068,15 @@ function DurationPickerModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Chọn thời lượng buổi học</h3>
-          <button aria-label="Đóng" className="modal-close" onClick={onClose} type="button">
+          <h3>Chá»n thá»i lÆ°á»£ng buá»•i há»c</h3>
+          <button aria-label="ÄÃ³ng" className="modal-close" onClick={onClose} type="button">
             <X size={18} />
           </button>
         </div>
 
         <div className="modal-body">
           <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
-            Kỹ năng: <strong>{session.skill}</strong>
+            Ká»¹ nÄƒng: <strong>{session.skill}</strong>
           </p>
 
           {hasExactPricing ? (
@@ -824,7 +1089,7 @@ function DurationPickerModal({
                     onClick={() => setSelectedOption(opt)}
                     type="button"
                   >
-                    {opt.durationMinutes} phút
+                    {opt.durationMinutes} phÃºt
                   </button>
                 ))}
               </div>
@@ -838,20 +1103,20 @@ function DurationPickerModal({
                 }}
               >
                 {selectedOption
-                  ? `Chi phí: ${selectedOption.learnerChargePoints} điểm`
-                  : 'Chọn thời lượng để xem điểm cần trả'}
+                  ? `Chi phÃ­: ${selectedOption.learnerChargePoints} Ä‘iá»ƒm`
+                  : 'Chá»n thá»i lÆ°á»£ng Ä‘á»ƒ xem Ä‘iá»ƒm cáº§n tráº£'}
               </p>
             </>
           ) : (
-            // Legacy fallback: session cũ không có durationPricingOptions
+            // Legacy fallback: session cÅ© khÃ´ng cÃ³ durationPricingOptions
             <>
               {preview ? (
                 <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
-                  Dự kiến chi phí:{' '}
+                  Dá»± kiáº¿n chi phÃ­:{' '}
                   <strong>
                     {preview.minLearnerChargePoints === preview.maxLearnerChargePoints
-                      ? `${preview.minLearnerChargePoints} điểm`
-                      : `${preview.minLearnerChargePoints} – ${preview.maxLearnerChargePoints} điểm`}
+                      ? `${preview.minLearnerChargePoints} Ä‘iá»ƒm`
+                      : `${preview.minLearnerChargePoints} â€“ ${preview.maxLearnerChargePoints} Ä‘iá»ƒm`}
                   </strong>
                 </p>
               ) : null}
@@ -863,7 +1128,7 @@ function DurationPickerModal({
                     onClick={() => setLegacySelected(d as AllowedDurationMinutes)}
                     type="button"
                   >
-                    {d} phút
+                    {d} phÃºt
                   </button>
                 ))}
               </div>
@@ -873,7 +1138,7 @@ function DurationPickerModal({
 
         <div className="modal-footer">
           <button className="button secondary" disabled={isPending} onClick={onClose} type="button">
-            Hủy
+            Há»§y
           </button>
           <button
             className="button primary"
@@ -882,10 +1147,13 @@ function DurationPickerModal({
             type="button"
           >
             {isPending ? <LoaderCircle className="spin" size={16} /> : null}
-            Xác nhận đặt lịch
+            XÃ¡c nháº­n Ä‘áº·t lá»‹ch
           </button>
         </div>
       </div>
     </div>
   )
 }
+
+
+

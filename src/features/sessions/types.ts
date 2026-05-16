@@ -100,8 +100,6 @@ export type AllowedDurationMinutes = 30 | 45 | 60 | 90 | 120
 export interface CreateSessionRequest {
   skillId: string
   description?: string | null
-  deliveryMode: SessionDeliveryMode
-  location?: string | null
   durationOptions: AllowedDurationMinutes[]
   scheduledAt: string
 }

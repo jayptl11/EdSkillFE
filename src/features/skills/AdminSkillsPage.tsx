@@ -20,10 +20,12 @@ import { showToast } from '../../components/toastEvents'
 import { useAppStore } from '../../store/useAppStore'
 import { skillApi, skillKeys } from './skillApi'
 import {
+  availableSkillIconKeys,
   getSkillIcon,
   isValidSkillIconKey,
   normalizeSkillIconKey,
   resolveSkillIcon,
+  skillIconMap,
 } from './skillIcons'
 import type { AdminSkill, CreateAdminSkillPayload, UpdateAdminSkillPayload } from './types'
 
@@ -135,7 +137,6 @@ export function AdminSkillsPage() {
     normalizedFormIconKey && !isValidSkillIconKey(normalizedFormIconKey)
       ? 'Icon key tối đa 50 ký tự và chỉ gồm chữ thường, số, dấu gạch ngang.'
       : ''
-  const PreviewSkillIcon = normalizedFormIconKey ? resolveSkillIcon(normalizedFormIconKey) : null
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -421,51 +422,10 @@ export function AdminSkillsPage() {
                 </small>
               </label>
 
-              <label className="profile-field full">
-                <span>Icon key</span>
-                <input
-                  onChange={(event) => setFormValues((current) => ({ ...current, iconKey: event.target.value }))}
-                  placeholder="Ví dụ: languages, code, book-open"
-                  value={formValues.iconKey}
-                />
-                <small style={{ color: 'var(--color-text-secondary)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                  Nhập mã icon do FE quy ước, ví dụ: languages, code, book-open.
-                </small>
-                {iconKeyError ? <p className="profile-field-error">{iconKeyError}</p> : null}
-              </label>
-
-              <div className="profile-field full">
-                <span className="profile-field-label">Preview icon</span>
-                <div className="admin-skill-icon-preview">
-                  {normalizedFormIconKey ? (
-                    PreviewSkillIcon ? (
-                      <div className="admin-skill-icon-preview-card">
-                        <span aria-hidden="true" className="admin-skill-icon large">
-                          {createElement(PreviewSkillIcon, { size: 20 })}
-                        </span>
-                        <div className="admin-skill-icon-preview-copy">
-                          <strong>{normalizedFormIconKey}</strong>
-                          <small>Preview từ local icon map.</small>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="admin-skill-icon-note">Không có preview cho icon key này trong local map.</p>
-                    )
-                  ) : (
-                    <p className="admin-skill-icon-note">Chưa chọn icon key.</p>
-                  )}
-
-                  {selectedSkill ? (
-                    <button
-                      className="button secondary ghost"
-                      onClick={() => setFormValues((current) => ({ ...current, iconKey: '' }))}
-                      type="button"
-                    >
-                      Clear icon
-                    </button>
-                  ) : null}
-                </div>
-              </div>
+              <IconPickerField
+                value={normalizedFormIconKey}
+                onChange={(key) => setFormValues((current) => ({ ...current, iconKey: key ?? '' }))}
+              />
 
               <div className="profile-field admin-field-switch">
                 <span>Trạng thái hiển thị</span>
@@ -618,4 +578,104 @@ function normalizeTags(values: string[]) {
   }
 
   return normalizedValues
+}
+
+function IconPickerField({
+  value,
+  onChange,
+}: {
+  value: string | null
+  onChange: (key: string | null) => void
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const SelectedIcon = value ? resolveSkillIcon(value) : null
+
+  const filteredKeys = useMemo(() => {
+    if (!search.trim()) return availableSkillIconKeys
+    const q = search.trim().toLowerCase()
+    return availableSkillIconKeys.filter((key) => key.includes(q))
+  }, [search])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      const el = document.querySelector('.admin-icon-picker-popup')
+      if (el && !el.contains(e.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen])
+
+  return (
+    <div className="profile-field full" style={{ position: 'relative' }}>
+      <span className="profile-field-label">Icon</span>
+      <button
+        type="button"
+        className="admin-icon-picker-trigger"
+        onClick={() => setIsOpen((o) => !o)}
+      >
+        {SelectedIcon ? (
+          <>
+            <span className="admin-icon-picker-trigger-icon">{createElement(SelectedIcon, { size: 18 })}</span>
+            <span className="admin-icon-picker-trigger-label">{value}</span>
+          </>
+        ) : (
+          <span className="admin-icon-picker-trigger-placeholder">Chọn icon...</span>
+        )}
+      </button>
+      {value && (
+        <button
+          type="button"
+          className="button secondary ghost"
+          style={{ marginTop: '0.25rem' }}
+          onClick={() => onChange(null)}
+        >
+          Xóa icon
+        </button>
+      )}
+
+      {isOpen && (
+        <div className="admin-icon-picker-popup">
+          <input
+            autoFocus
+            className="admin-icon-picker-search"
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm icon..."
+            type="text"
+            value={search}
+          />
+          <div className="admin-icon-picker-grid">
+            {filteredKeys.length === 0 && (
+              <p className="admin-icon-picker-empty">Không tìm thấy icon phù hợp.</p>
+            )}
+            {filteredKeys.map((key) => {
+              const IconComponent = skillIconMap[key]
+              const isSelected = value === key
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className={`admin-icon-picker-item${isSelected ? ' selected' : ''}`}
+                  onClick={() => {
+                    onChange(isSelected ? null : key)
+                    setIsOpen(false)
+                    setSearch('')
+                  }}
+                >
+                  <span className="admin-icon-picker-item-icon">
+                    {createElement(IconComponent, { size: 20 })}
+                  </span>
+                  <span className="admin-icon-picker-item-label">{key}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }

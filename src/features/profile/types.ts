@@ -2,6 +2,12 @@ import type { UserRole } from '../../store/useAppStore'
 
 export type ProfileRole = UserRole
 
+export interface ProfileSkillDto {
+  skillId: string
+  name: string
+  iconKey: string | null
+}
+
 export interface ProfileDto {
   userId: string
   displayName: string
@@ -14,6 +20,8 @@ export interface ProfileDto {
   credentialCount: number
   skillsToTeach: string[]
   skillsToLearn: string[]
+  teachingSkills: ProfileSkillDto[]
+  learningSkills: ProfileSkillDto[]
   isPublic: boolean
   roles: ProfileRole[]
   totalSessions: number

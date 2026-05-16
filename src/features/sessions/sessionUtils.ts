@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { walletKeys } from '../wallet/walletApi'
 import { sessionKeys } from './sessionsApi'
-import type { SessionActorRole, SessionDto, SessionStatus } from './types'
+import type { AllowedDurationMinutes, CreateSessionRequest, SessionActorRole, SessionDto, SessionStatus } from './types'
 
 const activePollingStatuses: SessionStatus[] = ['Pending', 'Confirmed', 'InProgress', 'PendingReview']
 
@@ -73,6 +73,20 @@ export function buildJitsiUrl(roomId: string) {
 export function toDateTimeLocalValue(date: Date) {
   const offset = date.getTimezoneOffset()
   return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16)
+}
+
+export function buildCreateSessionPayload(input: {
+  selectedSkillId: string
+  description: string
+  selectedMaxDuration: AllowedDurationMinutes
+  scheduledAtIso: string
+}): CreateSessionRequest {
+  return {
+    skillId: input.selectedSkillId,
+    description: input.description.trim() || null,
+    durationOptions: [input.selectedMaxDuration],
+    scheduledAt: input.scheduledAtIso,
+  }
 }
 
 export async function invalidateWalletQueries(queryClient: QueryClient) {
