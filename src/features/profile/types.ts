@@ -1,5 +1,6 @@
 import type { UserRole } from '../../store/useAppStore'
 import type { AchievementSummaryDto } from '../achievements/types'
+import type { ActiveSubscriptionSummaryDto, ResolvedSubscriptionEntitlementsDto } from '../wallet/types'
 
 export type ProfileRole = UserRole
 
@@ -30,6 +31,8 @@ export interface ProfileDto {
   lastActiveAt: string | null
   isCompanionOnboardingComplete: boolean
   missingCompanionProfileFields: ProfileField[]
+  activeSubscriptions: ActiveSubscriptionSummaryDto[]
+  subscriptionEntitlements: ResolvedSubscriptionEntitlementsDto | null
 }
 
 export interface AvatarUploadUrlDto {

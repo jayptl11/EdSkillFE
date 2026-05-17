@@ -53,7 +53,11 @@ import {
 import { CompanionSearchPage } from './features/sessions/CompanionSearchPage'
 import { CompanionDetailPage } from './features/sessions/CompanionDetailPage'
 import { CompanionSkillDetailPage } from './features/sessions/CompanionSkillDetailPage'
-import { WalletPage } from './features/wallet/WalletPage'
+import {
+  PointPurchaseReturnPage,
+  SubscriptionPurchaseReturnPage,
+  WalletPage,
+} from './features/wallet/WalletPage'
 import { useAppStore, type UserRole } from './store/useAppStore'
 import './App.css'
 
@@ -135,6 +139,11 @@ function App() {
                 <WalletPage />
               </ProtectedRoute>
             }
+          />
+          <Route path="/dashboard/wallet/points/return" element={<PointPurchaseReturnPage />} />
+          <Route
+            path="/dashboard/wallet/subscriptions/return"
+            element={<SubscriptionPurchaseReturnPage />}
           />
           <Route
             path="/dashboard/skills/learning"

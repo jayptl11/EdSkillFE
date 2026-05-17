@@ -1,7 +1,10 @@
+import { useQuery } from '@tanstack/react-query'
 import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { CalendarCheck2, Clock3, Sparkles, type LucideIcon } from 'lucide-react'
 import { motion } from 'motion/react'
+import { profileApi, profileKeys } from '../features/profile/profileApi'
+import { SubscriptionSummaryCard } from '../features/wallet/SubscriptionSummaryCard'
 import { SiteHeader } from './Brand'
 import { MotionPage } from './MotionPage'
 import { dashboardCards } from './learningData'
@@ -21,6 +24,11 @@ export function DashboardShell({
   primaryRole: string
   getCardCopy: (card: string, role: string) => string
 }) {
+  const profileQuery = useQuery({
+    queryKey: profileKeys.me(),
+    queryFn: profileApi.getMyProfile,
+  })
+
   return (
     <MotionPage className="page dashboard-page">
       <SiteHeader />
@@ -84,6 +92,16 @@ export function DashboardShell({
           <span>để hoàn thiện bước khởi đầu hôm nay</span>
         </div>
       </section>
+      {profileQuery.data ? (
+        <section className="dashboard-subscription-panel">
+          <SubscriptionSummaryCard
+            compact
+            entitlements={profileQuery.data.subscriptionEntitlements}
+            subscriptions={profileQuery.data.activeSubscriptions}
+            title="Gói đang dùng"
+          />
+        </section>
+      ) : null}
       <section className="dashboard-quick-links">
         {!roles.includes('admin') && (
           <>

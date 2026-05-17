@@ -6276,6 +6276,333 @@
 }
 
 /* ---------------------------------------------------------
+   WALLET + SUBSCRIPTIONS
+---------------------------------------------------------- */
+
+.wallet-hub-card,
+.wallet-return-card,
+.dashboard-subscription-panel {
+  border: 1px solid rgba(12, 23, 45, 0.12);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 40px rgba(12, 23, 45, 0.08);
+}
+
+.wallet-hub-card {
+  display: grid;
+  gap: 22px;
+  padding: 22px;
+}
+
+.wallet-tab-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.wallet-tab-button {
+  min-height: 42px;
+  border: 1px solid rgba(12, 23, 45, 0.12);
+  border-radius: 999px;
+  background: rgba(248, 252, 255, 0.96);
+  color: var(--sapphire);
+  font: inherit;
+  font-weight: 900;
+  padding: 0 16px;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.wallet-tab-button.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: white;
+  box-shadow: 0 14px 28px rgba(36, 147, 245, 0.22);
+}
+
+.wallet-tab-button:hover {
+  transform: translateY(-1px);
+}
+
+.wallet-tab-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.wallet-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.wallet-section-head h2,
+.wallet-offer-head h3,
+.wallet-payment-head h3,
+.wallet-return-state h2,
+.wallet-subscription-summary-head h3 {
+  margin: 0;
+  color: #091224;
+}
+
+.wallet-section-head p,
+.wallet-offer-card p,
+.wallet-payment-head p,
+.wallet-return-state p,
+.wallet-subscription-empty {
+  margin: 6px 0 0;
+  color: #5b6473;
+}
+
+.wallet-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 18px;
+}
+
+.wallet-payment-list {
+  display: grid;
+  gap: 16px;
+}
+
+.wallet-offer-card,
+.wallet-payment-card {
+  display: grid;
+  gap: 16px;
+  border: 1px solid rgba(12, 23, 45, 0.1);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 252, 255, 0.96));
+  padding: 22px;
+}
+
+.wallet-offer-card.featured,
+.wallet-offer-card.premium {
+  border-color: rgba(30, 136, 229, 0.22);
+  box-shadow: 0 12px 30px rgba(30, 136, 229, 0.08);
+}
+
+.wallet-offer-head,
+.wallet-payment-head,
+.wallet-subscription-active-main,
+.wallet-return-state {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.wallet-offer-head strong,
+.wallet-payment-head strong {
+  color: var(--blue-dark);
+  font-size: 1.08rem;
+}
+
+.wallet-offer-grid,
+.wallet-payment-grid,
+.wallet-return-grid,
+.wallet-subscription-active-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.wallet-offer-grid div,
+.wallet-payment-grid div,
+.wallet-return-grid div,
+.wallet-subscription-active-grid div {
+  border-radius: 18px;
+  background: rgba(243, 244, 246, 0.9);
+  padding: 12px 14px;
+}
+
+.wallet-offer-grid dt,
+.wallet-payment-grid dt,
+.wallet-return-grid dt,
+.wallet-subscription-active-grid dt {
+  color: #5b6473;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.wallet-offer-grid dd,
+.wallet-payment-grid dd,
+.wallet-return-grid dd,
+.wallet-subscription-active-grid dd {
+  margin: 6px 0 0;
+  color: #091224;
+  font-weight: 900;
+}
+
+.wallet-benefit-list,
+.wallet-payment-actions,
+.wallet-subscription-entitlement-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.wallet-benefit-chip,
+.wallet-entitlement-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  border-radius: 999px;
+  padding: 0 14px;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.wallet-benefit-chip {
+  background: rgba(30, 136, 229, 0.08);
+  color: var(--sapphire);
+}
+
+.wallet-entitlement-chip {
+  background: rgba(245, 185, 36, 0.14);
+  color: #8a5b00;
+}
+
+.wallet-premium-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  min-height: 28px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 221, 87, 0.22), rgba(255, 190, 11, 0.18));
+  color: #8a5b00;
+  padding: 0 12px;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.wallet-premium-badge.subtle {
+  background: rgba(30, 136, 229, 0.08);
+  color: var(--sapphire);
+}
+
+.wallet-subscription-summary {
+  display: grid;
+  gap: 14px;
+}
+
+.wallet-subscription-empty {
+  margin: 0;
+}
+
+.wallet-subscription-active-list {
+  display: grid;
+  gap: 12px;
+}
+
+.wallet-subscription-active-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(12, 23, 45, 0.08);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 16px;
+}
+
+.wallet-subscription-active-main strong {
+  display: block;
+  color: #091224;
+}
+
+.wallet-subscription-active-main span {
+  color: #5b6473;
+  font-weight: 800;
+}
+
+.wallet-subscription-entitlements {
+  display: grid;
+  gap: 10px;
+}
+
+.wallet-subscription-entitlements-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--sapphire);
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.wallet-return-card {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+}
+
+.wallet-return-card.success {
+  border-color: rgba(16, 185, 129, 0.22);
+}
+
+.wallet-return-card.failed {
+  border-color: rgba(239, 68, 68, 0.18);
+}
+
+.wallet-return-state svg {
+  color: var(--blue-dark);
+}
+
+.wallet-return-card.success .wallet-return-state svg {
+  color: #059669;
+}
+
+.wallet-return-card.failed .wallet-return-state svg {
+  color: #dc2626;
+}
+
+.wallet-return-note {
+  margin: 0;
+  color: #5b6473;
+  font-weight: 700;
+}
+
+.wallet-return-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.dashboard-subscription-panel {
+  padding: 18px;
+}
+
+.discovery-hz-price-stack {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.search-premium-badge,
+.companion-premium-badge {
+  margin-top: 8px;
+}
+
+@media (max-width: 720px) {
+  .wallet-offer-head,
+  .wallet-payment-head,
+  .wallet-subscription-active-main,
+  .wallet-return-state,
+  .wallet-section-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wallet-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------------------------------------------------------
    ACHIEVEMENTS
 ---------------------------------------------------------- */
 

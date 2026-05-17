@@ -124,6 +124,11 @@ export function CompanionDetailPage() {
 
                 <div className="companion-profile-copy">
                   <h2>{profileQuery.data.displayName}</h2>
+                  {profileQuery.data.subscriptionBadge ? (
+                    <span className="wallet-premium-badge companion-premium-badge">
+                      {profileQuery.data.subscriptionBadge}
+                    </span>
+                  ) : null}
 
                   <div className="companion-profile-rating">
                     <strong>{profileQuery.data.activitySummary.avgRating.toFixed(1)}</strong>

@@ -91,8 +91,7 @@ export function buildCreateSessionPayload(input: {
 
 export async function invalidateWalletQueries(queryClient: QueryClient) {
   await Promise.all([
-    queryClient.invalidateQueries({ queryKey: walletKeys.summary() }),
-    queryClient.invalidateQueries({ queryKey: walletKeys.transactionsRoot() }),
+    queryClient.invalidateQueries({ queryKey: walletKeys.all() }),
   ])
 }
 

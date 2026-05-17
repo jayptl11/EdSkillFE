@@ -35,6 +35,8 @@ export interface CompanionSearchItemDto {
   pricingPreview: SessionPricingPreviewDto | null
   nextScheduledAt: string
   matchedOffers: SessionDto[]
+  subscriptionBadge: string | null
+  hasPriorityVisibility: boolean
 }
 
 export interface CompanionSearchResponse {
@@ -71,6 +73,8 @@ export interface CompanionPublicProfileDto {
   activitySummary: CompanionActivitySummaryDto
   achievements: AchievementSummaryDto[]
   teachingSkills: CompanionTeachingSkillDto[]
+  subscriptionBadge: string | null
+  hasPriorityVisibility: boolean
 }
 
 export interface CompanionSkillInfoDto {

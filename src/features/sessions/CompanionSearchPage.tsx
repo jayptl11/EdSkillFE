@@ -489,7 +489,14 @@ export function CompanionSearchPage() {
 
                       <div className="discovery-hz-info">
                         <div className="discovery-hz-header">
-                          <span className="discovery-hz-points">{priceLabel}</span>
+                          <div className="discovery-hz-price-stack">
+                            <span className="discovery-hz-points">{priceLabel}</span>
+                            {companion.subscriptionBadge ? (
+                              <span className="wallet-premium-badge search-premium-badge">
+                                {companion.subscriptionBadge}
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
 
                         <div className="discovery-hz-name">

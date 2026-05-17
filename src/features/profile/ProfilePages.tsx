@@ -20,6 +20,7 @@ import { showToast } from '../../components/toastEvents'
 import { useAppStore } from '../../store/useAppStore'
 import { AchievementSection } from '../achievements/AchievementSection'
 import { SkillAutocomplete } from '../skills/SkillAutocomplete'
+import { SubscriptionSummaryCard } from '../wallet/SubscriptionSummaryCard'
 import {
   clearSavedAvatar,
   profileApi,
@@ -483,6 +484,15 @@ export function OwnerProfilePage() {
                   <dd>{formValues.isPublic ? 'Công khai' : 'Riêng tư'}</dd>
                 </div>
               </dl>
+            </div>
+
+            <div className="profile-meta-card profile-panel">
+              <SubscriptionSummaryCard
+                compact
+                entitlements={profileQuery.data.subscriptionEntitlements}
+                subscriptions={profileQuery.data.activeSubscriptions}
+                title="Gói đang dùng"
+              />
             </div>
 
             <div className="profile-meta-card profile-panel">
