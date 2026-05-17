@@ -36,7 +36,6 @@ import {
   formatPoints,
   getPaymentItemLabel,
   getPaymentStatusLabel,
-  isSubscriptionActive,
 } from './walletUtils'
 
 const SUMMARY_REFRESH_MS = 30_000
@@ -526,7 +525,7 @@ function PointPackageCard({
         </div>
       </dl>
 
-      <button className="button primary" disabled={isPending} onClick={onPurchase} type="button">
+      <button className="button primary wallet-offer-cta" disabled={isPending} onClick={onPurchase} type="button">
         {isPending ? <LoaderCircle className="spin" size={18} /> : null}
         Thanh toán với VNPay
       </button>
@@ -545,7 +544,27 @@ function SubscriptionPlanCard({
   onPurchase: () => void
   isPending: boolean
 }) {
-  const isActive = isSubscriptionActive(activeSubscriptions, plan.planId)
+  const normalizedPlanName = normalizeComparableText(plan.name)
+  const normalizedPlanCode = normalizeComparableText(plan.code)
+
+  const isActive = activeSubscriptions.some((subscription) => {
+    if (subscription.status !== 'Active') {
+      return false
+    }
+
+    const normalizedSubscriptionName = normalizeComparableText(subscription.name)
+    const normalizedSubscriptionCode = normalizeComparableText(subscription.code)
+
+    return (
+      subscription.planId === plan.planId
+      || normalizedSubscriptionCode === normalizedPlanCode
+      || normalizedSubscriptionName === normalizedPlanName
+      || (
+        subscription.targetRole === plan.targetRole
+        && normalizedSubscriptionName.includes(normalizedPlanName)
+      )
+    )
+  })
 
   return (
     <article className="wallet-offer-card premium subscription-card">
@@ -574,10 +593,17 @@ function SubscriptionPlanCard({
         ))}
       </div>
 
-      <button className="button primary" disabled={isPending} onClick={onPurchase} type="button">
-        {isPending ? <LoaderCircle className="spin" size={18} /> : null}
-        Mua gói
-      </button>
+      <div className="wallet-offer-cta-shell">
+        <button
+          className="button primary wallet-offer-cta"
+          disabled={isPending || isActive}
+          onClick={onPurchase}
+          type="button"
+        >
+          {isPending ? <LoaderCircle className="spin" size={18} /> : null}
+          {isActive ? 'Đang sử dụng' : 'Mua gói'}
+        </button>
+      </div>
     </article>
   )
 }
@@ -753,6 +779,14 @@ function getReturnTitle(variant: ReturnVariant, isSuccess: boolean) {
   }
 
   return isSuccess ? 'Kích hoạt subscription thành công' : 'Mua subscription chưa hoàn tất'
+}
+
+function normalizeComparableText(value: string | null | undefined) {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toLowerCase()
 }
 
 function normalizeWalletTab(value: string | null): WalletTabId {
