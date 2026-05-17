@@ -25,6 +25,7 @@ export function SubscriptionSummaryCard({
     <section className={`wallet-subscription-summary${compact ? ' compact' : ''}`}>
       <div className="wallet-subscription-summary-head">
         <h3>{title}</h3>
+        {subscriptions.length > 0 ? <span>Quyền lợi đang được áp dụng từ backend.</span> : null}
       </div>
 
       {subscriptions.length === 0 ? (

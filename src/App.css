@@ -6290,8 +6290,11 @@
 
 .wallet-hub-card {
   display: grid;
-  gap: 22px;
-  padding: 22px;
+  gap: 24px;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 215, 97, 0.14), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 251, 255, 0.96));
 }
 
 .wallet-tab-bar {
@@ -6330,7 +6333,7 @@
 
 .wallet-tab-panel {
   display: grid;
-  gap: 18px;
+  gap: 20px;
 }
 
 .wallet-section-head {
@@ -6350,19 +6353,24 @@
   color: #091224;
 }
 
+.wallet-section-head h2 {
+  font-size: 1.45rem;
+  line-height: 1.15;
+}
+
 .wallet-section-head p,
-.wallet-offer-card p,
 .wallet-payment-head p,
 .wallet-return-state p,
 .wallet-subscription-empty {
   margin: 6px 0 0;
   color: #5b6473;
+  line-height: 1.6;
 }
 
 .wallet-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 20px;
 }
 
 .wallet-payment-list {
@@ -6373,9 +6381,9 @@
 .wallet-offer-card,
 .wallet-payment-card {
   display: grid;
-  gap: 16px;
+  gap: 18px;
   border: 1px solid rgba(12, 23, 45, 0.1);
-  border-radius: 24px;
+  border-radius: 26px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 252, 255, 0.96));
   padding: 22px;
 }
@@ -6384,6 +6392,20 @@
 .wallet-offer-card.premium {
   border-color: rgba(30, 136, 229, 0.22);
   box-shadow: 0 12px 30px rgba(30, 136, 229, 0.08);
+}
+
+.wallet-offer-card.point-card {
+  align-content: start;
+  background:
+    radial-gradient(circle at top right, rgba(36, 147, 245, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(246, 250, 255, 0.96));
+}
+
+.wallet-offer-card.subscription-card,
+.wallet-subscription-active-card {
+  background:
+    radial-gradient(circle at top right, rgba(255, 205, 96, 0.18), transparent 34%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.99), rgba(255, 250, 239, 0.94));
 }
 
 .wallet-offer-head,
@@ -6396,10 +6418,36 @@
   gap: 14px;
 }
 
+.wallet-offer-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.wallet-offer-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  min-height: 30px;
+  border-radius: 999px;
+  background: rgba(30, 136, 229, 0.08);
+  color: var(--sapphire);
+  padding: 0 12px;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.wallet-offer-kicker.premium {
+  background: rgba(255, 190, 11, 0.14);
+  color: #8a5b00;
+}
+
 .wallet-offer-head strong,
 .wallet-payment-head strong {
   color: var(--blue-dark);
   font-size: 1.08rem;
+  line-height: 1.3;
+  text-align: right;
 }
 
 .wallet-offer-grid,
@@ -6409,6 +6457,10 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
+}
+
+.wallet-offer-grid.compact {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .wallet-offer-grid div,
@@ -6459,8 +6511,9 @@
 }
 
 .wallet-benefit-chip {
-  background: rgba(30, 136, 229, 0.08);
-  color: var(--sapphire);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(138, 91, 0, 0.12);
+  color: #6f4d00;
 }
 
 .wallet-entitlement-chip {
@@ -6489,7 +6542,24 @@
 
 .wallet-subscription-summary {
   display: grid;
-  gap: 14px;
+  gap: 16px;
+  border: 1px solid rgba(12, 23, 45, 0.08);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 205, 96, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 249, 236, 0.94));
+  padding: 18px;
+}
+
+.wallet-subscription-summary-head {
+  display: grid;
+  gap: 6px;
+}
+
+.wallet-subscription-summary-head span {
+  color: #5b6473;
+  font-size: 0.92rem;
+  line-height: 1.55;
 }
 
 .wallet-subscription-empty {
@@ -6503,16 +6573,17 @@
 
 .wallet-subscription-active-card {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   border: 1px solid rgba(12, 23, 45, 0.08);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.96);
-  padding: 16px;
+  padding: 18px;
+  box-shadow: 0 12px 28px rgba(138, 91, 0, 0.06);
 }
 
 .wallet-subscription-active-main strong {
   display: block;
   color: #091224;
+  font-size: 1.08rem;
 }
 
 .wallet-subscription-active-main span {
@@ -6536,8 +6607,8 @@
 
 .wallet-return-card {
   display: grid;
-  gap: 18px;
-  padding: 24px;
+  gap: 20px;
+  padding: 28px;
 }
 
 .wallet-return-card.success {
@@ -6548,16 +6619,86 @@
   border-color: rgba(239, 68, 68, 0.18);
 }
 
-.wallet-return-state svg {
+.wallet-return-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.wallet-return-kicker {
+  color: #5b6473;
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.wallet-return-icon-shell {
+  width: 64px;
+  height: 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  background: rgba(30, 136, 229, 0.08);
   color: var(--blue-dark);
+  flex: 0 0 64px;
 }
 
-.wallet-return-card.success .wallet-return-state svg {
+.wallet-return-icon-shell.points {
+  background: rgba(30, 136, 229, 0.1);
+}
+
+.wallet-return-icon-shell.subscriptions {
+  background: rgba(255, 190, 11, 0.14);
+  color: #8a5b00;
+}
+
+.wallet-return-card.success .wallet-return-icon-shell {
   color: #059669;
+  background: rgba(16, 185, 129, 0.12);
 }
 
-.wallet-return-card.failed .wallet-return-state svg {
+.wallet-return-card.failed .wallet-return-icon-shell {
   color: #dc2626;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.wallet-return-highlight {
+  display: grid;
+  gap: 8px;
+  border-radius: 24px;
+  padding: 18px 20px;
+}
+
+.wallet-return-highlight span,
+.wallet-return-highlight small {
+  color: #5b6473;
+}
+
+.wallet-return-highlight strong {
+  color: #091224;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.05;
+}
+
+.wallet-return-highlight.points {
+  background: linear-gradient(135deg, rgba(36, 147, 245, 0.12), rgba(125, 211, 252, 0.18));
+}
+
+.wallet-return-highlight.subscription {
+  background: linear-gradient(135deg, rgba(255, 221, 87, 0.18), rgba(255, 190, 11, 0.1));
+}
+
+.wallet-return-card.points-return.success {
+  background:
+    radial-gradient(circle at top right, rgba(36, 147, 245, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(244, 250, 255, 0.98));
+}
+
+.wallet-return-card.subscriptions-return.success {
+  background:
+    radial-gradient(circle at top right, rgba(255, 205, 96, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(255, 249, 236, 0.96));
 }
 
 .wallet-return-note {
@@ -6595,6 +6736,11 @@
   .wallet-section-head {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .wallet-offer-head strong,
+  .wallet-payment-head strong {
+    text-align: left;
   }
 
   .wallet-card-grid {

@@ -7,6 +7,7 @@ import {
   Crown,
   LoaderCircle,
   RefreshCcw,
+  Sparkles,
   Wallet,
   XCircle,
 } from 'lucide-react'
@@ -47,6 +48,7 @@ const walletTabs = [
 ] as const
 
 type WalletTabId = (typeof walletTabs)[number]['id']
+type ReturnVariant = 'points' | 'subscriptions'
 
 const paymentStatusOptions: Array<{ label: string; value: WalletPaymentsParams['status'] }> = [
   { label: 'Tất cả', value: '' },
@@ -82,8 +84,8 @@ export function WalletPage() {
             <Wallet size={15} />
             Wallet hub
           </span>
-          <h1>Quản lý nạp point, gói subscription và lịch sử thanh toán của bạn.</h1>
-          <p>Chỉ hiển thị đúng dữ liệu cần thiết cho người dùng cuối theo contract backend hiện tại.</p>
+          <h1>Quản lý point, subscription và lịch sử thanh toán của bạn.</h1>
+          <p>Hiển thị đúng dữ liệu người dùng cần theo contract backend hiện tại, không thêm flow ngoài scope.</p>
         </div>
         <div className="profile-hero-actions">
           <Link className="button secondary" to="/dashboard">
@@ -105,7 +107,7 @@ export function WalletPage() {
       {summaryQuery.isLoading ? (
         <section className="profile-state-card">
           <LoaderCircle className="spin" size={24} />
-          <p>Đang tải ví điểm...</p>
+          <p>Đang tải thông tin ví...</p>
         </section>
       ) : null}
 
@@ -113,7 +115,7 @@ export function WalletPage() {
         <section className="profile-state-card error">
           <AlertCircle size={22} />
           <div>
-            <h2>Không thể tải ví điểm</h2>
+            <h2>Không thể tải thông tin ví</h2>
             <p>{getErrorMessage(summaryQuery.error)}</p>
           </div>
         </section>
@@ -174,14 +176,14 @@ function PointPackagesTab() {
       <div className="wallet-section-head">
         <div>
           <h2>Chọn gói point</h2>
-          <p>Thanh toán với VNPay để nạp point vào ví. FE không tự cộng point trước khi backend xác nhận callback.</p>
+          <p>Nạp point qua VNPay. Point chỉ được cộng sau khi backend xác minh callback thành công.</p>
         </div>
       </div>
 
       {pointPackagesQuery.isLoading ? (
         <section className="profile-state-card">
           <LoaderCircle className="spin" size={20} />
-          <p>Đang tải gói point...</p>
+          <p>Đang tải danh sách gói point...</p>
         </section>
       ) : null}
 
@@ -242,14 +244,14 @@ function SubscriptionPlansTab() {
       <div className="wallet-section-head">
         <div>
           <h2>Subscription của bạn</h2>
-          <p>Hiển thị gói cố định 30 ngày, quyền lợi đang áp dụng và điều hướng mua gói qua VNPay.</p>
+          <p>Xem gói đang hoạt động, quyền lợi hiện tại và mua gói mới qua VNPay.</p>
         </div>
       </div>
 
       {mySubscriptionsQuery.isLoading ? (
         <section className="profile-state-card">
           <LoaderCircle className="spin" size={20} />
-          <p>Đang tải subscription hiện tại...</p>
+          <p>Đang tải thông tin subscription hiện tại...</p>
         </section>
       ) : null}
 
@@ -324,7 +326,7 @@ function PaymentHistoryTab() {
       <div className="wallet-section-head">
         <div>
           <h2>Lịch sử thanh toán</h2>
-          <p>Render gọn lịch sử nạp point và mua gói. Nếu giao dịch còn pending, người dùng có thể thử lại thanh toán.</p>
+          <p>Theo dõi các giao dịch nạp point và mua subscription. Giao dịch pending có thể thanh toán lại.</p>
         </div>
         <label className="session-filter-field wallet-status-filter">
           <span>Trạng thái</span>
@@ -386,7 +388,7 @@ export function PointPurchaseReturnPage() {
   return (
     <WalletReturnPageShell
       backHref="/dashboard/wallet?tab=points"
-      backLabel="Về nạp point"
+      backLabel="Về tab nạp point"
       title="Kết quả nạp point"
       queryString={location.search}
       queryFn={walletApi.verifyPointPurchaseReturn}
@@ -401,8 +403,8 @@ export function SubscriptionPurchaseReturnPage() {
   return (
     <WalletReturnPageShell
       backHref="/dashboard/wallet?tab=subscriptions"
-      backLabel="Về subscription"
-      title="Kết quả mua gói"
+      backLabel="Về tab subscription"
+      title="Kết quả mua subscription"
       queryString={location.search}
       queryFn={walletApi.verifySubscriptionPurchaseReturn}
       variant="subscriptions"
@@ -423,7 +425,7 @@ function WalletReturnPageShell({
   backLabel: string
   queryString: string
   queryFn: (queryString: string) => Promise<VnPayReturnResultDto | SubscriptionPurchaseReturnResultDto>
-  variant: 'points' | 'subscriptions'
+  variant: ReturnVariant
 }) {
   const queryClient = useQueryClient()
 
@@ -456,7 +458,7 @@ function WalletReturnPageShell({
             VNPay return
           </span>
           <h1>{title}</h1>
-          <p>Trang này chỉ dùng callback query từ VNPay để gọi lại backend và hiển thị kết quả cuối cùng.</p>
+          <p>Trang này dùng query callback từ VNPay để gọi lại backend và hiển thị kết quả cuối cùng.</p>
         </div>
         <div className="profile-hero-actions">
           <Link className="button secondary" to={backHref}>
@@ -492,7 +494,7 @@ function WalletReturnPageShell({
         </section>
       ) : null}
 
-      {returnQuery.data ? <ReturnResultCard backHref={backHref} data={returnQuery.data} /> : null}
+      {returnQuery.data ? <ReturnResultCard backHref={backHref} data={returnQuery.data} variant={variant} /> : null}
     </MotionPage>
   )
 }
@@ -507,18 +509,17 @@ function PointPackageCard({
   isPending: boolean
 }) {
   return (
-    <article className={`wallet-offer-card${packageItem.isHighlighted ? ' featured' : ''}`}>
+    <article className={`wallet-offer-card point-card${packageItem.isHighlighted ? ' featured' : ''}`}>
       <div className="wallet-offer-head">
-        <div>
+        <div className="wallet-offer-copy">
+          <span className="wallet-offer-kicker">Nạp nhanh qua VNPay</span>
           <h3>{packageItem.name}</h3>
           {packageItem.badgeText ? <span className="wallet-premium-badge">{packageItem.badgeText}</span> : null}
         </div>
         <strong>{formatCurrencyVnd(packageItem.priceVnd)} {packageItem.currency}</strong>
       </div>
 
-      <p>{packageItem.description || 'Gói point phù hợp để tiếp tục học và đặt buổi học.'}</p>
-
-      <dl className="wallet-offer-grid">
+      <dl className="wallet-offer-grid compact">
         <div>
           <dt>Nhận được</dt>
           <dd>{formatPoints(packageItem.totalPoints)} point</dd>
@@ -547,9 +548,13 @@ function SubscriptionPlanCard({
   const isActive = isSubscriptionActive(activeSubscriptions, plan.planId)
 
   return (
-    <article className="wallet-offer-card premium">
+    <article className="wallet-offer-card premium subscription-card">
       <div className="wallet-offer-head">
-        <div>
+        <div className="wallet-offer-copy">
+          <span className="wallet-offer-kicker premium">
+            <Sparkles size={14} />
+            Gói premium theo tháng
+          </span>
           <h3>{plan.name}</h3>
           {isActive ? (
             <span className="wallet-premium-badge subtle">
@@ -620,45 +625,79 @@ function PaymentHistoryCard({ payment }: { payment: PaymentTransactionDto }) {
 function ReturnResultCard({
   data,
   backHref,
+  variant,
 }: {
   data: VnPayReturnResultDto | SubscriptionPurchaseReturnResultDto
   backHref: string
+  variant: ReturnVariant
 }) {
   const isSuccess = data.status === 'Success'
-  const title = isSuccess ? 'Thanh toán thành công' : 'Thanh toán chưa hoàn tất'
   const name =
-    'packageName' in data
-      ? data.packageName || 'Gói point'
-      : data.planName || 'Gói subscription'
+    variant === 'points'
+      ? 'packageName' in data
+        ? data.packageName || 'Gói point'
+        : 'Gói point'
+      : 'planName' in data
+        ? data.planName || 'Gói subscription'
+        : data.subscriptionPlanName || 'Gói subscription'
+
+  const wrapperClassName = `wallet-return-card ${variant}-return${isSuccess ? ' success' : ' failed'}`
 
   return (
-    <section className={`wallet-return-card${isSuccess ? ' success' : ' failed'}`}>
+    <section className={wrapperClassName}>
       <div className="wallet-return-state">
-        {isSuccess ? <CheckCircle2 size={26} /> : <XCircle size={26} />}
-        <div>
-          <h2>{title}</h2>
+        <div className={`wallet-return-icon-shell ${variant}`}>
+          {isSuccess ? <CheckCircle2 size={28} /> : <XCircle size={28} />}
+        </div>
+        <div className="wallet-return-copy">
+          <span className="wallet-return-kicker">
+            {variant === 'points' ? 'Kết quả nạp ví' : 'Kết quả kích hoạt gói'}
+          </span>
+          <h2>{getReturnTitle(variant, isSuccess)}</h2>
           <p>{name}</p>
         </div>
       </div>
+
+      {variant === 'points' ? (
+        <div className="wallet-return-highlight points">
+          <span>Point đã cộng</span>
+          <strong>{formatPoints(data.creditedPoints)}</strong>
+          <small>{isSuccess ? 'Số point đã được backend ghi nhận cho ví của bạn.' : 'Point sẽ chỉ được cộng khi backend xác minh giao dịch thành công.'}</small>
+        </div>
+      ) : (
+        <div className="wallet-return-highlight subscription">
+          <span>Subscription</span>
+          <strong>{name}</strong>
+          <small>
+            {isSuccess
+              ? 'Giao dịch đã được xác nhận. Trạng thái gói sẽ được đồng bộ từ backend.'
+              : 'Giao dịch chưa hoàn tất. Bạn có thể quay lại tab subscription để thử lại.'}
+          </small>
+        </div>
+      )}
 
       <dl className="wallet-return-grid">
         <div>
           <dt>Trạng thái</dt>
           <dd>{getPaymentStatusLabel(data.status as PaymentStatus)}</dd>
         </div>
-        <div>
-          <dt>Point đã cộng</dt>
-          <dd>{formatPoints(data.creditedPoints)}</dd>
-        </div>
+        {variant === 'points' || data.creditedPoints > 0 ? (
+          <div>
+            <dt>{variant === 'points' ? 'Point đã cộng' : 'Point thưởng đã cộng'}</dt>
+            <dd>{formatPoints(data.creditedPoints)}</dd>
+          </div>
+        ) : null}
       </dl>
 
       {data.alreadyProcessed ? (
-        <p className="wallet-return-note">Giao dịch này đã được xử lý trước đó. Kết quả hiện tại vẫn là hợp lệ.</p>
+        <p className="wallet-return-note">
+          Giao dịch này đã được xử lý trước đó. Kết quả hiện tại vẫn là kết quả hợp lệ từ backend.
+        </p>
       ) : null}
 
       <div className="wallet-return-actions">
         <Link className="button primary" to={backHref}>
-          Về wallet
+          {variant === 'points' ? 'Về tab nạp point' : 'Về tab subscription'}
         </Link>
       </div>
     </section>
@@ -706,6 +745,14 @@ function PaginationControls({
       </button>
     </div>
   )
+}
+
+function getReturnTitle(variant: ReturnVariant, isSuccess: boolean) {
+  if (variant === 'points') {
+    return isSuccess ? 'Nạp point thành công' : 'Nạp point chưa hoàn tất'
+  }
+
+  return isSuccess ? 'Kích hoạt subscription thành công' : 'Mua subscription chưa hoàn tất'
 }
 
 function normalizeWalletTab(value: string | null): WalletTabId {
