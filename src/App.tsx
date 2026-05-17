@@ -42,6 +42,7 @@ import {
   requiredSignupPolicyTypes,
 } from './features/policies/policyUtils'
 import { AdminSessionWalletPage } from './features/admin-session-wallet/AdminSessionWalletPage'
+import { AdminAchievementsPage } from './features/achievements/AdminAchievementsPage'
 import { AdminSkillsPage } from './features/skills/AdminSkillsPage'
 import { SessionDetailPage } from './features/sessions/SessionDetailPage'
 import {
@@ -51,6 +52,7 @@ import {
 } from './features/sessions/SessionPages'
 import { CompanionSearchPage } from './features/sessions/CompanionSearchPage'
 import { CompanionDetailPage } from './features/sessions/CompanionDetailPage'
+import { CompanionSkillDetailPage } from './features/sessions/CompanionSkillDetailPage'
 import { WalletPage } from './features/wallet/WalletPage'
 import { useAppStore, type UserRole } from './store/useAppStore'
 import './App.css'
@@ -119,6 +121,14 @@ function App() {
             }
           />
           <Route
+            path="/dashboard/admin/achievements"
+            element={
+              <ProtectedRoute>
+                <AdminAchievementsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/dashboard/wallet"
             element={
               <ProtectedRoute>
@@ -172,6 +182,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CompanionDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/companions/:companionId/skills/:skillId"
+            element={
+              <ProtectedRoute>
+                <CompanionSkillDetailPage />
               </ProtectedRoute>
             }
           />

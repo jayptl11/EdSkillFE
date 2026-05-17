@@ -18,6 +18,7 @@ import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
 import { useAppStore } from '../../store/useAppStore'
+import { AchievementSection } from '../achievements/AchievementSection'
 import { SkillAutocomplete } from '../skills/SkillAutocomplete'
 import {
   clearSavedAvatar,
@@ -483,6 +484,14 @@ export function OwnerProfilePage() {
                 </div>
               </dl>
             </div>
+
+            <div className="profile-meta-card profile-panel">
+              <AchievementSection
+                achievements={profileQuery.data.achievements}
+                compact
+                emptyLabel="Bạn chưa có thành tích nào."
+              />
+            </div>
           </aside>
 
           <form className="profile-form-card" onSubmit={handleSubmit}>
@@ -839,6 +848,14 @@ function PublicProfileCard({ profile }: { profile: ProfileDto }) {
           <SkillChips emptyLabel="Chưa cập nhật kỹ năng muốn học." skills={profile.skillsToLearn} />
         </div>
         ) : null}
+
+        <div className="profile-meta-card">
+          <AchievementSection
+            achievements={profile.achievements}
+            compact
+            emptyLabel="Người dùng này chưa có thành tích nào."
+          />
+        </div>
       </div>
     </section>
   )

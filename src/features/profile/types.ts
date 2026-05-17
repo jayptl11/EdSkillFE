@@ -1,4 +1,5 @@
 import type { UserRole } from '../../store/useAppStore'
+import type { AchievementSummaryDto } from '../achievements/types'
 
 export type ProfileRole = UserRole
 
@@ -22,6 +23,7 @@ export interface ProfileDto {
   skillsToLearn: string[]
   teachingSkills: ProfileSkillDto[]
   learningSkills: ProfileSkillDto[]
+  achievements: AchievementSummaryDto[]
   isPublic: boolean
   roles: ProfileRole[]
   totalSessions: number

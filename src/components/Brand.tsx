@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'motion/react'
-import { BookOpen, CalendarRange, Coins, LogOut, PlusCircle, Settings, User, Wallet } from 'lucide-react'
+import { Award, BookOpen, CalendarRange, Coins, LogOut, PlusCircle, Settings, User, Wallet } from 'lucide-react'
 import edSkillLogo from '../assets/edskill-logo.png'
 import { useAppStore } from '../store/useAppStore'
 import { walletApi, walletKeys } from '../features/wallet/walletApi'
@@ -80,9 +80,9 @@ function UserNavDropdown() {
                 Hồ sơ
               </Link>
             </div>
-            
+
             <div className="dropdown-divider" />
-            
+
             {session.roles.includes('admin') && (
               <>
                 <div className="dropdown-section">
@@ -94,11 +94,15 @@ function UserNavDropdown() {
                     <Coins size={16} />
                     Quản lý điểm thưởng
                   </Link>
+                  <Link className="dropdown-item" onClick={close} to="/dashboard/admin/achievements">
+                    <Award size={16} />
+                    Quản lý thành tích
+                  </Link>
                 </div>
                 <div className="dropdown-divider" />
               </>
             )}
-            
+
             <div className="dropdown-section">
               {session.roles.includes('companion') && (
                 <>
@@ -121,7 +125,7 @@ function UserNavDropdown() {
             </div>
 
             <div className="dropdown-divider" />
-            
+
             <div className="dropdown-section">
               <button className="dropdown-item text-danger" onClick={handleLogout}>
                 <LogOut size={16} />
@@ -159,11 +163,9 @@ export function SiteHeader() {
         {session ? (
           <>
             {!session.roles.includes('admin') && (
-              <>
-                <Link className="nav-link" to="/dashboard/companions">
-                  Khám phá skill mới
-                </Link>
-              </>
+              <Link className="nav-link" to="/dashboard/companions">
+                Khám phá skill mới
+              </Link>
             )}
             <Link className="nav-link nav-wallet-link" to="/dashboard/wallet">
               <Wallet size={16} />

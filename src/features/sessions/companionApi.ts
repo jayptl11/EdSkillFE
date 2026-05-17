@@ -1,35 +1,25 @@
 import { apiGet } from '../../api/client'
 import { toQueryString } from '../../api/query'
-import type { SessionDto, SessionPricingPreviewDto } from '../sessions/types'
-
-// ─── Enums ──────────────────────────────────────────────────────────────────
+import type { AchievementSummaryDto } from '../achievements/types'
+import type { SessionDto, SessionPricingPreviewDto } from './types'
 
 export type CredentialCountGroup = 'Zero' | 'One' | 'Two' | 'ThreeOrMore'
 
-// ─── Params ─────────────────────────────────────────────────────────────────
-
 export interface CompanionSearchParams {
   skillId: string
-  /** Ngưỡng thời lượng tối thiểu (phút) — backend lọc >= giá trị này */
   minimumDurationMinutes?: 30 | 45 | 60 | 90 | 120
-  /** Điểm tối đa learner muốn chi — backend lọc learnerChargePoints <= giá trị này */
   maxLearnerChargePoints?: number
-  /** Nhóm chứng chỉ */
   credentialCountGroup?: CredentialCountGroup
   page?: number
   limit?: number
 }
 
-export interface CompanionDetailParams {
-  skillId: string
-  minimumDurationMinutes?: 30 | 45 | 60 | 90 | 120
-  maxLearnerChargePoints?: number
-  credentialCountGroup?: CredentialCountGroup
+export interface CompanionSkillDetailParams {
   reviewPage?: number
   reviewLimit?: number
+  offerPage?: number
+  offerLimit?: number
 }
-
-// ─── DTOs ───────────────────────────────────────────────────────────────────
 
 export interface CompanionSearchItemDto {
   companionId: string
@@ -37,7 +27,6 @@ export interface CompanionSearchItemDto {
   avatarUrl: string | null
   bio: string | null
   skillsToTeach: string[]
-  /** Số chứng chỉ đã xác minh */
   credentialCount: number
   avgRating: number
   totalReviews: number
@@ -45,7 +34,6 @@ export interface CompanionSearchItemDto {
   lowestPointCost: number
   pricingPreview: SessionPricingPreviewDto | null
   nextScheduledAt: string
-  /** Danh sách offer đã match — nội bộ FE, không render trực tiếp trên card */
   matchedOffers: SessionDto[]
 }
 
@@ -56,7 +44,42 @@ export interface CompanionSearchResponse {
   limit: number
 }
 
-export interface ReviewItemDto {
+export interface CompanionActivitySummaryDto {
+  totalSessions: number
+  totalTeachingHours: number
+  avgRating: number
+  totalReviews: number
+  lastActiveAt: string | null
+}
+
+export interface CompanionTeachingSkillDto {
+  skillId: string
+  name: string
+  iconKey: string | null
+  offerCount: number
+  startingPointCost: number | null
+  nextScheduledAt: string | null
+  hasAvailableOffers: boolean
+}
+
+export interface CompanionPublicProfileDto {
+  companionId: string
+  displayName: string
+  avatarUrl: string | null
+  bio: string | null
+  roles: string[]
+  activitySummary: CompanionActivitySummaryDto
+  achievements: AchievementSummaryDto[]
+  teachingSkills: CompanionTeachingSkillDto[]
+}
+
+export interface CompanionSkillInfoDto {
+  skillId: string
+  name: string
+  iconKey: string | null
+}
+
+export interface CompanionReviewDto {
   reviewId: string
   rating: number
   comment: string | null
@@ -64,30 +87,28 @@ export interface ReviewItemDto {
   createdAt: string
 }
 
-export interface CompanionDetailDto {
-  companionId: string
-  displayName: string
-  avatarUrl: string | null
-  bio: string | null
-  skillsToTeach: string[]
-  roles: string[]
-  /** Số chứng chỉ đã xác minh */
-  credentialCount: number
-  totalSessions: number
-  lastActiveAt: string | null
-  avgRating: number
-  totalReviews: number
-  reviews: {
-    data: ReviewItemDto[]
-    total: number
-    page: number
-    limit: number
-  }
-  /** Sessions đã được BE lọc sẵn: online + skillId + filter duration/price/credential */
-  sessions: SessionDto[]
+export interface CompanionReviewListDto {
+  data: CompanionReviewDto[]
+  total: number
+  page: number
+  limit: number
 }
 
-// ─── Validation error ────────────────────────────────────────────────────────
+export interface SessionListDto {
+  data: SessionDto[]
+  total: number
+  page: number
+  limit: number
+}
+
+export interface CompanionSkillDetailDto {
+  companionId: string
+  skill: CompanionSkillInfoDto
+  avgRating: number
+  totalReviews: number
+  offers: SessionListDto
+  reviews: CompanionReviewListDto
+}
 
 export type CompanionValidationErrorCode =
   | 'UNSUPPORTED_DELIVERY_MODE_FILTER'
@@ -107,45 +128,22 @@ export interface CompanionValidationError {
   }>
 }
 
-// ─── Query Keys ─────────────────────────────────────────────────────────────
-
 export const companionKeys = {
   search: (params: CompanionSearchParams) => ['companions', 'search', params] as const,
-  detail: (companionId: string, params: CompanionDetailParams) =>
-    ['companions', 'detail', companionId, params] as const,
+  publicProfile: (companionId: string) => ['companions', 'public-profile', companionId] as const,
+  skillDetail: (companionId: string, skillId: string, params: CompanionSkillDetailParams) =>
+    ['companions', 'skill-detail', companionId, skillId, params] as const,
 }
-
-// ─── Query builder (theo tài liệu §8.2) ─────────────────────────────────────
-
-export function buildCompanionSearchQuery(filters: CompanionSearchParams): string {
-  const params = new URLSearchParams()
-
-  params.set('skillId', filters.skillId)
-
-  if (filters.minimumDurationMinutes) {
-    params.set('minimumDurationMinutes', String(filters.minimumDurationMinutes))
-  }
-
-  if (typeof filters.maxLearnerChargePoints === 'number' && filters.maxLearnerChargePoints > 0) {
-    params.set('maxLearnerChargePoints', String(filters.maxLearnerChargePoints))
-  }
-
-  if (filters.credentialCountGroup) {
-    params.set('credentialCountGroup', filters.credentialCountGroup)
-  }
-
-  params.set('page', String(filters.page ?? 1))
-  params.set('limit', String(filters.limit ?? 20))
-
-  return `?${params.toString()}`
-}
-
-// ─── API ────────────────────────────────────────────────────────────────────
 
 export const companionApi = {
   search: (params: CompanionSearchParams) =>
     apiGet<CompanionSearchResponse>(`/api/companions/search${toQueryString(params)}`),
 
-  getDetail: (companionId: string, params: CompanionDetailParams) =>
-    apiGet<CompanionDetailDto>(`/api/companions/${companionId}${toQueryString(params)}`),
+  getPublicProfile: (companionId: string) =>
+    apiGet<CompanionPublicProfileDto>(`/api/companions/${companionId}/public-profile`),
+
+  getSkillDetail: (companionId: string, skillId: string, params: CompanionSkillDetailParams) =>
+    apiGet<CompanionSkillDetailDto>(
+      `/api/companions/${companionId}/skills/${skillId}${toQueryString(params)}`,
+    ),
 }

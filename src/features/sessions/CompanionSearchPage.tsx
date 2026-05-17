@@ -145,18 +145,6 @@ export function CompanionSearchPage() {
   const buildDetailLink = (companionId: string) => {
     const queryString = new URLSearchParams({ skillId })
 
-    if (minimumDurationMinutes) {
-      queryString.set('minimumDurationMinutes', String(minimumDurationMinutes))
-    }
-
-    if (maxLearnerChargePoints && Number(maxLearnerChargePoints) > 0) {
-      queryString.set('maxLearnerChargePoints', maxLearnerChargePoints)
-    }
-
-    if (credentialCountGroup) {
-      queryString.set('credentialCountGroup', credentialCountGroup)
-    }
-
     return `/dashboard/companions/${companionId}?${queryString.toString()}`
   }
 
@@ -541,15 +529,7 @@ export function CompanionSearchPage() {
 
                         <div className="discovery-hz-actions">
                           <span className="hz-btn-view">Xem chi tiết</span>
-                          <span
-                            className="hz-btn-book"
-                            onClick={(event) => {
-                              event.preventDefault()
-                              event.stopPropagation()
-                            }}
-                          >
-                            Đăng Kí
-                          </span>
+                          <span className="hz-btn-book">Profile</span>
                         </div>
                       </div>
                     </Link>
