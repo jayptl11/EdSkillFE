@@ -7,6 +7,7 @@ import type {
   AdminAchievementDto,
   CreateAchievementRequest,
   GenerateAchievementIconUploadUrlRequest,
+  MyAchievementsDto,
   UpdateAchievementRequest,
 } from './types'
 
@@ -21,9 +22,12 @@ const MAX_ACHIEVEMENT_ICON_SIZE_BYTES = 10 * 1024 * 1024
 
 export const achievementKeys = {
   adminList: (includeInactive: boolean) => ['achievements', 'admin', { includeInactive }] as const,
+  me: () => ['achievements', 'me'] as const,
 }
 
 export const achievementApi = {
+  getMyAchievements: () => apiGet<MyAchievementsDto>('/api/achievements/me', { auth: true }),
+
   getAdminAchievements: (includeInactive = true) =>
     apiGet<AdminAchievementDto[]>(`/api/admin/achievements?includeInactive=${includeInactive}`, { auth: true }),
 

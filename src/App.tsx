@@ -25,13 +25,13 @@ import {
 import { queryClient } from './api/queryClient'
 import { AuthPage, FieldIcon } from './components/AuthLayout'
 import { SiteHeader } from './components/Brand'
-import { DashboardShell } from './components/DashboardView'
 import { LearningHero } from './components/LearningHero'
 import { MotionPage } from './components/MotionPage'
 import { ToastViewport } from './components/Toast'
 import { showToast } from './components/toastEvents'
 
-import { OwnerProfilePage, PublicProfilePage } from './features/profile/ProfilePages'
+import { DashboardTabsPage } from './features/dashboard/DashboardTabsPage'
+import { PublicProfilePage } from './features/profile/ProfilePages'
 import { profileApi } from './features/profile/profileApi'
 import { PolicyConsentGate } from './features/policies/PolicyConsentGate'
 import { PoliciesPage, PolicyDetailPage } from './features/policies/PolicyPages'
@@ -58,7 +58,7 @@ import {
   SubscriptionPurchaseReturnPage,
   WalletPage,
 } from './features/wallet/WalletPage'
-import { useAppStore, type UserRole } from './store/useAppStore'
+import { useAppStore } from './store/useAppStore'
 import './App.css'
 
 type OtpPurpose = 'register' | 'reset'
@@ -104,7 +104,7 @@ function App() {
             path="/dashboard/profile"
             element={
               <ProtectedRoute>
-                <OwnerProfilePage />
+                <Navigate replace to="/dashboard?tab=profile" />
               </ProtectedRoute>
             }
           />
@@ -966,23 +966,7 @@ function ResetPasswordPage() {
 }
 
 function DashboardPage() {
-  const session = useAppStore((state) => state.session)
-  const primaryRole = getPrimaryRole(session?.roles ?? [])
-
-  if (!session) {
-    return <Navigate replace to="/login" />
-  }
-
-  return (
-    <DashboardShell
-      dailyReminderNeeded={session.shouldPromptDailyReminderTime}
-      email={session.email}
-      getCardCopy={getDashboardCopy}
-      primaryRole={primaryRole}
-      roles={session.roles}
-      username={session.username}
-    />
-  )
+  return <DashboardTabsPage />
 }
 
 const validateRegisterForm = (form: {
@@ -1024,18 +1008,6 @@ const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim(
 const isStrongPassword = (value: string) =>
   /[A-Z]/.test(value) && /[a-z]/.test(value) && /\d/.test(value) && value.length >= 8
 
-const getPrimaryRole = (roles: UserRole[]) => {
-  if (roles.includes('admin')) {
-    return 'admin'
-  }
-
-  if (roles.includes('companion')) {
-    return 'companion'
-  }
-
-  return 'learner'
-}
-
 const getDashboardCopy = (card: string, role: string) => {
   if (card === 'Mục tiêu kỹ năng') {
     return role === 'companion'
@@ -1055,6 +1027,8 @@ const getDashboardCopy = (card: string, role: string) => {
 
   return 'Giữ nhịp đều mỗi ngày để biến kế hoạch học thành tiến triển thật.'
 }
+
+void getDashboardCopy
 
 function normalizeIntent(value: string | null | undefined): SignupIntent | null {
   if (value === 'learn' || value === 'teach') {

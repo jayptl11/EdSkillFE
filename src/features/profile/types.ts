@@ -3,6 +3,7 @@ import type { AchievementSummaryDto } from '../achievements/types'
 import type { ActiveSubscriptionSummaryDto, ResolvedSubscriptionEntitlementsDto } from '../wallet/types'
 
 export type ProfileRole = UserRole
+export type UserGender = 'Male' | 'Female' | 'NonBinary' | 'PreferNotToSay'
 
 export interface ProfileSkillDto {
   skillId: string
@@ -12,14 +13,18 @@ export interface ProfileSkillDto {
 
 export interface ProfileDto {
   userId: string
+  email: string
   displayName: string
   avatarUrl: string | null
   bio: string | null
   dateOfBirth: string | null
   phone: string | null
+  gender: UserGender | null
+  socialLinkUrl: string | null
   degreeUrl: string | null
   credentialUrls: string[]
   credentialCount: number
+  address: string | null
   skillsToTeach: string[]
   skillsToLearn: string[]
   teachingSkills: ProfileSkillDto[]
@@ -78,10 +83,13 @@ export interface UpdateMyProfilePayload {
   bio?: string | null
   dateOfBirth?: string | null
   phone?: string | null
+  gender?: UserGender | null
+  socialLinkUrl?: string | null
   credentialUrls?: string[] | null
   skillsToTeach?: string[] | null
   skillsToLearn?: string[] | null
   avatarUrl?: string | null
+  address?: string | null
   isPublic?: boolean
 }
 
@@ -90,11 +98,14 @@ export interface ProfileFormValues {
   bio: string
   dateOfBirth: string
   phone: string
+  gender: UserGender | ''
+  socialLinkUrl: string
   credentialUrls: string[]
   skillsToTeach: string[]
   skillsToLearn: string[]
   isPublic: boolean
   avatarUrl: string | null
+  address: string
 }
 
 export type ProfileField =
@@ -102,9 +113,12 @@ export type ProfileField =
   | 'bio'
   | 'dateOfBirth'
   | 'phone'
+  | 'gender'
+  | 'socialLinkUrl'
   | 'degreeUrl'
   | 'credentialUrls'
   | 'skillsToTeach'
   | 'skillsToLearn'
   | 'avatarUrl'
+  | 'address'
   | 'isPublic'

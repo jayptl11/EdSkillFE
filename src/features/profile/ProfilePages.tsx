@@ -48,11 +48,14 @@ const emptyForm: ProfileFormValues = {
   bio: '',
   dateOfBirth: '',
   phone: '',
+  gender: '',
+  socialLinkUrl: '',
   credentialUrls: [],
   skillsToTeach: [],
   skillsToLearn: [],
   isPublic: true,
   avatarUrl: null,
+  address: '',
 }
 
 export function OwnerProfilePage() {

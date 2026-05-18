@@ -9,6 +9,35 @@ export interface AchievementSummaryDto {
 export type AchievementTrack = 'learner' | 'companion'
 export type AchievementMetric = 'completed_sessions' | 'completed_hours' | 'distinct_completed_learners'
 
+export interface MyAchievementEarnedDto {
+  achievementId: string
+  name: string
+  description: string
+  iconUrl: string | null
+  track: AchievementTrack
+  metric: AchievementMetric
+  threshold: number
+  awardedAt: string
+}
+
+export interface MyUpcomingAchievementDto {
+  achievementId: string
+  name: string
+  description: string
+  iconUrl: string | null
+  track: AchievementTrack
+  metric: AchievementMetric
+  currentValue: number
+  threshold: number
+  remainingValue: number
+  progressPercent: number
+}
+
+export interface MyAchievementsDto {
+  earned: MyAchievementEarnedDto[]
+  upcoming: MyUpcomingAchievementDto[]
+}
+
 export interface AdminAchievementDto {
   achievementId: string
   name: string

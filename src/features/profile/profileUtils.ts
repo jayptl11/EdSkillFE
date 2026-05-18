@@ -3,6 +3,7 @@ import type { ProfileDto, ProfileField, ProfileFormValues, UpdateMyProfilePayloa
 
 const DISPLAY_NAME_REGEX = /^[\p{L}\p{N} ]+$/u
 const PHONE_REGEX = /^[\d+\-() ]{8,20}$/
+const HTTP_URL_REGEX = /^https?:\/\/\S+$/i
 const MAX_SKILLS_PER_LIST = 20
 const MAX_SKILL_LENGTH = 50
 const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
@@ -18,11 +19,14 @@ export function toProfileFormValues(profile: ProfileDto): ProfileFormValues {
     bio: profile.bio ?? '',
     dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.slice(0, 10) : '',
     phone: profile.phone ?? '',
+    gender: profile.gender ?? '',
+    socialLinkUrl: profile.socialLinkUrl ?? '',
     credentialUrls: profile.credentialUrls ?? [],
     skillsToTeach: profile.skillsToTeach ?? [],
     skillsToLearn: profile.skillsToLearn ?? [],
     isPublic: profile.isPublic,
     avatarUrl: profile.avatarUrl,
+    address: profile.address ?? '',
   }
 }
 
@@ -56,6 +60,22 @@ export function buildProfileUpdatePayload(
   const initialPhone = initial.phone.trim()
   if (currentPhone !== initialPhone) {
     payload.phone = currentPhone || null
+  }
+
+  if (current.gender !== initial.gender) {
+    payload.gender = current.gender || null
+  }
+
+  const currentSocialLinkUrl = current.socialLinkUrl.trim()
+  const initialSocialLinkUrl = initial.socialLinkUrl.trim()
+  if (currentSocialLinkUrl !== initialSocialLinkUrl) {
+    payload.socialLinkUrl = currentSocialLinkUrl || null
+  }
+
+  const currentAddress = current.address.trim()
+  const initialAddress = initial.address.trim()
+  if (currentAddress !== initialAddress) {
+    payload.address = currentAddress || null
   }
 
   if (!areStringArraysEqual(current.credentialUrls, initial.credentialUrls)) {
@@ -122,6 +142,14 @@ export function validateProfileForm(values: ProfileFormValues): ProfileFieldErro
     } else if (!PHONE_REGEX.test(phone)) {
       errors.phone = 'Số điện thoại chỉ được chứa chữ số, dấu +, -, () và dấu cách.'
     }
+  }
+
+  if (values.socialLinkUrl.trim() && !HTTP_URL_REGEX.test(values.socialLinkUrl.trim())) {
+    errors.socialLinkUrl = 'Liên kết mạng xã hội cần bắt đầu bằng http:// hoặc https://.'
+  }
+
+  if (values.address.length > 200) {
+    errors.address = 'Địa chỉ tối đa 200 ký tự.'
   }
 
   const teachError = validateSkills(values.skillsToTeach, 'dạy')
@@ -269,10 +297,13 @@ function mapApiPropertyToField(property?: string): ProfileField | null {
     Bio: 'bio',
     DateOfBirth: 'dateOfBirth',
     Phone: 'phone',
+    Gender: 'gender',
+    SocialLinkUrl: 'socialLinkUrl',
     CredentialUrls: 'credentialUrls',
     SkillsToTeach: 'skillsToTeach',
     SkillsToLearn: 'skillsToLearn',
     AvatarUrl: 'avatarUrl',
+    Address: 'address',
     IsPublic: 'isPublic',
   }
 
