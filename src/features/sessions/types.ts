@@ -9,6 +9,7 @@ export type SessionStatus =
   | 'Disputed'
 
 export type SessionDeliveryMode = 'Online' | 'Offline'
+export type SessionRole = 'learner' | 'companion'
 
 export type SessionPricingModel = 'FormulaV1' | 'LegacyManual'
 
@@ -86,6 +87,23 @@ export interface SessionStatusDto {
   companionConfirmed: boolean
 }
 
+export interface SessionRoomAccessDto {
+  sessionId: string
+  roomName: string | null
+  jitsiDomain: string
+  displayName: string
+  avatarUrl: string | null
+  role: SessionRole
+  status: SessionStatus
+  canJoin: boolean
+  denyCode: string | null
+  denyMessage: string | null
+  scheduledAt: string
+  durationMinutes: number
+  joinOpenAt: string
+  joinCloseAt: string
+}
+
 /** @deprecated Dùng CreateSessionRequest thay thế */
 export interface CreateSessionPayload {
   skill: string
@@ -124,5 +142,5 @@ export interface CancelSessionPayload {
 }
 
 export interface LeaveSessionPayload {
-  actualDuration?: number
+  actualDuration: number | null
 }

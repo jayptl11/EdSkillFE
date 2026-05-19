@@ -27,10 +27,11 @@ import { getSkillIcon } from '../skills/skillIcons'
 import { useAppStore } from '../../store/useAppStore'
 import {
   buildCreateSessionPayload,
-  buildJitsiUrl,
+  canRenderSessionRoomEntry,
   formatSessionDateTime,
   formatSessionPoints,
   getCurrentSessionRole,
+  getSessionRoomRoute,
   getSessionStatusLabel,
   invalidateSessionQueries,
   invalidateWalletQueries,
@@ -565,8 +566,7 @@ function SessionCard({
 }) {
   const currentRole = getCurrentSessionRole(session, viewerId)
   const isOnline = session.deliveryMode === 'Online'
-  const canJoin = isOnline && session.jitsiRoomId !== null
-  const joinUrl = session.jitsiRoomId ? buildJitsiUrl(session.jitsiRoomId) : null
+  const canJoinRoom = canRenderSessionRoomEntry(session) && currentRole !== 'viewer'
   const isFormula = session.pricingModel === 'FormulaV1'
   const preview = session.pricingPreview
   const priceLabel =
@@ -663,10 +663,10 @@ function SessionCard({
             {isBooking ? <LoaderCircle className="spin" size={18} /> : 'ÄÄƒng kÃ½'}
           </button>
         ) : null}
-        {session.status === 'Confirmed' && canJoin && joinUrl && currentRole !== 'viewer' ? (
-          <a className="button secondary" href={joinUrl} rel="noreferrer" target="_blank">
-            VÃ o phÃ²ng há»c
-          </a>
+        {canJoinRoom ? (
+          <Link className="button secondary" to={getSessionRoomRoute(session.sessionId)}>
+            Join session
+          </Link>
         ) : null}
       </div>
     </article>

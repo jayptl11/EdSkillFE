@@ -8687,3 +8687,72 @@
   border: 1px solid rgba(0,45,114,0.08) !important;
   color: var(--sapphire) !important;
 }
+
+.session-room-page {
+  gap: 1.5rem;
+}
+
+.session-room-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.8fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.session-room-stage,
+.session-room-side,
+.session-room-post-call,
+.session-room-denied-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.session-room-surface {
+  min-height: 72vh;
+  border-radius: 24px;
+  overflow: hidden;
+  background: rgba(12, 20, 36, 0.88);
+  box-shadow: 0 24px 48px rgba(6, 16, 35, 0.16);
+}
+
+.session-room-surface iframe {
+  width: 100%;
+  min-height: 72vh;
+  border: 0;
+}
+
+.session-room-inline-state,
+.session-room-countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-weight: 600;
+}
+
+.session-room-supporting-copy {
+  margin: 0;
+  color: var(--color-text-secondary, var(--muted));
+}
+
+.session-room-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.session-room-post-call-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+@media (max-width: 960px) {
+  .session-room-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .session-room-surface,
+  .session-room-surface iframe {
+    min-height: 60vh;
+  }
+}

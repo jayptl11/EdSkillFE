@@ -8,6 +8,7 @@ import type {
   LeaveSessionPayload,
   RejectSessionPayload,
   SessionDto,
+  SessionRoomAccessDto,
   SessionStatusDto,
   SessionsListParams,
 } from './types'
@@ -18,6 +19,8 @@ export const sessionKeys = {
   list: (params: SessionsListParams) => ['sessions', 'list', params] as const,
   details: () => ['sessions', 'detail'] as const,
   detail: (sessionId: string) => ['sessions', 'detail', sessionId] as const,
+  roomAccesses: () => ['sessions', 'room-access'] as const,
+  roomAccess: (sessionId: string) => ['sessions', 'room-access', sessionId] as const,
   statuses: () => ['sessions', 'status'] as const,
   status: (sessionId: string) => ['sessions', 'status', sessionId] as const,
 }
@@ -29,6 +32,9 @@ export const sessionsApi = {
     apiGet<PaginatedResponse<SessionDto>>(`/api/sessions${toQueryString(params)}`, { auth: true }),
 
   getById: (sessionId: string) => apiGet<SessionDto>(`/api/sessions/${sessionId}`, { auth: true }),
+
+  getRoomAccess: (sessionId: string) =>
+    apiGet<SessionRoomAccessDto>(`/api/sessions/${sessionId}/room-access`, { auth: true }),
 
   book: (sessionId: string, payload: BookSessionRequest) =>
     apiPost<SessionDto>(`/api/sessions/${sessionId}/book`, payload, { auth: true }),
@@ -48,7 +54,7 @@ export const sessionsApi = {
     apiPost<SessionDto>(`/api/sessions/${sessionId}/leave`, payload, { auth: true }),
 
   confirmCompletion: (sessionId: string) =>
-    apiPost<SessionDto>(`/api/sessions/${sessionId}/confirm-completion`, undefined, { auth: true }),
+    apiPost<void>(`/api/sessions/${sessionId}/confirm-completion`, undefined, { auth: true }),
 
   getStatus: (sessionId: string) =>
     apiGet<SessionStatusDto>(`/api/sessions/${sessionId}/status`, { auth: true }),

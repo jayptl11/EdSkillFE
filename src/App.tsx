@@ -45,6 +45,7 @@ import { AdminSessionWalletPage } from './features/admin-session-wallet/AdminSes
 import { AdminAchievementsPage } from './features/achievements/AdminAchievementsPage'
 import { AdminSkillsPage } from './features/skills/AdminSkillsPage'
 import { SessionDetailPage } from './features/sessions/SessionDetailPage'
+import { SessionRoomPage } from './features/sessions/SessionRoomPage'
 import {
   CreateSessionOfferPage,
   LearningSessionsPage,
@@ -174,6 +175,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <SessionDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sessions/:sessionId/room"
+            element={
+              <ProtectedRoute>
+                <SessionRoomPage />
               </ProtectedRoute>
             }
           />

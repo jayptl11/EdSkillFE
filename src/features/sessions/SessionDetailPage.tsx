@@ -19,12 +19,13 @@ import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
 import { useAppStore } from '../../store/useAppStore'
 import {
-  buildJitsiUrl,
   canBookSession,
   canCancelSession,
+  canRenderSessionRoomEntry,
   formatSessionDateTime,
   formatSessionPoints,
   getCurrentSessionRole,
+  getSessionRoomRoute,
   getSessionStatusLabel,
   invalidateSessionQueries,
   invalidateWalletQueries,
@@ -40,7 +41,6 @@ export function SessionDetailPage() {
   const queryClient = useQueryClient()
   const [cancelReason, setCancelReason] = useState('')
   const [rejectReason, setRejectReason] = useState('')
-  const [leaveDuration, setLeaveDuration] = useState('')
 
   const detailQuery = useQuery({
     queryKey: sessionKeys.detail(sessionId),
@@ -101,31 +101,15 @@ export function SessionDetailPage() {
     onError: handleActionError,
   })
 
-  const joinMutation = useMutation({
-    mutationFn: () => sessionsApi.join(sessionId),
-    onSuccess: async (updatedSession) => {
-      showToast({ kind: 'success', message: 'Buổi học đã bắt đầu.' })
-      await invalidateSessionQueries(queryClient, updatedSession.sessionId)
-
-      if (updatedSession.jitsiRoomId) {
-        window.open(buildJitsiUrl(updatedSession.jitsiRoomId), '_blank', 'noopener,noreferrer')
-      }
-    },
-    onError: handleActionError,
-  })
-
-  const leaveMutation = useMutation({
-    mutationFn: () =>
-      sessionsApi.leave(sessionId, {
-        actualDuration: leaveDuration.trim() ? Number(leaveDuration) : undefined,
-      }),
-    onSuccess: handleSessionOnlySuccess('Đã rời khỏi buổi học.'),
-    onError: handleActionError,
-  })
-
   const completionMutation = useMutation({
     mutationFn: () => sessionsApi.confirmCompletion(sessionId),
-    onSuccess: handleWalletSessionSuccess('Đã xác nhận hoàn tất buổi học.'),
+    onSuccess: async () => {
+      showToast({ kind: 'success', message: 'Đã xác nhận hoàn tất buổi học.' })
+      await Promise.all([
+        invalidateSessionQueries(queryClient, sessionId),
+        invalidateWalletQueries(queryClient),
+      ])
+    },
     onError: handleActionError,
   })
 
@@ -341,38 +325,11 @@ export function SessionDetailPage() {
                   </>
                 ) : null}
 
-                {sessionData.status === 'Confirmed' && viewerRole !== 'viewer' && sessionData.deliveryMode === 'Online' ? (
-                  <button
-                    className="button primary"
-                    disabled={joinMutation.isPending}
-                    onClick={() => joinMutation.mutate()}
-                    type="button"
-                  >
-                    {joinMutation.isPending ? <LoaderCircle className="spin" size={18} /> : <Video size={18} />}
-                    Vào phòng học
-                  </button>
-                ) : null}
-
-                {sessionData.status === 'InProgress' && viewerRole !== 'viewer' && sessionData.deliveryMode === 'Online' ? (
-                  <>
-                    <label className="profile-field">
-                      <span>Thời lượng thực tế (phút, không bắt buộc)</span>
-                      <input
-                        min={1}
-                        onChange={(event) => setLeaveDuration(event.target.value)}
-                        type="number"
-                        value={leaveDuration}
-                      />
-                    </label>
-                    <button
-                      className="button primary"
-                      disabled={leaveMutation.isPending}
-                      onClick={() => leaveMutation.mutate()}
-                      type="button"
-                    >
-                      {leaveMutation.isPending ? <LoaderCircle className="spin" size={18} /> : 'Rời phòng học'}
-                    </button>
-                  </>
+                {viewerRole !== 'viewer' && canRenderSessionRoomEntry(sessionData) ? (
+                  <Link className="button primary" to={getSessionRoomRoute(sessionData.sessionId)}>
+                    <Video size={18} />
+                    Join session
+                  </Link>
                 ) : null}
 
                 {sessionData.status === 'PendingReview' && viewerRole !== 'viewer' ? (
@@ -396,11 +353,11 @@ export function SessionDetailPage() {
               </div>
             </section>
 
-            {sessionData.deliveryMode === 'Online' && sessionData.jitsiRoomId ? (
+            {viewerRole !== 'viewer' && canRenderSessionRoomEntry(sessionData) ? (
               <section className="profile-section-card session-action-panel">
-                <a className="button secondary" href={buildJitsiUrl(sessionData.jitsiRoomId)} rel="noreferrer" target="_blank">
+                <Link className="button secondary" to={getSessionRoomRoute(sessionData.sessionId)}>
                   Mở phòng học trực tuyến
-                </a>
+                </Link>
               </section>
             ) : null}
 

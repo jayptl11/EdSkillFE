@@ -70,6 +70,18 @@ export function buildJitsiUrl(roomId: string) {
   return `${baseUrl}/${roomId}`
 }
 
+export function getSessionRoomRoute(sessionId: string) {
+  return `/sessions/${sessionId}/room`
+}
+
+export function canRenderSessionRoomEntry(session: Pick<SessionDto, 'deliveryMode' | 'status' | 'jitsiRoomId'>) {
+  return (
+    session.deliveryMode === 'Online'
+    && (session.status === 'Confirmed' || session.status === 'InProgress')
+    && session.jitsiRoomId !== null
+  )
+}
+
 export function toDateTimeLocalValue(date: Date) {
   const offset = date.getTimezoneOffset()
   return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16)
@@ -98,11 +110,13 @@ export async function invalidateWalletQueries(queryClient: QueryClient) {
 export async function invalidateSessionQueries(queryClient: QueryClient, sessionId?: string) {
   const tasks = [
     queryClient.invalidateQueries({ queryKey: sessionKeys.lists() }),
+    queryClient.invalidateQueries({ queryKey: sessionKeys.roomAccesses() }),
     queryClient.invalidateQueries({ queryKey: sessionKeys.statuses() }),
   ]
 
   if (sessionId) {
     tasks.push(queryClient.invalidateQueries({ queryKey: sessionKeys.detail(sessionId) }))
+    tasks.push(queryClient.invalidateQueries({ queryKey: sessionKeys.roomAccess(sessionId) }))
     tasks.push(queryClient.invalidateQueries({ queryKey: sessionKeys.status(sessionId) }))
   } else {
     tasks.push(queryClient.invalidateQueries({ queryKey: sessionKeys.details() }))

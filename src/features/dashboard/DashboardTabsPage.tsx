@@ -47,7 +47,7 @@ import {
 import type { ProfileDto, ProfileField, ProfileFormValues, UserGender } from '../profile/types'
 import { reviewDashboardApi, reviewDashboardKeys } from '../reviews/reviewDashboardApi'
 import type { ReviewTaskDto } from '../reviews/types'
-import { formatSessionDateTime, getSessionStatusLabel } from '../sessions/sessionUtils'
+import { canRenderSessionRoomEntry, formatSessionDateTime, getSessionRoomRoute, getSessionStatusLabel } from '../sessions/sessionUtils'
 import type { SessionDto } from '../sessions/types'
 import { walletApi, walletKeys } from '../wallet/walletApi'
 import type { PaymentStatus, PaymentTransactionDto, PointTransactionDto } from '../wallet/types'
@@ -459,6 +459,7 @@ function MySpaceSessionCard({
       : item.learner?.displayName ?? 'Chưa có learner'
   const personLabel = role === 'learner' ? 'Companion' : 'Learner'
   const isOnline = session.deliveryMode === 'Online'
+  const canJoinRoom = canRenderSessionRoomEntry(session)
 
   return (
     <article className="dashboard-space-card">
@@ -508,6 +509,11 @@ function MySpaceSessionCard({
         {session.jitsiRoomId ? <span>Có phòng Online</span> : null}
       </div>
       <div className="dashboard-space-actions">
+        {canJoinRoom ? (
+          <Link className="dashboard-primary-button" to={getSessionRoomRoute(session.sessionId)}>
+            Join session
+          </Link>
+        ) : null}
         <Link className="dashboard-outline-button" to={`/dashboard/skills/${session.sessionId}`}>
           Xem chi tiết
         </Link>
