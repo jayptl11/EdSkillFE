@@ -71,13 +71,21 @@ const dashboardTabs: Array<{ id: DashboardTabId; label: string }> = [
   { id: 'transactions', label: 'Lịch sử giao dịch' },
 ]
 
-const genderOptions: Array<{ label: string; value: UserGender | '' }> = [
+const genderOptions: Array<{ label: string; value: string }> = [
   { label: 'Chưa chọn', value: '' },
   { label: 'Nam', value: 'Male' },
   { label: 'Nữ', value: 'Female' },
   { label: 'Khác', value: 'Other' },
   { label: 'Không muốn chia sẻ', value: 'PreferNotToSay' },
 ]
+
+function normalizeGenderOptionValue(value: string): UserGender | '' {
+  if (value === 'Other') {
+    return 'NonBinary'
+  }
+
+  return value as UserGender | ''
+}
 
 export function DashboardTabsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -760,6 +768,15 @@ function TransactionsTab() {
     queryKey: walletKeys.payments({ page: paymentPage, limit: 20 }),
     queryFn: () => walletApi.getPayments({ page: paymentPage, limit: 20 }),
   })
+  const retryPaymentMutation = useMutation({
+    mutationFn: (paymentTransactionId: string) => walletApi.retryPayment(paymentTransactionId),
+    onSuccess: (result) => {
+      window.location.assign(result.paymentUrl)
+    },
+    onError: (error) => {
+      showToast({ kind: 'error', message: getErrorMessage(error) })
+    },
+  })
 
   return (
     <section className="dashboard-transactions-page">
@@ -797,7 +814,14 @@ function TransactionsTab() {
         isLoading={paymentsQuery.isLoading}
         items={paymentsQuery.data?.data ?? []}
         onPageChange={setPaymentPage}
-        renderItem={(item) => <PaymentTransactionCard item={item} key={item.paymentTransactionId} />}
+        renderItem={(item) => (
+          <PaymentTransactionCard
+            isRetrying={retryPaymentMutation.isPending && retryPaymentMutation.variables === item.paymentTransactionId}
+            item={item}
+            key={item.paymentTransactionId}
+            onRetry={() => retryPaymentMutation.mutate(item.paymentTransactionId)}
+          />
+        )}
         title="Thanh toán"
         total={paymentsQuery.data?.total ?? 0}
       />
@@ -834,7 +858,7 @@ function DashboardGenderSelect({
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const selectRef = useRef<HTMLDivElement | null>(null)
-  const selectedOption = genderOptions.find((option) => option.value === value) ?? genderOptions[0]
+  const selectedOption = genderOptions.find((option) => normalizeGenderOptionValue(option.value) === value) ?? genderOptions[0]
 
   useEffect(() => {
     if (!isOpen) {
@@ -877,7 +901,7 @@ function DashboardGenderSelect({
       {isOpen ? (
         <div className="dashboard-select-menu" role="listbox">
           {genderOptions.map((option) => {
-            const isSelected = option.value === value
+            const isSelected = normalizeGenderOptionValue(option.value) === value
 
             return (
               <button
@@ -885,7 +909,7 @@ function DashboardGenderSelect({
                 className={`dashboard-select-option${isSelected ? ' selected' : ''}`}
                 key={option.value || 'empty'}
                 onClick={() => {
-                  onChange(option.value)
+                  onChange(normalizeGenderOptionValue(option.value))
                   setIsOpen(false)
                 }}
                 role="option"
@@ -1043,7 +1067,15 @@ function PointTransactionCard({ item }: { item: PointTransactionDto }) {
   )
 }
 
-function PaymentTransactionCard({ item }: { item: PaymentTransactionDto }) {
+function PaymentTransactionCard({
+  isRetrying = false,
+  item,
+  onRetry,
+}: {
+  isRetrying?: boolean
+  item: PaymentTransactionDto
+  onRetry: () => void
+}) {
   return (
     <article className="dashboard-transaction-card">
       <CreditCard size={24} />
@@ -1055,8 +1087,8 @@ function PaymentTransactionCard({ item }: { item: PaymentTransactionDto }) {
       <div className="dashboard-transaction-amount">
         <strong>{formatCurrencyVnd(item.amountVnd)} {item.currency}</strong>
         <span>{getPaymentStatusLabel(item.status as PaymentStatus)}</span>
-        {item.status === 'Pending' && item.paymentUrl ? (
-          <button onClick={() => window.location.assign(item.paymentUrl!)} type="button">
+        {item.status === 'Pending' ? (
+          <button disabled={isRetrying} onClick={onRetry} type="button">
             Thử lại thanh toán
           </button>
         ) : null}

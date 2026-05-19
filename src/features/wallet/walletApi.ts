@@ -10,6 +10,7 @@ import type {
   PaymentTransactionHistoryDto,
   PointPackageListDto,
   PointTransactionDto,
+  RetryPaymentResultDto,
   SubscriptionPlanListDto,
   SubscriptionPurchaseReturnResultDto,
   VnPayReturnResultDto,
@@ -60,4 +61,7 @@ export const walletApi = {
 
   getPayments: (params: WalletPaymentsParams) =>
     apiGet<PaymentTransactionHistoryDto>(`/api/wallet/payments${toQueryString(params)}`, { auth: true }),
+
+  retryPayment: (paymentTransactionId: string) =>
+    apiPost<RetryPaymentResultDto>(`/api/wallet/payments/${paymentTransactionId}/retry`, undefined, { auth: true }),
 }

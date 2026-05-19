@@ -316,6 +316,15 @@ function PaymentHistoryTab() {
     queryKey: walletKeys.payments({ status: statusFilter, page, limit: PAYMENT_LIMIT }),
     queryFn: () => walletApi.getPayments({ status: statusFilter, page, limit: PAYMENT_LIMIT }),
   })
+  const retryPaymentMutation = useMutation({
+    mutationFn: (paymentTransactionId: string) => walletApi.retryPayment(paymentTransactionId),
+    onSuccess: (result) => {
+      window.location.assign(result.paymentUrl)
+    },
+    onError: (error) => {
+      showToast({ kind: 'error', message: getErrorMessage(error) })
+    },
+  })
 
   const payments = paymentsQuery.data?.data ?? []
   const totalPages = Math.max(1, Math.ceil((paymentsQuery.data?.total ?? 0) / PAYMENT_LIMIT))
@@ -368,7 +377,12 @@ function PaymentHistoryTab() {
         ) : (
           <div className="wallet-payment-list">
             {payments.map((payment) => (
-              <PaymentHistoryCard key={payment.paymentTransactionId} payment={payment} />
+              <PaymentHistoryCard
+                isRetrying={retryPaymentMutation.isPending && retryPaymentMutation.variables === payment.paymentTransactionId}
+                key={payment.paymentTransactionId}
+                onRetry={() => retryPaymentMutation.mutate(payment.paymentTransactionId)}
+                payment={payment}
+              />
             ))}
           </div>
         )
@@ -608,7 +622,15 @@ function SubscriptionPlanCard({
   )
 }
 
-function PaymentHistoryCard({ payment }: { payment: PaymentTransactionDto }) {
+function PaymentHistoryCard({
+  isRetrying = false,
+  onRetry,
+  payment,
+}: {
+  isRetrying?: boolean
+  onRetry: () => void
+  payment: PaymentTransactionDto
+}) {
   return (
     <article className="wallet-payment-card">
       <div className="wallet-payment-head">
@@ -633,11 +655,12 @@ function PaymentHistoryCard({ payment }: { payment: PaymentTransactionDto }) {
         </div>
       </dl>
 
-      {payment.status === 'Pending' && payment.paymentUrl ? (
+      {payment.status === 'Pending' ? (
         <div className="wallet-payment-actions">
           <button
             className="button secondary"
-            onClick={() => window.location.assign(payment.paymentUrl!)}
+            disabled={isRetrying}
+            onClick={onRetry}
             type="button"
           >
             Thử lại thanh toán

@@ -162,6 +162,12 @@ export interface PaymentTransactionHistoryDto {
   limit: number
 }
 
+export interface RetryPaymentResultDto {
+  paymentTransactionId: string
+  paymentUrl: string
+  expiresAt: string
+}
+
 export interface WalletPaymentsParams {
   status?: Lowercase<PaymentStatus> | ''
   page?: number
