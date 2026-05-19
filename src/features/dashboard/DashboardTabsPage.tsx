@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
@@ -6,6 +6,8 @@ import {
   Award,
   CalendarDays,
   Camera,
+  Check,
+  ChevronDown,
   Clock3,
   Coins,
   CreditCard,
@@ -67,6 +69,14 @@ const dashboardTabs: Array<{ id: DashboardTabId; label: string }> = [
   { id: 'achievements', label: 'Bảng thành tích' },
   { id: 'reviews', label: 'Đánh giá' },
   { id: 'transactions', label: 'Lịch sử giao dịch' },
+]
+
+const genderOptions: Array<{ label: string; value: UserGender | '' }> = [
+  { label: 'Chưa chọn', value: '' },
+  { label: 'Nam', value: 'Male' },
+  { label: 'Nữ', value: 'Female' },
+  { label: 'Khác', value: 'Other' },
+  { label: 'Không muốn chia sẻ', value: 'PreferNotToSay' },
 ]
 
 export function DashboardTabsPage() {
@@ -268,16 +278,10 @@ function GeneralInfoForm({ profile }: { profile: ProfileDto }) {
             <input value={formValues.phone} onChange={(event) => handleChange('phone', event.target.value)} />
           </DashboardField>
           <DashboardField error={fieldErrors.gender} label="Giới tính">
-            <select
+            <DashboardGenderSelect
               value={formValues.gender}
-              onChange={(event) => handleChange('gender', event.target.value as UserGender | '')}
-            >
-              <option value="">Chưa chọn</option>
-              <option value="Male">Nam</option>
-              <option value="Female">Nữ</option>
-              <option value="NonBinary">Phi nhị nguyên</option>
-              <option value="PreferNotToSay">Không muốn chia sẻ</option>
-            </select>
+              onChange={(value) => handleChange('gender', value)}
+            />
           </DashboardField>
           <DashboardField label="Email">
             <input readOnly value={profile.email} />
@@ -505,12 +509,11 @@ function MySpaceSessionCard({
 }
 
 function getMySpaceDurationLabel(session: SessionDto) {
-  const selectedDuration = session.selectedDurationMinutes ?? session.durationMinutes
-  const optionSummary = session.durationOptions.length > 1
-    ? ` (${session.durationOptions.map((duration) => `${duration} ph`).join(' / ')})`
-    : ''
+  const durationCandidates = [session.durationMinutes, ...session.durationOptions].filter((duration) => duration > 0)
+  const displayDuration = session.selectedDurationMinutes
+    ?? (durationCandidates.length > 0 ? Math.max(...durationCandidates) : session.durationMinutes)
 
-  return `${selectedDuration} phút${session.selectedDurationMinutes ? '' : optionSummary}`
+  return `${displayDuration} phút`
 }
 
 function getMySpacePointsLabel(session: SessionDto) {
@@ -819,6 +822,83 @@ function DashboardField({
       {children}
       {error ? <small>{error}</small> : null}
     </label>
+  )
+}
+
+function DashboardGenderSelect({
+  onChange,
+  value,
+}: {
+  onChange: (value: UserGender | '') => void
+  value: UserGender | ''
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const selectRef = useRef<HTMLDivElement | null>(null)
+  const selectedOption = genderOptions.find((option) => option.value === value) ?? genderOptions[0]
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen])
+
+  return (
+    <div className="dashboard-select" ref={selectRef}>
+      <button
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        className={`dashboard-select-trigger${isOpen ? ' open' : ''}`}
+        onClick={() => setIsOpen((current) => !current)}
+        type="button"
+      >
+        <span>{selectedOption.label}</span>
+        <ChevronDown className="dashboard-select-chevron" size={17} />
+      </button>
+      {isOpen ? (
+        <div className="dashboard-select-menu" role="listbox">
+          {genderOptions.map((option) => {
+            const isSelected = option.value === value
+
+            return (
+              <button
+                aria-selected={isSelected}
+                className={`dashboard-select-option${isSelected ? ' selected' : ''}`}
+                key={option.value || 'empty'}
+                onClick={() => {
+                  onChange(option.value)
+                  setIsOpen(false)
+                }}
+                role="option"
+                type="button"
+              >
+                <span>{option.label}</span>
+                {isSelected ? <Check size={15} /> : null}
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
+    </div>
   )
 }
 
