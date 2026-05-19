@@ -233,7 +233,6 @@ function GeneralInfoForm({ profile }: { profile: ProfileDto }) {
           Chỉnh sửa ảnh đại diện
         </button>
         <div className="dashboard-owner-meta">
-          <span>{profile.roles.includes('companion') ? 'Companion' : 'Learner'}</span>
           <span>{formatLastActive(profile.lastActiveAt)}</span>
         </div>
       </aside>
@@ -364,8 +363,6 @@ function DashboardTabButton({
   onClick: () => void
   tab: { id: DashboardTabId; label: string }
 }) {
-  const Icon = getDashboardTabIcon(tab.id)
-
   return (
     <button
       aria-current={active ? 'page' : undefined}
@@ -373,7 +370,7 @@ function DashboardTabButton({
       onClick={onClick}
       type="button"
     >
-      <Icon className="dashboard-tab-icon" size={16} />
+      {renderDashboardTabIcon(tab.id)}
       {tab.label}
     </button>
   )
@@ -996,14 +993,26 @@ function normalizeDashboardTab(value: string | null): DashboardTabId {
   return 'profile'
 }
 
-function getDashboardTabIcon(tab: DashboardTabId) {
-  return {
-    profile: UserRound,
-    'my-space': LayoutGrid,
-    achievements: Trophy,
-    reviews: Star,
-    transactions: CreditCard,
-  }[tab]
+function renderDashboardTabIcon(tab: DashboardTabId) {
+  const iconProps = { className: 'dashboard-tab-icon', size: 16 }
+
+  if (tab === 'my-space') {
+    return <LayoutGrid {...iconProps} />
+  }
+
+  if (tab === 'achievements') {
+    return <Trophy {...iconProps} />
+  }
+
+  if (tab === 'reviews') {
+    return <Star {...iconProps} />
+  }
+
+  if (tab === 'transactions') {
+    return <CreditCard {...iconProps} />
+  }
+
+  return <UserRound {...iconProps} />
 }
 
 function getReviewStatusLabel(status: ReviewTaskDto['reviewStatus']) {

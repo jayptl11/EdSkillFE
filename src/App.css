@@ -1923,7 +1923,7 @@
   grid-template-columns: 352px minmax(0, 1fr);
   gap: 52px;
   margin: 0 auto;
-  align-items: start;
+  align-items: stretch;
 }
 
 .dashboard-owner-card,
@@ -1947,21 +1947,24 @@
 }
 
 .dashboard-owner-card {
-  min-height: 528px;
+  min-height: 100%;
   display: grid;
+  align-content: start;
   justify-items: center;
-  gap: 12px;
-  padding: 14px 16px 32px;
+  gap: 16px;
+  padding: 16px 16px 30px;
 }
 
 .dashboard-avatar-frame {
-  width: 322px;
+  width: 100%;
   max-width: 100%;
-  height: 326px;
+  aspect-ratio: 1 / 1;
+  height: auto;
   display: grid;
   place-items: center;
-  border: 2px solid #9857ff;
-  background: #d8d8d8;
+  border: 1px solid rgba(30, 136, 229, 0.18);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(30, 136, 229, 0.12), rgba(245, 185, 36, 0.16));
   color: #888;
   overflow: hidden;
 }
@@ -8272,7 +8275,7 @@
   grid-template-columns: 320px minmax(0, 1fr) !important;
   gap: 40px !important;
   margin: 0 auto !important;
-  align-items: start !important;
+  align-items: stretch !important;
   padding: 0 0 48px !important;
 }
 
@@ -8315,46 +8318,54 @@
 }
 
 .dashboard-owner-card {
-  min-height: auto !important;
+  min-height: 100% !important;
   display: grid !important;
+  align-content: start !important;
   justify-items: center !important;
-  gap: 14px !important;
-  padding: 28px 20px 32px !important;
+  gap: 16px !important;
+  padding: 16px 16px 30px !important;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(180,165,255,0.22), transparent 60%),
+    radial-gradient(ellipse at 50% 0%, rgba(30, 136, 229, 0.14), transparent 58%),
+    radial-gradient(ellipse at 50% 46%, rgba(245, 185, 36, 0.12), transparent 52%),
     var(--glass-bg-strong) !important;
 }
 
 .dashboard-avatar-frame {
-  width: 140px !important;
-  height: 140px !important;
-  border-radius: 50% !important;
-  border: none !important;
-  background: linear-gradient(135deg, #a78bfa, #60a5fa, #34d399) !important;
-  padding: 3px !important;
-  box-shadow: 0 0 0 4px rgba(255,255,255,0.8), 0 8px 28px rgba(100,80,200,0.25) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: visible !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 22px !important;
+  border: 1px solid rgba(30, 136, 229, 0.18) !important;
+  background:
+    linear-gradient(135deg, rgba(30, 136, 229, 0.14), rgba(245, 185, 36, 0.18)),
+    rgba(255, 255, 255, 0.72) !important;
+  padding: 0 !important;
+  box-shadow: 0 14px 32px rgba(0,45,114,0.12) !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
   position: relative !important;
 }
 
 .dashboard-avatar-frame img {
-  width: calc(100% - 6px) !important;
-  height: calc(100% - 6px) !important;
-  border-radius: 50% !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 20px !important;
   object-fit: cover !important;
+  object-position: center 28% !important;
   position: relative !important;
   z-index: 1 !important;
 }
 
 .dashboard-avatar-frame svg {
-  color: rgba(100,80,200,0.5) !important;
+  color: rgba(0,45,114,0.36) !important;
+  width: 84px !important;
+  height: 84px !important;
 }
 
 .dashboard-owner-card h1 {
-  margin: 4px 0 0 !important;
+  margin: 6px 0 0 !important;
   color: var(--sapphire) !important;
   font-size: 26px !important;
   line-height: 1.2 !important;
@@ -8402,7 +8413,7 @@
 .dashboard-profile-form {
   background: var(--glass-bg-strong) !important;
   padding: 28px 30px !important;
-  min-height: auto !important;
+  min-height: 100% !important;
 }
 
 .dashboard-field {
