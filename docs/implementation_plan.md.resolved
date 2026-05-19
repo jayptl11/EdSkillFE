@@ -1,0 +1,252 @@
+# Dashboard & Tabs — Liquid Glass iOS Redesign
+
+Toàn bộ màn Dashboard (trang chủ cá nhân) và các tab con (`Thông tin chung`, `My Space`, `Bảng thành tích`, `Đánh giá`, `Lịch sử giao dịch`) sẽ được thiết kế lại theo ngôn ngữ **Liquid Glass** — lấy cảm hứng từ iOS 26 với các đặc trưng: backdrop blur, semi-transparency, soft glow, layered depth, rounded corners cực lớn và micro-animations mượt mà.
+
+---
+
+## Tổng quan thay đổi
+
+### 🎨 Design Language: Liquid Glass iOS
+
+| Thuộc tính | Giá trị mục tiêu |
+|---|---|
+| **Blur** | `backdrop-filter: blur(28–40px)` + `saturate(1.6)` |
+| **Glass tint** | `rgba(255,255,255, 0.55–0.72)` trên nền sáng |
+| **Border** | `1px solid rgba(255,255,255, 0.6)` |
+| **Border-radius** | Cards: `20px`, Pills/Tags: `999px`, Inputs: `14px` |
+| **Shadow** | Multi-layer: `0 4px 6px rgba(0,0,0,0.04), 0 20px 48px rgba(0,45,114,0.10)` |
+| **Font** | `Inter` (đã dùng) + `font-variation-settings` cho weight động |
+| **Animations** | Spring-eased entrances, subtle hover lifts, shimmer effects |
+| **Color mood** | Iridescent gradient background: tím–xanh–hồng nhạt theo chiều sâu |
+
+---
+
+## Proposed Changes
+
+### 1. CSS Root & Design Tokens
+
+#### [MODIFY] [App.css](file:///d:/EdSkill/EdSkillFE/src/App.css)
+
+Thêm/cập nhật CSS custom properties mới cho Liquid Glass:
+
+```css
+/* Liquid Glass Tokens */
+--glass-bg: rgba(255, 255, 255, 0.58);
+--glass-bg-strong: rgba(255, 255, 255, 0.72);
+--glass-border: rgba(255, 255, 255, 0.62);
+--glass-blur: blur(32px) saturate(1.6);
+--glass-shadow: 0 4px 6px rgba(0,0,0,0.04), 0 16px 40px rgba(0,45,114,0.09);
+--glass-shadow-hover: 0 8px 12px rgba(0,0,0,0.06), 0 28px 58px rgba(0,45,114,0.14);
+--radius-glass: 20px;
+--radius-pill: 999px;
+--radius-input: 14px;
+```
+
+---
+
+### 2. Dashboard Home Page (`dashboard-page`)
+
+#### [MODIFY] [App.css](file:///d:/EdSkill/EdSkillFE/src/App.css) — Sections ~L8–L32, L958–L1188
+
+**Background**: Thay gradient hiện tại bằng nền iridescent multi-layer với noise texture nhẹ:
+```
+background:
+  radial-gradient(ellipse at 15% 0%, rgba(200,180,255,0.30), transparent 40%),
+  radial-gradient(ellipse at 85% 5%, rgba(100,200,255,0.25), transparent 38%),
+  radial-gradient(ellipse at 50% 80%, rgba(255,200,150,0.18), transparent 42%),
+  linear-gradient(160deg, #f0f4ff 0%, #fafbff 55%, #f5f0ff 100%);
+```
+
+**`dashboard-hero`** — Liquid Glass hero banner:
+- Loại bỏ gradient `sapphire→blue` cứng, thay bằng glass morphism card nền trong suốt mờ với viền sáng
+- Thêm `::before` pseudo với radial glow hiệu ứng ánh sáng tím-xanh phía sau
+- Text: `color: var(--ink)` thay vì trắng (để đọc được trên nền trong)
+- Thêm animated shimmer ring xung quanh avatar/icon chào mừng
+
+**`dashboard-grid` (4 cards)** — iOS Widget style:
+- Mỗi card: `backdrop-filter: blur(28px)`, `background: var(--glass-bg)`, `border-radius: 20px`
+- Card 1 (featured): gradient glass với teal tint
+- Card 2: lavender tint
+- Card 3: warm amber tint  
+- Card 4: rose tint
+- Icon container: `border-radius: 14px` với tint màu của card + soft inner glow
+- Micro-animation: `whileHover={{ scale: 1.03, y: -8 }}` (Framer Motion)
+
+**`learning-summary`** — 3-column iOS widgets:
+- `next-step-card`: Glass với gradient border animation khi hover
+- `session-panel`: Glass frosted
+- `study-pulse`: Circular progress indicator thay cho text hiện tại
+
+**`dashboard-quick-links`** — Horizontal scrolling row:
+- Mỗi link: pill glass chip thay vì block card vuông
+- Thêm icon tương ứng trước label
+
+---
+
+### 3. DashboardTabsPage — Tab Navigation
+
+#### [MODIFY] [App.css](file:///d:/EdSkill/EdSkillFE/src/App.css) — Section `.dashboard-tab-nav`, `.dashboard-tab-pill`
+
+**Tab bar** — iOS-style segmented pill bar:
+- Container: `glass-bg`, `border-radius: 999px`, `padding: 4px`, `backdrop-filter: blur(20px)`
+- Active pill: `background: white`, `box-shadow: 0 2px 8px rgba(0,0,0,0.12)` — pill nổi lên như iOS
+- Hover pill: `background: rgba(255,255,255,0.45)`
+- Slide animation: active indicator trượt smoothly giữa các tab
+- Thêm icon nhỏ trước mỗi label tab (UserRound, Layout, Trophy, Star, CreditCard)
+
+```
+[ 👤 Thông tin ]  [ 📋 My Space ]  [ 🏆 Thành tích ]  [ ⭐ Đánh giá ]  [ 💳 Giao dịch ]
+```
+
+#### [MODIFY] [DashboardTabsPage.tsx](file:///d:/EdSkill/EdSkillFE/src/features/dashboard/DashboardTabsPage.tsx)
+
+Thêm icon vào `dashboardTabs` array:
+```ts
+const dashboardTabs = [
+  { id: 'profile', label: 'Thông tin', Icon: UserRound },
+  { id: 'my-space', label: 'My Space', Icon: LayoutGrid },
+  { id: 'achievements', label: 'Thành tích', Icon: Trophy },
+  { id: 'reviews', label: 'Đánh giá', Icon: Star },
+  { id: 'transactions', label: 'Giao dịch', Icon: CreditCard },
+]
+```
+
+---
+
+### 4. Tab: Thông tin chung (`GeneralInfoTab`)
+
+#### [MODIFY] [App.css](file:///d:/EdSkill/EdSkillFE/src/App.css) — Sections `dashboard-profile-*`
+
+**Layout**: Giữ nguyên 2-column, nhưng nâng cấp visual:
+
+**`dashboard-owner-card` (sidebar):**
+- Full glass card `border-radius: 24px`
+- Avatar: circular với animated gradient ring xung quanh (`conic-gradient` rotating animation)
+- Tên người dùng: `font-size: 22px`, `font-weight: 800`
+- Badge role: pill glass với màu tint tương ứng (Companion = xanh teal, Learner = vàng)
+- Button "Chỉnh sửa ảnh": glass pill với icon camera, hover subtle glow
+
+**`dashboard-profile-form`:**
+- Section header: `h2` nhỏ gọn hơn + animated underline khi active
+- Inputs: `border-radius: 14px`, glass background, focus ring đẹp hơn (iOS-style blue glow)
+- Grid: 2 col responsive, `gap: 16px`
+- Save button: Blue glass button với micro-bounce animation khi click
+
+**`dashboard-field`:**
+- Label: nhỏ, `font-size: 12px`, uppercase, muted — iOS style
+- Input/Select/Textarea: `background: rgba(255,255,255,0.6)`, `backdrop-filter: blur(8px)`, `border: 1px solid var(--glass-border)`, `border-radius: 14px`
+
+---
+
+### 5. Tab: My Space (`MySpaceTab`)
+
+#### [MODIFY] [App.css](file:///d:/EdSkill/EdSkillFE/src/App.css) — Sections `dashboard-space-*`
+
+**Horizontal scroll rail** → **Masonry/card grid** layout:
+- Thay `dashboard-space-rail` (horizontal scroll) sang grid 2 col responsive
+- Mỗi `dashboard-space-card`: glass card `border-radius: 20px`
+  - Header: avatar + tên kỹ năng + giá điểm (inline flexbox)
+  - Status chip: pill glass với màu semantic (pending=vàng, confirmed=xanh, completed=tím)
+  - Meta row: icon + text cho thời gian và thời lượng (compact, dễ scan)
+  - Footer: CTA button "Xem chi tiết" glass outline
+
+**`dashboard-add-card`** (nút thêm buổi học):
+- Dashed glass border (`border: 2px dashed rgba(0,45,114,0.2)`)
+- Plus icon với pulse animation
+- Hover: solid glass glow effect
+
+---
+
+### 6. Tab: Bảng thành tích (`AchievementsTab`)
+
+#### [MODIFY] [App.css](file:///d:/EdSkill/EdSkillFE/src/App.css) — Sections `dashboard-achievements-*`, `dashboard-earned-*`, `dashboard-upcoming-*`
+
+**Earned achievements** — Horizontal scroll strip → Vertical glass list:
+- Mỗi `dashboard-earned-card`: glass card, icon lớn hơn với glow ring vàng/gradient
+- Hiệu ứng "shine" sweep trên card khi hover
+
+**Upcoming achievements** — Grid 3 col:
+- `dashboard-upcoming-card`: glass card với progress bar iOS-style
+- Progress bar: gradient xanh với animated shine effect
+- Hiển thị % lớn + số hiện tại / ngưỡng
+
+---
+
+### 7. Tab: Đánh giá (`ReviewsTab`)
+
+#### [MODIFY] [App.css](file:///d:/EdSkill/EdSkillFE/src/App.css) — Sections `dashboard-review-*`, `dashboard-rating-*`
+
+**Rating overview section**:
+- Score lớn (`4.8`) với golden glow
+- Rating bars: smooth animated bars với gradient
+- Recent reviews: avatar tròn + glass card review item
+
+**Review task list**:
+- Mỗi task card: glass card với avatar lớn hơn, rõ ràng hơn
+- "Đánh giá ngay" button: blue glass với shine animation
+
+**Review modal** — iOS Sheet style:
+- Backdrop: `rgba(0,0,0,0.4)` blur nền
+- Modal sheet: slide-up animation, `border-radius: 24px 24px 0 0` (bottom sheet style)
+- Star picker: lớn hơn, bounce animation khi chọn
+- Submit button: full-width blue glass
+
+---
+
+### 8. Tab: Lịch sử giao dịch (`TransactionsTab`)
+
+#### [MODIFY] [App.css](file:///d:/EdSkill/EdSkillFE/src/App.css) — Sections `dashboard-wallet-*`, `dashboard-transaction-*`
+
+**Summary tiles** (4 tile):
+- Grid 2×2 glass tiles thay vì 4 col ngang
+- Mỗi tile: glass card với icon tương ứng, số liệu lớn, label nhỏ phía dưới
+- Màu accent khác nhau cho mỗi tile (xanh/vàng/tím/đỏ nhạt)
+
+**Transaction list**:
+- Mỗi `dashboard-transaction-card`: glass row với:
+  - Coin/CreditCard icon trong glass bubble
+  - Amount: màu xanh cho `+`, màu đỏ nhạt cho `-`
+  - Date: compact relative time
+
+**Pagination**: Glass pill buttons
+
+---
+
+### 9. Responsive & Mobile
+
+#### [MODIFY] [App.css](file:///d:/EdSkill/EdSkillFE/src/App.css) — Media queries `@media (max-width: 720px)`
+
+- Tab nav: horizontal scroll với `overflow-x: auto`, tabs không wrap
+- Dashboard grid: 2→1 col
+- Profile layout: stack vertical
+- My Space grid: 1 col
+- Summary tiles: 2 col
+
+---
+
+## Verification Plan
+
+### Visual Testing
+1. Dev server chạy tại `npm run dev` → truy cập `/dashboard` và từng tab
+2. Kiểm tra backdrop-filter blur hoạt động (Chrome/Edge)
+3. Test responsive: 375px (iPhone SE), 768px (iPad), 1280px (Desktop)
+4. Test dark/light: background gradient phải readable ở cả 2 chế độ OS
+
+### Functional Testing
+- Tab switching vẫn hoạt động bình thường
+- Form submit / avatar upload hoạt động
+- Modal review vẫn close/submit đúng
+- Pagination transactions hoạt động
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> **Background mode**: Hiện tại app dùng nền sáng (light). Plan này dùng Liquid Glass trên nền sáng iridescent. Bạn có muốn thêm **Dark Mode** glass (darker glass tint) không?
+
+> [!NOTE]
+> **Scope tab navigation icon**: Thêm icon vào tab labels đòi hỏi thay đổi cả `.tsx`. Confirm rằng plan bao gồm sửa cả `DashboardTabsPage.tsx` nhé?
+
+> [!TIP]
+> **Animation library**: Framer Motion (`motion/react`) đã được dùng trong codebase. Toàn bộ animations sẽ dùng Framer Motion để đồng nhất và mượt mà nhất.

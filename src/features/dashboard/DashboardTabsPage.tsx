@@ -1,19 +1,23 @@
 import { useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   AlertCircle,
   Award,
+  CalendarDays,
   Camera,
+  Clock3,
   Coins,
   CreditCard,
+  LayoutGrid,
   LoaderCircle,
+  MapPin,
   Plus,
   Save,
   Star,
-  Trash2,
-  Upload,
+  Trophy,
   UserRound,
+  Video,
   X,
 } from 'lucide-react'
 import { getErrorMessage } from '../../api/client'
@@ -23,13 +27,7 @@ import { showToast } from '../../components/toastEvents'
 import { achievementApi, achievementKeys } from '../achievements/achievementApi'
 import type { MyAchievementEarnedDto, MyUpcomingAchievementDto } from '../achievements/types'
 import { mySpaceApi, mySpaceKeys } from '../my-space/mySpaceApi'
-import type {
-  CompanionSpaceCardDto,
-  CreateCompanionSpaceCardRequest,
-  CreateLearnerSpaceCardRequest,
-  LearnerSpaceCardDto,
-  SessionDeliveryMode,
-} from '../my-space/types'
+import type { MySpaceSessionDto } from '../my-space/types'
 import {
   profileApi,
   profileKeys,
@@ -44,9 +42,11 @@ import {
   validateProfileForm,
   type ProfileFieldErrors,
 } from '../profile/profileUtils'
-import type { ProfileDto, ProfileField, ProfileFormValues, ProfileSkillDto, UserGender } from '../profile/types'
+import type { ProfileDto, ProfileField, ProfileFormValues, UserGender } from '../profile/types'
 import { reviewDashboardApi, reviewDashboardKeys } from '../reviews/reviewDashboardApi'
 import type { ReviewTaskDto } from '../reviews/types'
+import { formatSessionDateTime, getSessionStatusLabel } from '../sessions/sessionUtils'
+import type { SessionDto } from '../sessions/types'
 import { walletApi, walletKeys } from '../wallet/walletApi'
 import type { PaymentStatus, PaymentTransactionDto, PointTransactionDto } from '../wallet/types'
 import {
@@ -59,10 +59,6 @@ import {
 
 type DashboardTabId = 'profile' | 'my-space' | 'achievements' | 'reviews' | 'transactions'
 type MySpaceRole = 'companion' | 'learner'
-type MySpaceCard = CompanionSpaceCardDto | LearnerSpaceCardDto
-type MySpaceModalState =
-  | { role: MySpaceRole; mode: 'create'; card?: never }
-  | { role: MySpaceRole; mode: 'edit'; card: MySpaceCard }
 type ReviewDraft = { task: ReviewTaskDto; rating: 1 | 2 | 3 | 4 | 5; comment: string }
 
 const dashboardTabs: Array<{ id: DashboardTabId; label: string }> = [
@@ -72,9 +68,6 @@ const dashboardTabs: Array<{ id: DashboardTabId; label: string }> = [
   { id: 'reviews', label: 'Đánh giá' },
   { id: 'transactions', label: 'Lịch sử giao dịch' },
 ]
-
-const durationOptions = [30, 45, 60, 90, 120] as const
-const deliveryModeOptions: SessionDeliveryMode[] = ['Online', 'Offline']
 
 export function DashboardTabsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -89,15 +82,12 @@ export function DashboardTabsPage() {
       <SiteHeader />
       <nav className="dashboard-tab-nav" aria-label="Dashboard tabs">
         {dashboardTabs.map((tab) => (
-          <button
-            aria-current={activeTab === tab.id ? 'page' : undefined}
-            className={`dashboard-tab-pill${activeTab === tab.id ? ' active' : ''}`}
+          <DashboardTabButton
+            active={activeTab === tab.id}
             key={tab.id}
             onClick={() => setSearchParams(tab.id === 'profile' ? {} : { tab: tab.id })}
-            type="button"
-          >
-            {tab.label}
-          </button>
+            tab={tab}
+          />
         ))}
       </nav>
 
@@ -313,30 +303,9 @@ function GeneralInfoForm({ profile }: { profile: ProfileDto }) {
 }
 
 function MySpaceTab({ profileQuery }: { profileQuery: UseQueryResult<ProfileDto> }) {
-  const queryClient = useQueryClient()
-  const [modalState, setModalState] = useState<MySpaceModalState | null>(null)
-  const [previewCard, setPreviewCard] = useState<MySpaceCard | null>(null)
   const mySpaceQuery = useQuery({
     queryKey: mySpaceKeys.me(),
     queryFn: mySpaceApi.getMySpace,
-  })
-
-  const deleteCompanionMutation = useMutation({
-    mutationFn: mySpaceApi.deleteCompanionCard,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: mySpaceKeys.me() })
-      showToast({ kind: 'success', message: 'Đã xóa thẻ companion.' })
-    },
-    onError: (error) => showToast({ kind: 'error', message: getErrorMessage(error) }),
-  })
-
-  const deleteLearnerMutation = useMutation({
-    mutationFn: mySpaceApi.deleteLearnerCard,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: mySpaceKeys.me() })
-      showToast({ kind: 'success', message: 'Đã xóa thẻ learner.' })
-    },
-    onError: (error) => showToast({ kind: 'error', message: getErrorMessage(error) }),
   })
 
   if (profileQuery.isLoading || mySpaceQuery.isLoading) {
@@ -361,59 +330,76 @@ function MySpaceTab({ profileQuery }: { profileQuery: UseQueryResult<ProfileDto>
   return (
     <section className="dashboard-space-page">
       <MySpaceSection
-        addDisabled={profile.teachingSkills.length === 0}
-        cards={mySpace.companionCards}
+        ctaDisabled={profile.teachingSkills.length === 0}
+        ctaDisabledLabel="Chưa có kỹ năng dạy"
+        ctaLabel="Mở buổi học mới"
+        ctaTo="/dashboard/skills/new"
+        emptyText="Các buổi học bạn mở sẽ xuất hiện ở đây."
+        emptyTitle="Chưa có buổi học companion"
         fallbackAvatarUrl={profile.avatarUrl}
-        onAdd={() => setModalState({ role: 'companion', mode: 'create' })}
-        onDelete={(card) => deleteCompanionMutation.mutate(card.companionSpaceCardId)}
-        onEdit={(card) => setModalState({ role: 'companion', mode: 'edit', card })}
-        onPreview={setPreviewCard}
         role="companion"
+        sessions={mySpace.companionSessions}
         title="Companion Space"
       />
       <MySpaceSection
-        addDisabled={profile.learningSkills.length === 0}
-        cards={mySpace.learnerCards}
+        ctaLabel="Tìm companion để đặt lịch"
+        ctaTo="/dashboard/companions"
+        emptyText="Các buổi học bạn đã đăng ký sẽ xuất hiện ở đây."
+        emptyTitle="Chưa có buổi học learner"
         fallbackAvatarUrl={profile.avatarUrl}
-        onAdd={() => setModalState({ role: 'learner', mode: 'create' })}
-        onDelete={(card) => deleteLearnerMutation.mutate(card.learnerSpaceCardId)}
-        onEdit={(card) => setModalState({ role: 'learner', mode: 'edit', card })}
-        onPreview={setPreviewCard}
         role="learner"
+        sessions={mySpace.learnerSessions}
         title="Learner Space"
       />
-
-      {modalState ? (
-        <MySpaceCardModal
-          modalState={modalState}
-          onClose={() => setModalState(null)}
-          profile={profile}
-        />
-      ) : null}
-      {previewCard ? <MySpacePreviewModal card={previewCard} onClose={() => setPreviewCard(null)} /> : null}
     </section>
   )
 }
 
-function MySpaceSection<TCard extends MySpaceCard>({
-  addDisabled,
-  cards,
+function DashboardTabButton({
+  active,
+  onClick,
+  tab,
+}: {
+  active: boolean
+  onClick: () => void
+  tab: { id: DashboardTabId; label: string }
+}) {
+  const Icon = getDashboardTabIcon(tab.id)
+
+  return (
+    <button
+      aria-current={active ? 'page' : undefined}
+      className={`dashboard-tab-pill${active ? ' active' : ''}`}
+      onClick={onClick}
+      type="button"
+    >
+      <Icon className="dashboard-tab-icon" size={16} />
+      {tab.label}
+    </button>
+  )
+}
+
+function MySpaceSection({
+  ctaDisabled = false,
+  ctaDisabledLabel,
+  ctaLabel,
+  ctaTo,
+  emptyText,
+  emptyTitle,
   fallbackAvatarUrl,
-  onAdd,
-  onDelete,
-  onEdit,
-  onPreview,
   role,
+  sessions,
   title,
 }: {
-  addDisabled: boolean
-  cards: TCard[]
+  ctaDisabled?: boolean
+  ctaDisabledLabel?: string
+  ctaLabel: string
+  ctaTo: string
+  emptyText: string
+  emptyTitle: string
   fallbackAvatarUrl: string | null
-  onAdd: () => void
-  onDelete: (card: TCard) => void
-  onEdit: (card: TCard) => void
-  onPreview: (card: TCard) => void
   role: MySpaceRole
+  sessions: MySpaceSessionDto[]
   title: string
 }) {
   return (
@@ -422,355 +408,128 @@ function MySpaceSection<TCard extends MySpaceCard>({
         <h1>{title}</h1>
       </div>
       <div className="dashboard-space-rail">
-        <button className="dashboard-add-card" disabled={addDisabled} onClick={onAdd} type="button">
-          <Plus size={92} />
-          {addDisabled ? 'Chưa có kỹ năng phù hợp' : 'Thêm thẻ'}
-        </button>
-        {cards.map((card) => (
-          <MySpaceCardItem
-            card={card}
+        {ctaDisabled ? (
+          <button className="dashboard-add-card" disabled type="button">
+            <Plus size={92} />
+            {ctaDisabledLabel ?? ctaLabel}
+          </button>
+        ) : (
+          <Link className="dashboard-add-card" to={ctaTo}>
+            <Plus size={92} />
+            {ctaLabel}
+          </Link>
+        )}
+        {sessions.map((item) => (
+          <MySpaceSessionCard
             fallbackAvatarUrl={fallbackAvatarUrl}
-            key={getMySpaceCardId(card)}
-            onDelete={() => onDelete(card)}
-            onEdit={() => onEdit(card)}
-            onPreview={() => onPreview(card)}
+            item={item}
+            key={item.session.sessionId}
             role={role}
           />
         ))}
+        {sessions.length === 0 ? <DashboardEmpty text={emptyText} title={emptyTitle} /> : null}
       </div>
     </section>
   )
 }
 
-function MySpaceCardItem({
-  card,
+function MySpaceSessionCard({
   fallbackAvatarUrl,
-  onDelete,
-  onEdit,
-  onPreview,
+  item,
   role,
 }: {
-  card: MySpaceCard
   fallbackAvatarUrl: string | null
-  onDelete: () => void
-  onEdit: () => void
-  onPreview: () => void
+  item: MySpaceSessionDto
   role: MySpaceRole
 }) {
-  const points = role === 'companion' ? (card as CompanionSpaceCardDto).pricePoints : (card as LearnerSpaceCardDto).targetPoints
+  const { session } = item
+  const avatarUrl = role === 'learner' ? item.companion.avatarUrl : item.learner?.avatarUrl ?? fallbackAvatarUrl
+  const personName =
+    role === 'learner'
+      ? item.companion.displayName
+      : item.learner?.displayName ?? 'Chưa có learner'
+  const personLabel = role === 'learner' ? 'Companion' : 'Learner'
+  const isOnline = session.deliveryMode === 'Online'
 
   return (
     <article className="dashboard-space-card">
       <div className="dashboard-space-image">
-        {card.coverImageUrl || fallbackAvatarUrl ? (
-          <img alt={card.title} src={card.coverImageUrl ?? fallbackAvatarUrl ?? ''} />
+        {avatarUrl ? (
+          <img alt={personName} src={avatarUrl} />
         ) : (
           <UserRound size={44} />
         )}
       </div>
       <div className="dashboard-space-card-head">
-        <h2>{card.title}</h2>
-        <strong>{formatPoints(points)} Điểm</strong>
+        <h2>{session.skill}</h2>
+        <strong>{getMySpacePointsLabel(session)}</strong>
       </div>
-      <h3>About the lesson</h3>
+      <div className="dashboard-review-task-tags">
+        <span className={`session-status-chip status-${session.status.toLowerCase()}`}>
+          {getSessionStatusLabel(session.status)}
+        </span>
+        <span className={`session-delivery-badge ${isOnline ? 'online' : 'offline'}`}>
+          {isOnline ? <Video size={12} /> : <MapPin size={12} />}
+          {isOnline ? 'Online' : 'Trực tiếp'}
+        </span>
+      </div>
       <dl className="dashboard-card-meta">
         <div>
+          <dt>{personLabel}</dt>
+          <dd>{personName}</dd>
+        </div>
+        <div>
+          <dt>Thời gian</dt>
+          <dd>
+            <CalendarDays size={13} />
+            {formatSessionDateTime(session.scheduledAt)}
+          </dd>
+        </div>
+        <div>
           <dt>Thời lượng</dt>
-          <dd>{card.durationMinutes} phút</dd>
-        </div>
-        <div>
-          <dt>Hình thức</dt>
-          <dd>{card.deliveryModes.join(', ') || 'Chưa chọn'}</dd>
-        </div>
-        <div>
-          <dt>Ngôn ngữ</dt>
-          <dd>{card.languages.join(', ') || 'Chưa chọn'}</dd>
+          <dd>
+            <Clock3 size={13} />
+            {getMySpaceDurationLabel(session)}
+          </dd>
         </div>
       </dl>
-      <p>{card.description || 'Chưa có mô tả kỹ năng.'}</p>
+      <p>{session.description || 'Chưa có mô tả buổi học.'}</p>
       <div className="dashboard-space-card-foot">
-        <span>{card.isPublished ? 'Đang hiển thị' : 'Bản nháp'}</span>
-        {role === 'companion' ? <span>{(card as CompanionSpaceCardDto).credentialUrls.length} chứng chỉ</span> : null}
+        <span>{item.skill?.name ?? session.skill}</span>
+        {session.jitsiRoomId ? <span>Có phòng Online</span> : null}
       </div>
       <div className="dashboard-space-actions">
-        <button className="dashboard-outline-button" onClick={onEdit} type="button">
-          Chỉnh sửa
-        </button>
-        <button className="dashboard-outline-button" onClick={onPreview} type="button">
-          Xem trước
-        </button>
-        <button className="dashboard-icon-button" aria-label="Xóa thẻ" onClick={onDelete} type="button">
-          <Trash2 size={16} />
-        </button>
+        <Link className="dashboard-outline-button" to={`/dashboard/skills/${session.sessionId}`}>
+          Xem chi tiết
+        </Link>
       </div>
     </article>
   )
 }
 
-function MySpaceCardModal({
-  modalState,
-  onClose,
-  profile,
-}: {
-  modalState: MySpaceModalState
-  onClose: () => void
-  profile: ProfileDto
-}) {
-  const queryClient = useQueryClient()
-  const coverInputRef = useRef<HTMLInputElement | null>(null)
-  const credentialInputRef = useRef<HTMLInputElement | null>(null)
-  const role = modalState.role
-  const card = modalState.mode === 'edit' ? modalState.card : null
-  const skillOptions = role === 'companion' ? profile.teachingSkills : profile.learningSkills
-  const [form, setForm] = useState(() => toMySpaceForm(card, skillOptions))
-  const [isUploading, setIsUploading] = useState(false)
+function getMySpaceDurationLabel(session: SessionDto) {
+  const selectedDuration = session.selectedDurationMinutes ?? session.durationMinutes
+  const optionSummary = session.durationOptions.length > 1
+    ? ` (${session.durationOptions.map((duration) => `${duration} ph`).join(' / ')})`
+    : ''
 
-  const saveCompanionMutation = useMutation({
-    mutationFn: (payload: CreateCompanionSpaceCardRequest) =>
-      modalState.mode === 'edit' && role === 'companion'
-        ? mySpaceApi.updateCompanionCard((modalState.card as CompanionSpaceCardDto).companionSpaceCardId, payload)
-        : mySpaceApi.createCompanionCard(payload),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: mySpaceKeys.me() })
-      showToast({ kind: 'success', message: 'Đã lưu thẻ companion.' })
-      onClose()
-    },
-    onError: (error) => showToast({ kind: 'error', message: getErrorMessage(error) }),
-  })
+  return `${selectedDuration} phút${session.selectedDurationMinutes ? '' : optionSummary}`
+}
 
-  const saveLearnerMutation = useMutation({
-    mutationFn: (payload: CreateLearnerSpaceCardRequest) =>
-      modalState.mode === 'edit' && role === 'learner'
-        ? mySpaceApi.updateLearnerCard((modalState.card as LearnerSpaceCardDto).learnerSpaceCardId, payload)
-        : mySpaceApi.createLearnerCard(payload),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: mySpaceKeys.me() })
-      showToast({ kind: 'success', message: 'Đã lưu thẻ learner.' })
-      onClose()
-    },
-    onError: (error) => showToast({ kind: 'error', message: getErrorMessage(error) }),
-  })
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const languages = parseCsv(form.languagesText).slice(0, 3)
-    const basePayload = {
-      skillId: form.skillId,
-      title: form.title.trim(),
-      description: form.description.trim() || null,
-      durationMinutes: form.durationMinutes,
-      deliveryModes: form.deliveryModes,
-      languages,
-      coverImageUrl: form.coverImageUrl || null,
-      isPublished: form.isPublished,
-    }
-
-    if (!basePayload.skillId || !basePayload.title || basePayload.deliveryModes.length === 0) {
-      showToast({ kind: 'error', message: 'Vui lòng nhập kỹ năng, tiêu đề và hình thức học.' })
-      return
-    }
-
-    if (role === 'companion') {
-      saveCompanionMutation.mutate({
-        ...basePayload,
-        pricePoints: Number(form.points),
-        credentialUrls: form.credentialUrls,
-      })
-      return
-    }
-
-    saveLearnerMutation.mutate({
-      ...basePayload,
-      targetPoints: Number(form.points),
-    })
+function getMySpacePointsLabel(session: SessionDto) {
+  if (session.pricingBreakdown) {
+    return `${formatPoints(session.pricingBreakdown.learnerChargePoints)} điểm`
   }
 
-  const handleCoverUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) {
-      return
-    }
-
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
-      showToast({ kind: 'error', message: 'Ảnh bìa chỉ hỗ trợ JPG, PNG, WEBP và tối đa 5 MB.' })
-      return
-    }
-
-    setIsUploading(true)
-    try {
-      const uploadMeta = await mySpaceApi.createCoverUploadUrl({
-        fileName: file.name,
-        contentType: file.type as 'image/jpeg' | 'image/png' | 'image/webp',
-        fileSize: file.size,
-      })
-      await uploadFileToPresignedUrl(uploadMeta.uploadUrl, file)
-      setForm((current) => ({ ...current, coverImageUrl: uploadMeta.publicUrl }))
-    } catch (error) {
-      showToast({ kind: 'error', message: getErrorMessage(error) })
-    } finally {
-      setIsUploading(false)
-    }
+  const preview = session.pricingPreview
+  if (preview) {
+    const { minLearnerChargePoints, maxLearnerChargePoints } = preview
+    return minLearnerChargePoints === maxLearnerChargePoints
+      ? `${formatPoints(minLearnerChargePoints)} điểm`
+      : `${formatPoints(minLearnerChargePoints)} - ${formatPoints(maxLearnerChargePoints)} điểm`
   }
 
-  const handleCredentialUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) {
-      return
-    }
-
-    if (form.credentialUrls.length >= 4) {
-      showToast({ kind: 'error', message: 'Tối đa 4 file chứng chỉ cho mỗi thẻ companion.' })
-      return
-    }
-
-    if (!['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024) {
-      showToast({ kind: 'error', message: 'Chứng chỉ chỉ hỗ trợ PDF/JPG/PNG/WEBP và tối đa 10 MB.' })
-      return
-    }
-
-    setIsUploading(true)
-    try {
-      const uploadMeta = await mySpaceApi.createCredentialUploadUrl({
-        fileName: file.name,
-        contentType: file.type as 'application/pdf' | 'image/jpeg' | 'image/png' | 'image/webp',
-        fileSize: file.size,
-      })
-      await uploadFileToPresignedUrl(uploadMeta.uploadUrl, file)
-      setForm((current) => ({ ...current, credentialUrls: [...current.credentialUrls, uploadMeta.publicUrl] }))
-    } catch (error) {
-      showToast({ kind: 'error', message: getErrorMessage(error) })
-    } finally {
-      setIsUploading(false)
-    }
-  }
-
-  const isPending = saveCompanionMutation.isPending || saveLearnerMutation.isPending
-
-  return (
-    <div className="dashboard-modal-backdrop">
-      <form className="dashboard-space-modal" onSubmit={handleSubmit}>
-        <div className="dashboard-modal-head">
-          <h2>{modalState.mode === 'create' ? 'Đăng tải kỹ năng' : 'Chỉnh sửa kỹ năng'}</h2>
-          <button aria-label="Đóng" className="dashboard-icon-button" onClick={onClose} type="button">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="dashboard-space-modal-grid">
-          <div className="dashboard-space-modal-fields">
-            <DashboardField label="Kĩ năng">
-              <select value={form.skillId} onChange={(event) => setForm({ ...form, skillId: event.target.value })}>
-                <option value="">Chọn kỹ năng</option>
-                {skillOptions.map((skill) => (
-                  <option key={skill.skillId} value={skill.skillId}>
-                    {skill.name}
-                  </option>
-                ))}
-              </select>
-            </DashboardField>
-            <DashboardField label="Thời lượng dạy">
-              <select
-                value={form.durationMinutes}
-                onChange={(event) => setForm({ ...form, durationMinutes: Number(event.target.value) as typeof durationOptions[number] })}
-              >
-                {durationOptions.map((duration) => (
-                  <option key={duration} value={duration}>
-                    {duration} phút
-                  </option>
-                ))}
-              </select>
-            </DashboardField>
-            <DashboardField label={role === 'companion' ? 'Điểm buổi học' : 'Điểm mục tiêu'}>
-              <input
-                min={0}
-                type="number"
-                value={form.points}
-                onChange={(event) => setForm({ ...form, points: Number(event.target.value) })}
-              />
-            </DashboardField>
-            <div className="dashboard-mode-row">
-              {deliveryModeOptions.map((mode) => (
-                <label key={mode}>
-                  <input
-                    checked={form.deliveryModes.includes(mode)}
-                    onChange={() => setForm((current) => ({ ...current, deliveryModes: toggleValue(current.deliveryModes, mode) }))}
-                    type="checkbox"
-                  />
-                  {mode}
-                </label>
-              ))}
-            </div>
-            <DashboardField label="Ngôn ngữ giảng dạy">
-              <input
-                placeholder="Việt, English"
-                value={form.languagesText}
-                onChange={(event) => setForm({ ...form, languagesText: event.target.value })}
-              />
-            </DashboardField>
-            <DashboardField label="Tiêu đề kĩ năng">
-              <input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} />
-            </DashboardField>
-            <DashboardField label="Mô tả kĩ năng">
-              <textarea rows={3} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
-            </DashboardField>
-            <label className="dashboard-publish-row">
-              <input
-                checked={form.isPublished}
-                onChange={(event) => setForm({ ...form, isPublished: event.target.checked })}
-                type="checkbox"
-              />
-              Hiển thị thẻ này
-            </label>
-          </div>
-
-          <div className="dashboard-space-upload-panel">
-            <div className="dashboard-cover-preview">
-              {form.coverImageUrl ? <img alt="Ảnh đại diện thẻ" src={form.coverImageUrl} /> : <span>Ảnh đại diện này sẽ luôn mặc định là ảnh đại diện gốc trừ khi người dùng muốn thay đổi</span>}
-            </div>
-            <input
-              accept="image/jpeg,image/png,image/webp"
-              className="dashboard-file-input"
-              onChange={handleCoverUpload}
-              ref={coverInputRef}
-              type="file"
-            />
-            <button className="dashboard-soft-button" disabled={isUploading} onClick={() => coverInputRef.current?.click()} type="button">
-              <Upload size={16} />
-              Thay đổi ảnh đại diện
-            </button>
-            {role === 'companion' ? (
-              <>
-                <input
-                  accept="application/pdf,image/jpeg,image/png,image/webp"
-                  className="dashboard-file-input"
-                  onChange={handleCredentialUpload}
-                  ref={credentialInputRef}
-                  type="file"
-                />
-                <button
-                  className="dashboard-soft-button"
-                  disabled={isUploading}
-                  onClick={() => credentialInputRef.current?.click()}
-                  type="button"
-                >
-                  <Upload size={16} />
-                  Tải chứng chỉ
-                </button>
-                <p>{form.credentialUrls.length} / 4 chứng chỉ</p>
-              </>
-            ) : null}
-          </div>
-        </div>
-
-        <button className="dashboard-primary-button wide" disabled={isPending || isUploading} type="submit">
-          {isPending ? <LoaderCircle className="spin" size={16} /> : null}
-          Đăng tải kĩ năng!
-        </button>
-      </form>
-    </div>
-  )
+  return `${formatPoints(session.pointCost)} điểm`
 }
 
 function AchievementsTab() {
@@ -1087,29 +846,6 @@ function DashboardEmpty({ text, title }: { text: string; title: string }) {
   )
 }
 
-function MySpacePreviewModal({ card, onClose }: { card: MySpaceCard; onClose: () => void }) {
-  return (
-    <div className="dashboard-modal-backdrop">
-      <article className="dashboard-preview-modal">
-        <div className="dashboard-modal-head">
-          <h2>{card.title}</h2>
-          <button aria-label="Đóng" className="dashboard-icon-button" onClick={onClose} type="button">
-            <X size={18} />
-          </button>
-        </div>
-        {card.coverImageUrl ? <img alt={card.title} src={card.coverImageUrl} /> : null}
-        <p>{card.description || 'Chưa có mô tả kỹ năng.'}</p>
-        <div className="dashboard-review-task-tags">
-          <span>{card.skill.name}</span>
-          <span>{card.durationMinutes} phút</span>
-          <span>{card.deliveryModes.join(', ')}</span>
-          <span>{card.languages.join(', ') || 'Chưa chọn ngôn ngữ'}</span>
-        </div>
-      </article>
-    </div>
-  )
-}
-
 function ReviewModal({
   draft,
   isPending,
@@ -1252,27 +988,6 @@ function PaymentTransactionCard({ item }: { item: PaymentTransactionDto }) {
   )
 }
 
-function toMySpaceForm(card: MySpaceCard | null, skillOptions: ProfileSkillDto[]) {
-  const isCompanion = card && 'pricePoints' in card
-
-  return {
-    skillId: card?.skill.skillId ?? skillOptions[0]?.skillId ?? '',
-    title: card?.title ?? '',
-    description: card?.description ?? '',
-    points: card ? (isCompanion ? card.pricePoints : (card as LearnerSpaceCardDto).targetPoints) : 0,
-    durationMinutes: card?.durationMinutes ?? 60,
-    deliveryModes: card?.deliveryModes ?? ['Online'],
-    languagesText: card?.languages.join(', ') ?? '',
-    coverImageUrl: card?.coverImageUrl ?? '',
-    credentialUrls: isCompanion ? card.credentialUrls : [],
-    isPublished: card?.isPublished ?? true,
-  }
-}
-
-function getMySpaceCardId(card: MySpaceCard) {
-  return 'companionSpaceCardId' in card ? card.companionSpaceCardId : card.learnerSpaceCardId
-}
-
 function normalizeDashboardTab(value: string | null): DashboardTabId {
   if (value === 'my-space' || value === 'achievements' || value === 'reviews' || value === 'transactions') {
     return value
@@ -1281,12 +996,14 @@ function normalizeDashboardTab(value: string | null): DashboardTabId {
   return 'profile'
 }
 
-function parseCsv(value: string) {
-  return [...new Set(value.split(',').map((item) => item.trim()).filter(Boolean))]
-}
-
-function toggleValue<T>(values: T[], value: T) {
-  return values.includes(value) ? values.filter((item) => item !== value) : [...values, value]
+function getDashboardTabIcon(tab: DashboardTabId) {
+  return {
+    profile: UserRound,
+    'my-space': LayoutGrid,
+    achievements: Trophy,
+    reviews: Star,
+    transactions: CreditCard,
+  }[tab]
 }
 
 function getReviewStatusLabel(status: ReviewTaskDto['reviewStatus']) {
