@@ -4,16 +4,23 @@ import { sessionKeys } from './sessionsApi'
 import type { AllowedDurationMinutes, CreateSessionRequest, SessionActorRole, SessionDto, SessionStatus } from './types'
 
 const activePollingStatuses: SessionStatus[] = ['Pending', 'Confirmed', 'InProgress', 'PendingReview']
+const SESSION_TIME_ZONE = 'Asia/Ho_Chi_Minh'
 
 export function formatSessionDateTime(value: string | null) {
   if (!value) {
     return 'Chưa có'
   }
 
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Chưa có'
+  }
+
+  return date.toLocaleString('vi-VN', {
+    timeZone: SESSION_TIME_ZONE,
+    hour12: false,
+  })
 }
 
 export function formatSessionPoints(value: number) {
@@ -82,9 +89,25 @@ export function canRenderSessionRoomEntry(session: Pick<SessionDto, 'deliveryMod
   )
 }
 
+export function toUtcIsoFromLocalDateTime(localValue: string) {
+  return new Date(localValue).toISOString()
+}
+
+export function toLocalDateTimeInputValue(value: string | Date) {
+  const date = typeof value === 'string' ? new Date(value) : value
+  const dateTimeInVn = new Date(date.toLocaleString('sv-SE', { timeZone: SESSION_TIME_ZONE }))
+
+  const year = dateTimeInVn.getFullYear()
+  const month = String(dateTimeInVn.getMonth() + 1).padStart(2, '0')
+  const day = String(dateTimeInVn.getDate()).padStart(2, '0')
+  const hours = String(dateTimeInVn.getHours()).padStart(2, '0')
+  const minutes = String(dateTimeInVn.getMinutes()).padStart(2, '0')
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
 export function toDateTimeLocalValue(date: Date) {
-  const offset = date.getTimezoneOffset()
-  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16)
+  return toLocalDateTimeInputValue(date)
 }
 
 export function buildCreateSessionPayload(input: {

@@ -36,6 +36,7 @@ import {
   invalidateSessionQueries,
   invalidateWalletQueries,
   toDateTimeLocalValue,
+  toUtcIsoFromLocalDateTime,
 } from './sessionUtils'
 import { sessionsApi, sessionKeys } from './sessionsApi'
 import type {
@@ -56,15 +57,15 @@ type CreateSessionFieldErrors = Partial<Record<CreateSessionField, string>>
 const SESSION_LIMIT = 12
 
 const sessionStatusOptions: Array<{ label: string; value: SessionStatus | '' }> = [
-  { label: 'Táº¥t cáº£ tráº¡ng thÃ¡i', value: '' },
-  { label: 'Äang má»Ÿ Ä‘Äƒng kÃ½', value: 'Available' },
-  { label: 'Chá» xÃ¡c nháº­n', value: 'Pending' },
-  { label: 'ÄÃ£ xÃ¡c nháº­n', value: 'Confirmed' },
-  { label: 'Äang diá»…n ra', value: 'InProgress' },
-  { label: 'Chá» xÃ¡c nháº­n hoÃ n táº¥t', value: 'PendingReview' },
-  { label: 'ÄÃ£ hoÃ n táº¥t', value: 'Completed' },
-  { label: 'ÄÃ£ há»§y', value: 'Cancelled' },
-  { label: 'Cáº§n há»— trá»£', value: 'Disputed' },
+  { label: 'Tất cả trạng thái', value: '' },
+  { label: 'Đang mở đăng ký', value: 'Available' },
+  { label: 'Chờ xác nhận', value: 'Pending' },
+  { label: 'Đã xác nhận', value: 'Confirmed' },
+  { label: 'Đang diễn ra', value: 'InProgress' },
+  { label: 'Chờ xác nhận hoàn tất', value: 'PendingReview' },
+  { label: 'Đã hoàn tất', value: 'Completed' },
+  { label: 'Đã hủy', value: 'Cancelled' },
+  { label: 'Cần hỗ trợ', value: 'Disputed' },
 ]
 
 export function LearningSessionsPage() {
@@ -209,7 +210,7 @@ export function CreateSessionOfferPage() {
         selectedSkillId: formValues.skillId,
         description: formValues.description,
         selectedMaxDuration: formValues.selectedMaxDuration,
-        scheduledAtIso: scheduledDate.toISOString(),
+        scheduledAtIso: toUtcIsoFromLocalDateTime(formValues.scheduledAt),
       }),
     )
   }
@@ -373,7 +374,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
     mutationFn: ({ sessionId, payload }: { sessionId: string; payload: BookSessionRequest }) =>
       sessionsApi.book(sessionId, payload),
     onSuccess: async (bookedSession) => {
-      showToast({ kind: 'success', message: 'Äáº·t buá»•i há»c thÃ nh cÃ´ng. VÃ­ Ä‘iá»ƒm sáº½ Ä‘Æ°á»£c cáº­p nháº­t.' })
+      showToast({ kind: 'success', message: 'Đặt buổi học thành công. Ví điểm sẽ được cập nhật.' })
       setBookingTarget(null)
       await Promise.all([
         invalidateSessionQueries(queryClient, bookedSession.sessionId),
@@ -392,7 +393,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
         replace
         state={{
           intent: mode === 'teaching' ? 'teach' : undefined,
-          message: 'Vui lÃ²ng Ä‘Äƒng nháº­p Ä‘á»ƒ tiáº¿p tá»¥c.',
+          message: 'Vui lòng đăng nhập để tiếp tục.',
         }}
         to="/login"
       />
@@ -413,7 +414,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
         <SiteHeader />
         <section className="profile-state-card">
           <LoaderCircle className="spin" size={24} />
-          <p>Äang kiá»ƒm tra há»“ sÆ¡ dáº¡y há»c...</p>
+          <p>Đang kiểm tra hồ sơ dạy học...</p>
         </section>
       </MotionPage>
     )
@@ -441,12 +442,12 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
         </div>
         <div className="profile-hero-actions">
           <Link className="button secondary" to="/dashboard">
-            Vá» trang cá»§a tÃ´i
+            Về trang của tôi
           </Link>
           {mode === 'teaching' ? (
             <Link className="button primary" to="/dashboard/skills/new">
               <Plus size={18} />
-              Má»Ÿ buá»•i há»c
+              Mở buổi học
             </Link>
           ) : null}
         </div>
@@ -457,13 +458,13 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
           <div>
             <h2>{getBoardToolbarTitle(mode)}</h2>
             <p>
-              Má»Ÿ tá»«ng buá»•i há»c Ä‘á»ƒ xÃ¡c nháº­n lá»‹ch, tham gia phÃ²ng há»c hoáº·c xem chi tiáº¿t.
+              Mở từng buổi học để xác nhận lịch, tham gia phòng học hoặc xem chi tiết.
             </p>
           </div>
 
           <div className="session-filter-grid">
             <label className="session-filter-field">
-              <span>Tráº¡ng thÃ¡i</span>
+              <span>Trạng thái</span>
               <select
                 onChange={(event) => {
                   setStatusFilter(event.target.value as SessionStatus | '')
@@ -487,7 +488,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
               type="button"
             >
               <RefreshCcw size={18} />
-              LÃ m má»›i
+              Làm mới
             </button>
           </div>
         </div>
@@ -495,7 +496,7 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
         {listQuery.isLoading ? (
           <section className="profile-state-card">
             <LoaderCircle className="spin" size={20} />
-            <p>Äang táº£i danh sÃ¡ch buá»•i há»c...</p>
+            <p>Đang tải danh sách buổi học...</p>
           </section>
         ) : null}
 
@@ -510,11 +511,11 @@ function SessionBoardPage({ mode }: { mode: SessionBoardMode }) {
           <>
             {sessions.length === 0 ? (
               <section className="session-empty-state">
-                <h3>ChÆ°a cÃ³ buá»•i há»c nÃ o phÃ¹ há»£p.</h3>
+                <h3>Chưa có buổi học nào phù hợp.</h3>
                 <p>
                   {mode === 'learning'
-                    ? 'Báº¡n chÆ°a Ä‘áº·t buá»•i há»c nÃ o.'
-                    : 'Báº¡n chÆ°a táº¡o lá»‹ch há»c nÃ o.'}
+                    ? 'Bạn chưa đặt buổi học nào.'
+                    : 'Bạn chưa tạo lịch học nào.'}
                 </p>
               </section>
             ) : (
@@ -572,8 +573,8 @@ function SessionCard({
   const priceLabel =
     isFormula && preview && session.selectedDurationMinutes === null
       ? preview.minLearnerChargePoints === preview.maxLearnerChargePoints
-        ? `${preview.minLearnerChargePoints} Ä‘iá»ƒm`
-        : `${preview.minLearnerChargePoints} â€“ ${preview.maxLearnerChargePoints} Ä‘iá»ƒm`
+        ? `${preview.minLearnerChargePoints} điểm`
+        : `${preview.minLearnerChargePoints} – ${preview.maxLearnerChargePoints} điểm`
       : formatSessionPoints(session.pointCost)
   const companionQuery = useQuery({
     queryKey: [...profileKeys.user(session.companionId), 'session-card'],
@@ -591,7 +592,7 @@ function SessionCard({
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
           <span className={`session-delivery-badge ${isOnline ? 'online' : 'offline'}`}>
             {isOnline ? <Video size={12} /> : <MapPin size={12} />}
-            {isOnline ? 'Online' : 'Trá»±c tiáº¿p'}
+            {isOnline ? 'Online' : 'Trực tiếp'}
           </span>
           <span className="session-cost-chip">{priceLabel}</span>
         </div>
@@ -606,13 +607,13 @@ function SessionCard({
           </div>
         )}
         <div>
-          <strong>{companionProfile?.displayName || 'NgÆ°á»i dáº¡y trÃªn EdSkill'}</strong>
-          <span>{companionProfile?.bio || 'Há»“ sÆ¡ Ä‘ang Ä‘Æ°á»£c cáº­p nháº­t'}</span>
+          <strong>{companionProfile?.displayName || 'Người dạy trên EdSkill'}</strong>
+          <span>{companionProfile?.bio || 'Hồ sơ đang được cập nhật'}</span>
         </div>
       </div>
 
       <h3>{session.skill}</h3>
-      <p>{session.description || 'NgÆ°á»i dáº¡y sáº½ giá»›i thiá»‡u rÃµ má»¥c tiÃªu vÃ  cÃ¡ch Ä‘á»“ng hÃ nh trong buá»•i há»c nÃ y.'}</p>
+      <p>{session.description || 'Người dạy sẽ giới thiệu rõ mục tiêu và cách đồng hành trong buổi học này.'}</p>
 
       {!isOnline && session.location ? (
         <div className="session-location-row">
@@ -623,26 +624,26 @@ function SessionCard({
 
       <dl className="session-card-meta">
         <div>
-          <dt>Thá»i gian</dt>
+          <dt>Thời gian</dt>
           <dd>{formatSessionDateTime(session.scheduledAt)}</dd>
         </div>
         <div>
-          <dt>Thá»i lÆ°á»£ng</dt>
+          <dt>Thời lượng</dt>
           <dd>
             {isFormula && session.selectedDurationMinutes
-              ? `${session.selectedDurationMinutes} phÃºt (Ä‘Ã£ chá»n)`
+              ? `${session.selectedDurationMinutes} phút (đã chọn)`
               : isFormula && session.durationOptions.length > 0
               ? session.durationOptions.map((d) => `${d} ph`).join(' / ')
-              : `${session.durationMinutes} phÃºt`}
+              : `${session.durationMinutes} phút`}
           </dd>
         </div>
         <div>
-          <dt>Vai trÃ² cá»§a báº¡n</dt>
-          <dd>{currentRole === 'viewer' ? 'Äang xem' : currentRole === 'learner' ? 'NgÆ°á»i há»c' : 'NgÆ°á»i dáº¡y'}</dd>
+          <dt>Vai trò của bạn</dt>
+          <dd>{currentRole === 'viewer' ? 'Đang xem' : currentRole === 'learner' ? 'Người học' : 'Người dạy'}</dd>
         </div>
         <div>
-          <dt>Hoáº¡t Ä‘á»™ng gáº§n Ä‘Ã¢y</dt>
-          <dd>{companionProfile ? formatLastActive(companionProfile.lastActiveAt) : 'Äang táº£i'}</dd>
+          <dt>Hoạt động gần đây</dt>
+          <dd>{companionProfile ? formatLastActive(companionProfile.lastActiveAt) : 'Đang tải'}</dd>
         </div>
       </dl>
 
@@ -656,11 +657,11 @@ function SessionCard({
 
       <div className="session-card-actions">
         <Link className="button secondary" to={`/dashboard/skills/${session.sessionId}`}>
-          Xem chi tiáº¿t
+          Xem chi tiết
         </Link>
         {canBook ? (
           <button className="button primary" disabled={isBooking} onClick={onBook} type="button">
-            {isBooking ? <LoaderCircle className="spin" size={18} /> : 'ÄÄƒng kÃ½'}
+            {isBooking ? <LoaderCircle className="spin" size={18} /> : 'Đăng ký'}
           </button>
         ) : null}
         {canJoinRoom ? (
@@ -963,7 +964,7 @@ function PaginationControls({
         onClick={() => onPageChange(currentPage - 1)}
         type="button"
       >
-        Trang trÆ°á»›c
+        Trang trước
       </button>
       <span>
         Trang {currentPage} / {totalPages}
@@ -982,34 +983,34 @@ function PaginationControls({
 
 function getBoardEyebrow(mode: SessionBoardMode) {
   if (mode === 'learning') {
-    return 'Buá»•i há»c cá»§a tÃ´i'
+    return 'Buổi học của tôi'
   }
 
-  return 'Khu dáº¡y há»c'
+  return 'Khu dạy học'
 }
 
 function getBoardTitle(mode: SessionBoardMode) {
   if (mode === 'learning') {
-    return 'Theo dÃµi cÃ¡c buá»•i há»c báº¡n Ä‘Ã£ Ä‘Äƒng kÃ½.'
+    return 'Theo dõi các buổi học bạn đã đăng ký.'
   }
 
-  return 'Quáº£n lÃ½ nhá»¯ng buá»•i há»c báº¡n Ä‘ang má»Ÿ vÃ  Ä‘ang dáº¡y.'
+  return 'Quản lý những buổi học bạn đang mở và đang dạy.'
 }
 
 function getBoardDescription(mode: SessionBoardMode) {
   if (mode === 'learning') {
-    return 'Xem láº¡i lá»‹ch há»c, tráº¡ng thÃ¡i xÃ¡c nháº­n vÃ  Ä‘Æ°á»ng vÃ o phÃ²ng há»c cá»§a báº¡n.'
+    return 'Xem lại lịch học, trạng thái xác nhận và đường vào phòng học của bạn.'
   }
 
-  return 'Kiá»ƒm tra buá»•i há»c nÃ o Ä‘ang chá» xÃ¡c nháº­n, Ä‘ang diá»…n ra hoáº·c Ä‘Ã£ hoÃ n táº¥t.'
+  return 'Kiểm tra buổi học nào đang chờ xác nhận, đang diễn ra hoặc đã hoàn tất.'
 }
 
 function getBoardToolbarTitle(mode: SessionBoardMode) {
   if (mode === 'learning') {
-    return 'Lá»‹ch há»c cá»§a tÃ´i'
+    return 'Lịch học của tôi'
   }
 
-  return 'Lá»‹ch dáº¡y cá»§a tÃ´i'
+  return 'Lịch dạy của tôi'
 }
 
 function createInitialOfferForm() {
@@ -1037,7 +1038,7 @@ function DurationPickerModal({
   const pricingOptions = session.durationPricingOptions
   const hasExactPricing = pricingOptions.length > 0
 
-  // Fallback sang durationOptions náº¿u session cÅ© khÃ´ng cÃ³ durationPricingOptions
+  // Fallback sang durationOptions nếu session cũ không có durationPricingOptions
   const legacyOptions = session.durationOptions
 
   const [selectedOption, setSelectedOption] = useState<DurationPricingOptionDto | null>(
@@ -1047,7 +1048,7 @@ function DurationPickerModal({
     },
   )
 
-  // Legacy fallback: chÆ°a cÃ³ durationPricingOptions
+  // Legacy fallback: chưa có durationPricingOptions
   const [legacySelected, setLegacySelected] = useState<AllowedDurationMinutes | null>(
     () => (!hasExactPricing && legacyOptions.length === 1 ? (legacyOptions[0] as AllowedDurationMinutes) : null),
   )
@@ -1068,15 +1069,15 @@ function DurationPickerModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Chá»n thá»i lÆ°á»£ng buá»•i há»c</h3>
-          <button aria-label="ÄÃ³ng" className="modal-close" onClick={onClose} type="button">
+          <h3>Chọn thời lượng buổi học</h3>
+          <button aria-label="Đóng" className="modal-close" onClick={onClose} type="button">
             <X size={18} />
           </button>
         </div>
 
         <div className="modal-body">
           <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
-            Ká»¹ nÄƒng: <strong>{session.skill}</strong>
+            Kỹ năng: <strong>{session.skill}</strong>
           </p>
 
           {hasExactPricing ? (
@@ -1089,7 +1090,7 @@ function DurationPickerModal({
                     onClick={() => setSelectedOption(opt)}
                     type="button"
                   >
-                    {opt.durationMinutes} phÃºt
+                    {opt.durationMinutes} phút
                   </button>
                 ))}
               </div>
@@ -1103,20 +1104,20 @@ function DurationPickerModal({
                 }}
               >
                 {selectedOption
-                  ? `Chi phÃ­: ${selectedOption.learnerChargePoints} Ä‘iá»ƒm`
-                  : 'Chá»n thá»i lÆ°á»£ng Ä‘á»ƒ xem Ä‘iá»ƒm cáº§n tráº£'}
+                  ? `Chi phí: ${selectedOption.learnerChargePoints} điểm`
+                  : 'Chọn thời lượng để xem điểm cần trả'}
               </p>
             </>
           ) : (
-            // Legacy fallback: session cÅ© khÃ´ng cÃ³ durationPricingOptions
+            // Legacy fallback: session cũ không có durationPricingOptions
             <>
               {preview ? (
                 <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
-                  Dá»± kiáº¿n chi phÃ­:{' '}
+                  Dự kiến chi phí:{' '}
                   <strong>
                     {preview.minLearnerChargePoints === preview.maxLearnerChargePoints
-                      ? `${preview.minLearnerChargePoints} Ä‘iá»ƒm`
-                      : `${preview.minLearnerChargePoints} â€“ ${preview.maxLearnerChargePoints} Ä‘iá»ƒm`}
+                      ? `${preview.minLearnerChargePoints} điểm`
+                      : `${preview.minLearnerChargePoints} – ${preview.maxLearnerChargePoints} điểm`}
                   </strong>
                 </p>
               ) : null}
@@ -1128,7 +1129,7 @@ function DurationPickerModal({
                     onClick={() => setLegacySelected(d as AllowedDurationMinutes)}
                     type="button"
                   >
-                    {d} phÃºt
+                    {d} phút
                   </button>
                 ))}
               </div>
@@ -1138,7 +1139,7 @@ function DurationPickerModal({
 
         <div className="modal-footer">
           <button className="button secondary" disabled={isPending} onClick={onClose} type="button">
-            Há»§y
+            Hủy
           </button>
           <button
             className="button primary"
@@ -1147,7 +1148,7 @@ function DurationPickerModal({
             type="button"
           >
             {isPending ? <LoaderCircle className="spin" size={16} /> : null}
-            XÃ¡c nháº­n Ä‘áº·t lá»‹ch
+            Xác nhận đặt lịch
           </button>
         </div>
       </div>
