@@ -95,6 +95,8 @@ export interface SessionRoomAccessDto {
   avatarUrl: string | null
   role: SessionRole
   status: SessionStatus
+  hostReady: boolean
+  hasCompanionJoined: boolean
   canJoin: boolean
   denyCode: string | null
   denyMessage: string | null

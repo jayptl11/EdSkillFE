@@ -14,11 +14,13 @@ import {
   getSessionStatusLabel,
   invalidateSessionQueries,
   invalidateWalletQueries,
+  parseSessionDateTime,
 } from './sessionUtils'
 import type { SessionDto, SessionRoomAccessDto } from './types'
 
 type SessionRoomPageState =
   | 'loading-access'
+  | 'waiting-for-host'
   | 'access-denied'
   | 'ready-to-mount'
   | 'joining-room'
@@ -44,6 +46,7 @@ export function SessionRoomPage() {
     queryKey: sessionKeys.roomAccess(sessionId),
     queryFn: () => sessionsApi.getRoomAccess(sessionId),
     enabled: Boolean(sessionId),
+    refetchInterval: pageState === 'waiting-for-host' ? 10_000 : false,
   })
 
   const statusQuery = useQuery({
@@ -54,6 +57,11 @@ export function SessionRoomPage() {
   })
 
   const accessData = accessQuery.data
+  const shouldRenderRoom =
+    pageState === 'ready-to-mount'
+    || pageState === 'joining-room'
+    || pageState === 'in-room'
+    || pageState === 'leaving-room'
 
   const joinMutation = useMutation({
     mutationFn: () => sessionsApi.join(sessionId),
@@ -66,8 +74,20 @@ export function SessionRoomPage() {
 
       setPageState('in-room')
     },
-    onError: (error) => {
+    onError: async (error) => {
       if (unmountedRef.current) {
+        return
+      }
+
+      if (isApiError(error) && error.code === 'SESSION_HOST_NOT_READY') {
+        setLocalError(null)
+        const refreshedAccess = await accessQuery.refetch()
+
+        if (unmountedRef.current) {
+          return
+        }
+
+        setPageState(resolveAccessPageState(refreshedAccess.data))
         return
       }
 
@@ -131,9 +151,9 @@ export function SessionRoomPage() {
 
   useEffect(() => {
     if (!accessQuery.isLoading) {
-      setPageState(accessData?.canJoin ? 'ready-to-mount' : 'access-denied')
+      setPageState(resolveAccessPageState(accessData))
     }
-  }, [accessData?.canJoin, accessQuery.isLoading])
+  }, [accessData, accessQuery.isLoading])
 
   useEffect(() => {
     if (!accessData || accessData.canJoin || accessData.denyCode !== 'SESSION_JOIN_WINDOW_CLOSED') {
@@ -141,9 +161,9 @@ export function SessionRoomPage() {
     }
 
     const now = Date.now()
-    const openAt = new Date(accessData.joinOpenAt).getTime()
+    const openAt = parseSessionDateTime(accessData.joinOpenAt)?.getTime() ?? Number.NaN
 
-    if (now >= openAt) {
+    if (!Number.isFinite(openAt) || now >= openAt) {
       return undefined
     }
 
@@ -155,7 +175,7 @@ export function SessionRoomPage() {
   }, [accessData, accessQuery])
 
   useEffect(() => {
-    if (!accessData?.canJoin) {
+    if (!accessData?.canJoin || !shouldRenderRoom) {
       return undefined
     }
 
@@ -268,6 +288,7 @@ export function SessionRoomPage() {
     accessData?.displayName,
     accessData?.jitsiDomain,
     accessData?.roomName,
+    shouldRenderRoom,
   ])
 
   useEffect(() => {
@@ -345,7 +366,17 @@ export function SessionRoomPage() {
         />
       ) : null}
 
-      {(pageState === 'ready-to-mount' || pageState === 'joining-room' || pageState === 'in-room' || pageState === 'leaving-room') && accessData?.canJoin ? (
+      {pageState === 'waiting-for-host' ? (
+        <SessionRoomWaitingState
+          access={accessData}
+          onRetry={() => {
+            setLocalError(null)
+            void accessQuery.refetch()
+          }}
+        />
+      ) : null}
+
+      {shouldRenderRoom && accessData?.canJoin ? (
         <section className="session-room-layout">
           <div className="session-room-stage">
             <div className="session-room-surface" ref={containerRef} />
@@ -435,6 +466,42 @@ function SessionRoomDeniedState({
   )
 }
 
+function SessionRoomWaitingState({
+  access,
+  onRetry,
+}: {
+  access?: SessionRoomAccessDto
+  onRetry: () => void
+}) {
+  return (
+    <section className="session-room-denied-grid">
+      <section className="profile-state-card">
+        <Clock3 size={24} />
+        <div>
+          <h2>Đợi Companion mở phòng</h2>
+          <p>Companion chưa vào phòng học. Hệ thống sẽ mở phòng cho bạn ngay khi host sẵn sàng.</p>
+        </div>
+      </section>
+
+      <section className="profile-section-card session-action-panel">
+        <div className="session-action-head">
+          <h3>Hệ thống đang kiểm tra quyền vào phòng</h3>
+          <p>Buổi học sẽ mở ngay khi Companion vào phòng học.</p>
+        </div>
+        <div className="session-room-actions">
+          <button className="button secondary" onClick={onRetry} type="button">
+            <RefreshCcw size={18} />
+            Làm mới
+          </button>
+          <Link className="button secondary" to={access ? `/dashboard/skills/${access.sessionId}` : '/dashboard/skills/learning'}>
+            Về chi tiết buổi học
+          </Link>
+        </div>
+      </section>
+    </section>
+  )
+}
+
 function SessionRoomCountdown({
   joinCloseAt,
   joinOpenAt,
@@ -454,8 +521,8 @@ function SessionRoomCountdown({
     return () => window.clearInterval(intervalId)
   }, [])
 
-  const openAt = new Date(joinOpenAt).getTime()
-  const closeAt = new Date(joinCloseAt).getTime()
+  const openAt = parseSessionDateTime(joinOpenAt)?.getTime() ?? Number.NaN
+  const closeAt = parseSessionDateTime(joinCloseAt)?.getTime() ?? Number.NaN
   const msUntilOpen = openAt - now
 
   return (
@@ -539,19 +606,26 @@ function SessionPostCallPanel({
 }
 
 function buildDeniedPresentation(accessData: SessionRoomAccessDto | undefined, error: unknown) {
+  if (accessData?.denyCode === 'SESSION_HOST_NOT_READY') {
+    return {
+      title: 'Đợi Companion mở phòng',
+      message: accessData.denyMessage ?? 'Companion chưa vào phòng học. Hệ thống sẽ mở phòng cho bạn ngay khi host sẵn sàng.',
+    }
+  }
+
   if (accessData?.denyCode === 'SESSION_JOIN_WINDOW_CLOSED') {
     const now = Date.now()
-    const openAt = new Date(accessData.joinOpenAt).getTime()
-    const closeAt = new Date(accessData.joinCloseAt).getTime()
+    const openAt = parseSessionDateTime(accessData.joinOpenAt)?.getTime() ?? Number.NaN
+    const closeAt = parseSessionDateTime(accessData.joinCloseAt)?.getTime() ?? Number.NaN
 
-    if (now < openAt) {
+    if (Number.isFinite(openAt) && now < openAt) {
       return {
         title: 'Phòng học chưa mở',
         message: accessData.denyMessage ?? 'Bạn chưa thể vào phòng học ở thời điểm này.',
       }
     }
 
-    if (now > closeAt) {
+    if (Number.isFinite(closeAt) && now > closeAt) {
       return {
         title: 'Đã qua thời gian vào phòng',
         message: accessData.denyMessage ?? 'Cửa sổ tham gia phòng học đã kết thúc.',
@@ -584,6 +658,21 @@ function buildDeniedPresentation(accessData: SessionRoomAccessDto | undefined, e
     title: 'Không thể vào phòng học',
     message: accessData?.denyMessage ?? (error ? getErrorMessage(error) : 'Hiện chưa thể mở phòng học.'),
   }
+}
+
+function resolveAccessPageState(accessData?: SessionRoomAccessDto): Extract<
+  SessionRoomPageState,
+  'waiting-for-host' | 'access-denied' | 'ready-to-mount'
+> {
+  if (accessData?.canJoin) {
+    return 'ready-to-mount'
+  }
+
+  if (accessData?.role === 'learner' && accessData.denyCode === 'SESSION_HOST_NOT_READY') {
+    return 'waiting-for-host'
+  }
+
+  return 'access-denied'
 }
 
 function formatCountdown(ms: number) {

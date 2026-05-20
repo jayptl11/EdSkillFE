@@ -5,15 +5,36 @@ import type { AllowedDurationMinutes, CreateSessionRequest, SessionActorRole, Se
 
 const activePollingStatuses: SessionStatus[] = ['Pending', 'Confirmed', 'InProgress', 'PendingReview']
 const SESSION_TIME_ZONE = 'Asia/Ho_Chi_Minh'
+const SESSION_DATE_TIME_WITHOUT_ZONE_PATTERN = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,7})?)?$/
+const SESSION_DATE_TIME_WITH_ZONE_PATTERN = /(?:Z|[+-]\d{2}:\d{2})$/i
 
-export function formatSessionDateTime(value: string | null) {
-  if (!value) {
-    return 'Chưa có'
+function normalizeSessionDateTimeString(value: string) {
+  const trimmedValue = value.trim()
+
+  if (!SESSION_DATE_TIME_WITHOUT_ZONE_PATTERN.test(trimmedValue) || SESSION_DATE_TIME_WITH_ZONE_PATTERN.test(trimmedValue)) {
+    return trimmedValue
   }
 
-  const date = new Date(value)
+  return `${trimmedValue.replace(' ', 'T')}Z`
+}
 
-  if (Number.isNaN(date.getTime())) {
+export function parseSessionDateTime(value: string | Date | null | undefined) {
+  if (!value) {
+    return null
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value
+  }
+
+  const parsedDate = new Date(normalizeSessionDateTimeString(value))
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate
+}
+
+export function formatSessionDateTime(value: string | null) {
+  const date = parseSessionDateTime(value)
+
+  if (!date) {
     return 'Chưa có'
   }
 
@@ -94,7 +115,12 @@ export function toUtcIsoFromLocalDateTime(localValue: string) {
 }
 
 export function toLocalDateTimeInputValue(value: string | Date) {
-  const date = typeof value === 'string' ? new Date(value) : value
+  const date = parseSessionDateTime(value)
+
+  if (!date) {
+    return ''
+  }
+
   const dateTimeInVn = new Date(date.toLocaleString('sv-SE', { timeZone: SESSION_TIME_ZONE }))
 
   const year = dateTimeInVn.getFullYear()
