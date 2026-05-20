@@ -1,10 +1,12 @@
 import { apiGet, apiPost } from '../../api/client'
+import { cacheScope } from '../../api/cacheScope'
 import type { AcceptedPolicyInput, ConsentStatus, PolicyDetail, PolicySummary } from './types'
 
 export const policyKeys = {
-  catalog: () => ['policies', 'catalog'] as const,
-  detail: (slug: string) => ['policies', 'detail', slug] as const,
-  consentStatus: () => ['policies', 'consents', 'me'] as const,
+  catalog: () => cacheScope.public('policies', 'catalog'),
+  details: () => cacheScope.public('policies', 'detail'),
+  detail: (slug: string) => cacheScope.public('policies', 'detail', slug),
+  consentStatus: () => cacheScope.user(undefined, 'policies', 'consents', 'me'),
 }
 
 export const policyApi = {

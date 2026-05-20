@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '../../api/client'
+import { cacheScope } from '../../api/cacheScope'
 import { toQueryString } from '../../api/query'
 import type {
   AdminSkill,
@@ -10,8 +11,10 @@ import type {
 } from './types'
 
 export const skillKeys = {
-  search: (params: SearchSkillsParams) => ['skills', 'search', params] as const,
-  adminList: (params: GetAdminSkillsParams) => ['skills', 'admin', params] as const,
+  searchRoot: () => cacheScope.public('skills', 'search'),
+  search: (params: SearchSkillsParams) => cacheScope.public('skills', 'search', params),
+  adminRoot: () => cacheScope.user(undefined, 'skills', 'admin'),
+  adminList: (params: GetAdminSkillsParams) => cacheScope.user(undefined, 'skills', 'admin', params),
 }
 
 export const skillApi = {

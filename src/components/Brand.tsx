@@ -4,10 +4,10 @@ import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'motion/react'
 import { Award, BookOpen, CalendarRange, Coins, LogOut, PlusCircle, Settings, User, Wallet } from 'lucide-react'
 import edSkillLogo from '../assets/edskill-logo.png'
+import { clearUserQueryCache } from '../api/cacheLifecycle'
 import { useAppStore } from '../store/useAppStore'
 import { walletApi, walletKeys } from '../features/wallet/walletApi'
 import { getErrorMessage, logout } from '../api/auth'
-import { queryClient } from '../api/queryClient'
 import { showToast } from './toastEvents'
 
 export function LogoImage({ size = 'default' }: { size?: 'default' | 'large' }) {
@@ -41,13 +41,19 @@ function UserNavDropdown() {
   }, [])
 
   const handleLogout = async () => {
+    if (!session) {
+      return
+    }
+
+    const userId = session.userId
+
     try {
       await logout()
     } catch (error) {
       showToast({ kind: 'info', message: getErrorMessage(error) })
     } finally {
+      await clearUserQueryCache(userId)
       clearSession()
-      queryClient.clear()
       navigate('/login', {
         replace: true,
         state: { message: 'Bạn đã đăng xuất thành công.' },

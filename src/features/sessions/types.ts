@@ -97,6 +97,7 @@ export interface SessionRoomAccessDto {
   status: SessionStatus
   hostReady: boolean
   hasCompanionJoined: boolean
+  canOpenRoomPage?: boolean
   canJoin: boolean
   denyCode: string | null
   denyMessage: string | null

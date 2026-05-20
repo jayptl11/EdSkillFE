@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { getErrorMessage } from '../../api/client'
+import { invalidateSessionCompletionQueries } from '../../api/cacheInvalidation'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
@@ -21,7 +22,6 @@ import { useAppStore } from '../../store/useAppStore'
 import {
   canBookSession,
   canCancelSession,
-  canRenderSessionRoomEntry,
   formatSessionDateTime,
   formatSessionPoints,
   getCurrentSessionRole,
@@ -31,9 +31,10 @@ import {
   invalidateWalletQueries,
   shouldPollSessionStatus,
 } from './sessionUtils'
+import { reviewDashboardKeys } from '../reviews/reviewDashboardApi'
 import { sessionsApi, sessionKeys } from './sessionsApi'
 import { reviewApi } from './reviewApi'
-import type { AllowedDurationMinutes, BookSessionRequest, DurationPricingOptionDto, SessionDto, SessionStatusDto } from './types'
+import type { AllowedDurationMinutes, BookSessionRequest, DurationPricingOptionDto, SessionDto, SessionRoomAccessDto, SessionStatusDto } from './types'
 
 export function SessionDetailPage() {
   const { sessionId = '' } = useParams()
@@ -57,6 +58,19 @@ export function SessionDetailPage() {
 
   const sessionData = useMemo(() => mergeSessionStatus(detailQuery.data, statusQuery.data), [detailQuery.data, statusQuery.data])
   const viewerRole = getCurrentSessionRole(sessionData ?? emptySession, authSession?.userId)
+
+  const roomAccessQuery = useQuery({
+    queryKey: sessionKeys.roomAccess(sessionId),
+    queryFn: () => sessionsApi.getRoomAccess(sessionId),
+    enabled:
+      Boolean(sessionId)
+      && detailQuery.data?.deliveryMode === 'Online'
+      && viewerRole !== 'viewer',
+    refetchInterval: (query) =>
+      query.state.data?.denyCode === 'SESSION_HOST_NOT_READY' ? 12_000 : false,
+  })
+  const canOpenRoomPage = roomAccessQuery.data?.canOpenRoomPage === true
+  const showRoomEntryAction = sessionData?.deliveryMode === 'Online' && viewerRole !== 'viewer' && (roomAccessQuery.data || roomAccessQuery.isLoading)
 
   useEffect(() => {
     if (!detailQuery.data || !statusQuery.data) {
@@ -107,7 +121,7 @@ export function SessionDetailPage() {
       showToast({ kind: 'success', message: 'Đã xác nhận hoàn tất buổi học.' })
       await Promise.all([
         invalidateSessionQueries(queryClient, sessionId),
-        invalidateWalletQueries(queryClient),
+        invalidateSessionCompletionQueries(queryClient),
       ])
     },
     onError: handleActionError,
@@ -162,6 +176,7 @@ export function SessionDetailPage() {
             onClick={() => {
               void detailQuery.refetch()
               void statusQuery.refetch()
+              void roomAccessQuery.refetch()
             }}
             type="button"
           >
@@ -325,11 +340,18 @@ export function SessionDetailPage() {
                   </>
                 ) : null}
 
-                {viewerRole !== 'viewer' && canRenderSessionRoomEntry(sessionData) ? (
-                  <Link className="button primary" to={getSessionRoomRoute(sessionData.sessionId)}>
-                    <Video size={18} />
-                    Join session
-                  </Link>
+                {showRoomEntryAction ? (
+                  canOpenRoomPage ? (
+                    <Link className="button primary" to={getSessionRoomRoute(sessionData.sessionId)}>
+                      <Video size={18} />
+                      Join session
+                    </Link>
+                  ) : (
+                    <button className="button primary" disabled type="button">
+                      <Video size={18} />
+                      {getSessionRoomEntryLabel(roomAccessQuery.data, roomAccessQuery.isLoading)}
+                    </button>
+                  )
                 ) : null}
 
                 {sessionData.status === 'PendingReview' && viewerRole !== 'viewer' ? (
@@ -353,11 +375,17 @@ export function SessionDetailPage() {
               </div>
             </section>
 
-            {viewerRole !== 'viewer' && canRenderSessionRoomEntry(sessionData) ? (
+            {showRoomEntryAction ? (
               <section className="profile-section-card session-action-panel">
-                <Link className="button secondary" to={getSessionRoomRoute(sessionData.sessionId)}>
-                  Mở phòng học trực tuyến
-                </Link>
+                {canOpenRoomPage ? (
+                  <Link className="button secondary" to={getSessionRoomRoute(sessionData.sessionId)}>
+                    Mở phòng học trực tuyến
+                  </Link>
+                ) : (
+                  <button className="button secondary" disabled type="button">
+                    {getSessionRoomEntryLabel(roomAccessQuery.data, roomAccessQuery.isLoading)}
+                  </button>
+                )}
               </section>
             ) : null}
 
@@ -404,6 +432,22 @@ function mergeSessionStatus(sessionData?: SessionDto, statusData?: SessionStatus
     learnerConfirmed: statusData.learnerConfirmed,
     companionConfirmed: statusData.companionConfirmed,
   }
+}
+
+function getSessionRoomEntryLabel(access: SessionRoomAccessDto | undefined, isLoading: boolean) {
+  if (isLoading) {
+    return 'Đang kiểm tra phòng học'
+  }
+
+  if (access?.denyCode === 'SESSION_HOST_NOT_READY') {
+    return 'Đợi Companion mở phòng'
+  }
+
+  if (access?.denyCode === 'SESSION_JOIN_WINDOW_CLOSED') {
+    return 'Chưa thể vào phòng'
+  }
+
+  return 'Chưa thể vào phòng'
 }
 
 const emptySession: SessionDto = {
@@ -573,6 +617,7 @@ function SessionDetailBookModal({
 // ─── Review Form ────────────────────────────────────────────────────────────
 
 function ReviewForm({ sessionId }: { sessionId: string }) {
+  const queryClient = useQueryClient()
   const [rating, setRating] = useState(0)
   const [hoverRating, setHoverRating] = useState(0)
   const [comment, setComment] = useState('')
@@ -587,6 +632,10 @@ function ReviewForm({ sessionId }: { sessionId: string }) {
         comment: comment.trim() || null,
       }),
     onSuccess: () => {
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: reviewDashboardKeys.root() }),
+        queryClient.invalidateQueries({ queryKey: sessionKeys.detail(sessionId) }),
+      ])
       setSubmitted(true)
       showToast({ kind: 'success', message: 'Đã gửi đánh giá thành công.' })
     },

@@ -23,6 +23,7 @@ import {
   X,
 } from 'lucide-react'
 import { getErrorMessage } from '../../api/client'
+import { syncProfileCaches } from '../../api/cacheInvalidation'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
@@ -47,7 +48,7 @@ import {
 import type { ProfileDto, ProfileField, ProfileFormValues, UserGender } from '../profile/types'
 import { reviewDashboardApi, reviewDashboardKeys } from '../reviews/reviewDashboardApi'
 import type { ReviewTaskDto } from '../reviews/types'
-import { canRenderSessionRoomEntry, formatSessionDateTime, getSessionRoomRoute, getSessionStatusLabel } from '../sessions/sessionUtils'
+import { formatSessionDateTime, getSessionRoomRoute, getSessionStatusLabel } from '../sessions/sessionUtils'
 import type { SessionDto } from '../sessions/types'
 import { walletApi, walletKeys } from '../wallet/walletApi'
 import type { PaymentStatus, PaymentTransactionDto, PointTransactionDto } from '../wallet/types'
@@ -142,7 +143,7 @@ function GeneralInfoForm({ profile }: { profile: ProfileDto }) {
     mutationFn: profileApi.updateMyProfile,
     onSuccess: (updatedProfile) => {
       const nextValues = toProfileFormValues(updatedProfile)
-      queryClient.setQueryData(profileKeys.me(), updatedProfile)
+      void syncProfileCaches(queryClient, updatedProfile)
       setFormValues(nextValues)
       setInitialValues(nextValues)
       setFieldErrors({})
@@ -211,7 +212,7 @@ function GeneralInfoForm({ profile }: { profile: ProfileDto }) {
       await uploadFileToPresignedUrl(uploadMeta.uploadUrl, file)
       const updatedProfile = await profileApi.updateMyProfile({ avatarUrl: uploadMeta.publicUrl })
       const nextValues = toProfileFormValues(updatedProfile)
-      queryClient.setQueryData(profileKeys.me(), updatedProfile)
+      void syncProfileCaches(queryClient, updatedProfile)
       setFormValues(nextValues)
       setInitialValues(nextValues)
       showToast({ kind: 'success', message: 'Ảnh đại diện đã được cập nhật.' })
@@ -459,7 +460,9 @@ function MySpaceSessionCard({
       : item.learner?.displayName ?? 'Chưa có learner'
   const personLabel = role === 'learner' ? 'Companion' : 'Learner'
   const isOnline = session.deliveryMode === 'Online'
-  const canJoinRoom = canRenderSessionRoomEntry(session)
+  const roomAccess = item.roomAccess
+  const canOpenRoomPage = roomAccess?.canOpenRoomPage === true
+  const showRoomEntryAction = isOnline && roomAccess !== undefined
 
   return (
     <article className="dashboard-space-card">
@@ -509,10 +512,16 @@ function MySpaceSessionCard({
         {session.jitsiRoomId ? <span>Có phòng Online</span> : null}
       </div>
       <div className="dashboard-space-actions">
-        {canJoinRoom ? (
-          <Link className="dashboard-primary-button" to={getSessionRoomRoute(session.sessionId)}>
-            Join session
-          </Link>
+        {showRoomEntryAction ? (
+          canOpenRoomPage ? (
+            <Link className="dashboard-primary-button" to={getSessionRoomRoute(session.sessionId)}>
+              Join session
+            </Link>
+          ) : (
+            <button className="dashboard-primary-button" disabled type="button">
+              {getMySpaceRoomEntryLabel(roomAccess?.denyCode)}
+            </button>
+          )
         ) : null}
         <Link className="dashboard-outline-button" to={`/dashboard/skills/${session.sessionId}`}>
           Xem chi tiết
@@ -544,6 +553,18 @@ function getMySpacePointsLabel(session: SessionDto) {
   }
 
   return `${formatPoints(session.pointCost)} điểm`
+}
+
+function getMySpaceRoomEntryLabel(denyCode: string | null | undefined) {
+  if (denyCode === 'SESSION_HOST_NOT_READY') {
+    return 'Đợi Companion mở phòng'
+  }
+
+  if (denyCode === 'SESSION_JOIN_WINDOW_CLOSED') {
+    return 'Chưa tới giờ vào phòng'
+  }
+
+  return 'Chưa thể vào phòng'
 }
 
 function AchievementsTab() {
@@ -640,7 +661,7 @@ function ReviewsTab() {
     mutationFn: reviewDashboardApi.createReview,
     onSuccess: () => {
       setReviewDraft(null)
-      void queryClient.invalidateQueries({ queryKey: reviewDashboardKeys.me() })
+      void queryClient.invalidateQueries({ queryKey: reviewDashboardKeys.root() })
       showToast({ kind: 'success', message: 'Đã gửi đánh giá.' })
     },
     onError: (error) => showToast({ kind: 'error', message: getErrorMessage(error) }),

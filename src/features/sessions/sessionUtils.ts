@@ -4,7 +4,6 @@ import { sessionKeys } from './sessionsApi'
 import type { AllowedDurationMinutes, CreateSessionRequest, SessionActorRole, SessionDto, SessionStatus } from './types'
 
 const activePollingStatuses: SessionStatus[] = ['Pending', 'Confirmed', 'InProgress', 'PendingReview']
-const SESSION_TIME_ZONE = 'Asia/Ho_Chi_Minh'
 const SESSION_DATE_TIME_WITHOUT_ZONE_PATTERN = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,7})?)?$/
 const SESSION_DATE_TIME_WITH_ZONE_PATTERN = /(?:Z|[+-]\d{2}:\d{2})$/i
 
@@ -39,7 +38,6 @@ export function formatSessionDateTime(value: string | null) {
   }
 
   return date.toLocaleString('vi-VN', {
-    timeZone: SESSION_TIME_ZONE,
     hour12: false,
   })
 }
@@ -121,13 +119,11 @@ export function toLocalDateTimeInputValue(value: string | Date) {
     return ''
   }
 
-  const dateTimeInVn = new Date(date.toLocaleString('sv-SE', { timeZone: SESSION_TIME_ZONE }))
-
-  const year = dateTimeInVn.getFullYear()
-  const month = String(dateTimeInVn.getMonth() + 1).padStart(2, '0')
-  const day = String(dateTimeInVn.getDate()).padStart(2, '0')
-  const hours = String(dateTimeInVn.getHours()).padStart(2, '0')
-  const minutes = String(dateTimeInVn.getMinutes()).padStart(2, '0')
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
 
   return `${year}-${month}-${day}T${hours}:${minutes}`
 }

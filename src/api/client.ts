@@ -1,4 +1,5 @@
 import { useAppStore } from '../store/useAppStore'
+import { clearUserQueryCache, pruneForeignAuthCaches } from './cacheLifecycle'
 import { normalizeSession, type LoginResponse } from './session'
 
 const API_BASE_URL =
@@ -122,6 +123,12 @@ export const apiRequest = async <T>(path: string, options: ApiRequestOptions): P
       return parseResponse<T>(retry)
     }
 
+    const expiredUserId = useAppStore.getState().session?.userId
+
+    if (expiredUserId) {
+      await clearUserQueryCache(expiredUserId)
+    }
+
     useAppStore.getState().clearSession()
     window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT))
   }
@@ -174,8 +181,10 @@ const refreshSession = async () => {
       body: JSON.stringify({ refreshToken }),
     })
     const data = await parseResponse<LoginResponse>(response)
+    const nextSession = normalizeSession(data)
 
-    useAppStore.getState().setSession(normalizeSession(data))
+    useAppStore.getState().setSession(nextSession)
+    await pruneForeignAuthCaches(nextSession.userId)
     return true
   } catch {
     return false

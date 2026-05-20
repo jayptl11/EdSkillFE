@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, ExternalLink, LoaderCircle, RefreshCcw, ShieldAlert } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getErrorMessage, isApiError } from '../../api/client'
@@ -10,6 +10,7 @@ import { policyApi, policyKeys } from './policyApi'
 import { buildAcceptedPoliciesFromRequirements, getPolicyLabel, isRequiredConsentPolicyType } from './policyUtils'
 
 export function PolicyConsentGate({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const consentQuery = useQuery({
     queryKey: policyKeys.consentStatus(),
     queryFn: policyApi.getMyPolicyConsents,
@@ -29,7 +30,7 @@ export function PolicyConsentGate({ children }: { children: ReactNode }) {
       return policyApi.acceptMyPolicies(payload)
     },
     onSuccess: async () => {
-      await consentQuery.refetch()
+      await queryClient.invalidateQueries({ queryKey: policyKeys.consentStatus() })
       showToast({ kind: 'success', message: 'Bạn đã xác nhận chính sách mới nhất của EdSkill.' })
     },
     onError: async (error) => {
@@ -41,7 +42,7 @@ export function PolicyConsentGate({ children }: { children: ReactNode }) {
         isApiError(error) &&
         (error.code === 'POLICY_VERSION_INVALID' || error.code === 'POLICY_DOCUMENT_NOT_FOUND')
       ) {
-        await consentQuery.refetch()
+        await queryClient.invalidateQueries({ queryKey: policyKeys.consentStatus() })
       }
 
       showToast({ kind: 'error', message: getErrorMessage(error) })

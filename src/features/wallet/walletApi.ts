@@ -1,4 +1,5 @@
 import { apiGet, apiPost } from '../../api/client'
+import { cacheScope } from '../../api/cacheScope'
 import { toQueryString } from '../../api/query'
 import type { PaginatedResponse } from '../../api/types'
 import type {
@@ -20,16 +21,18 @@ import type {
 } from './types'
 
 export const walletKeys = {
-  all: () => ['wallet'] as const,
-  summary: () => ['wallet', 'points', 'summary'] as const,
-  transactionsRoot: () => ['wallet', 'points', 'transactions'] as const,
+  all: () => cacheScope.user(undefined, 'wallet'),
+  summary: () => cacheScope.user(undefined, 'wallet', 'points', 'summary'),
+  transactionsRoot: () => cacheScope.user(undefined, 'wallet', 'points', 'transactions'),
   transactions: (params: WalletTransactionsParams) =>
-    ['wallet', 'points', 'transactions', params] as const,
-  pointPackages: () => ['wallet', 'points', 'packages'] as const,
-  subscriptionPlans: () => ['wallet', 'subscriptions', 'plans'] as const,
-  mySubscriptions: () => ['wallet', 'subscriptions', 'me'] as const,
-  paymentsRoot: () => ['wallet', 'payments'] as const,
-  payments: (params: WalletPaymentsParams) => ['wallet', 'payments', params] as const,
+    cacheScope.user(undefined, 'wallet', 'points', 'transactions', params),
+  pointPackages: () => cacheScope.public('wallet', 'points', 'packages'),
+  subscriptionPlans: () => cacheScope.public('wallet', 'subscriptions', 'plans'),
+  mySubscriptions: () => cacheScope.user(undefined, 'wallet', 'subscriptions', 'me'),
+  paymentsRoot: () => cacheScope.user(undefined, 'wallet', 'payments'),
+  payments: (params: WalletPaymentsParams) => cacheScope.user(undefined, 'wallet', 'payments', params),
+  return: (variant: 'points' | 'subscriptions', queryString: string) =>
+    cacheScope.user(undefined, 'wallet', variant, 'return', queryString),
 }
 
 export const walletApi = {

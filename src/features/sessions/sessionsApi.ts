@@ -1,4 +1,5 @@
 import { apiGet, apiPost } from '../../api/client'
+import { cacheScope } from '../../api/cacheScope'
 import { toQueryString } from '../../api/query'
 import type { PaginatedResponse } from '../../api/types'
 import type {
@@ -14,15 +15,15 @@ import type {
 } from './types'
 
 export const sessionKeys = {
-  all: () => ['sessions'] as const,
-  lists: () => ['sessions', 'list'] as const,
-  list: (params: SessionsListParams) => ['sessions', 'list', params] as const,
-  details: () => ['sessions', 'detail'] as const,
-  detail: (sessionId: string) => ['sessions', 'detail', sessionId] as const,
-  roomAccesses: () => ['sessions', 'room-access'] as const,
-  roomAccess: (sessionId: string) => ['sessions', 'room-access', sessionId] as const,
-  statuses: () => ['sessions', 'status'] as const,
-  status: (sessionId: string) => ['sessions', 'status', sessionId] as const,
+  all: () => cacheScope.user(undefined, 'sessions'),
+  lists: () => cacheScope.user(undefined, 'sessions', 'list'),
+  list: (params: SessionsListParams) => cacheScope.user(undefined, 'sessions', 'list', params),
+  details: () => cacheScope.user(undefined, 'sessions', 'detail'),
+  detail: (sessionId: string) => cacheScope.user(undefined, 'sessions', 'detail', sessionId),
+  roomAccesses: () => cacheScope.user(undefined, 'sessions', 'room-access'),
+  roomAccess: (sessionId: string) => cacheScope.user(undefined, 'sessions', 'room-access', sessionId),
+  statuses: () => cacheScope.user(undefined, 'sessions', 'status'),
+  status: (sessionId: string) => cacheScope.user(undefined, 'sessions', 'status', sessionId),
 }
 
 export const sessionsApi = {

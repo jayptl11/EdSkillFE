@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { Link, Navigate } from 'react-router-dom'
 import { getErrorMessage } from '../../api/client'
+import { invalidateSkillCatalogQueries } from '../../api/cacheInvalidation'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
@@ -230,7 +231,7 @@ export function AdminSkillsPage() {
   }
 
   async function refreshSkills() {
-    await queryClient.invalidateQueries({ queryKey: ['skills'] })
+    await invalidateSkillCatalogQueries(queryClient)
   }
 
   return (

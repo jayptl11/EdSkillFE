@@ -1,4 +1,5 @@
 import { apiPost } from '../../api/client'
+import { cacheScope } from '../../api/cacheScope'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -21,7 +22,7 @@ export interface ReviewDto {
 // ─── Query Keys ─────────────────────────────────────────────────────────────
 
 export const reviewKeys = {
-  session: (sessionId: string) => ['reviews', 'session', sessionId] as const,
+  session: (sessionId: string) => cacheScope.user(undefined, 'reviews', 'session', sessionId),
 }
 
 // ─── API ────────────────────────────────────────────────────────────────────

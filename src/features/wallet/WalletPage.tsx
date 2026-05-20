@@ -13,11 +13,11 @@ import {
 } from 'lucide-react'
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { getErrorMessage } from '../../api/client'
+import { invalidateWalletAndProfileQueries } from '../../api/cacheInvalidation'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
 import { useAppStore } from '../../store/useAppStore'
-import { profileKeys } from '../profile/profileApi'
 import { SubscriptionSummaryCard } from './SubscriptionSummaryCard'
 import { walletApi, walletKeys } from './walletApi'
 import type {
@@ -443,7 +443,7 @@ function WalletReturnPageShell({
   const queryClient = useQueryClient()
 
   const returnQuery = useQuery({
-    queryKey: ['wallet', variant, 'return', queryString],
+    queryKey: walletKeys.return(variant, queryString),
     queryFn: () => queryFn(queryString),
     enabled: Boolean(queryString),
     retry: false,
@@ -454,10 +454,7 @@ function WalletReturnPageShell({
       return
     }
 
-    void Promise.all([
-      queryClient.invalidateQueries({ queryKey: walletKeys.all() }),
-      queryClient.invalidateQueries({ queryKey: profileKeys.me() }),
-    ])
+    void invalidateWalletAndProfileQueries(queryClient)
   }, [queryClient, returnQuery.data])
 
   return (

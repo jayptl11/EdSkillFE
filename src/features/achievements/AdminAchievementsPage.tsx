@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, Award, Eye, EyeOff, LoaderCircle, RefreshCcw, Save, Shield, Upload } from 'lucide-react'
 import { Link, Navigate } from 'react-router-dom'
 import { getErrorMessage } from '../../api/client'
+import { invalidateAchievementAdminQueries } from '../../api/cacheInvalidation'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
@@ -183,7 +184,7 @@ export function AdminAchievementsPage() {
   }
 
   async function refreshAchievements() {
-    await queryClient.invalidateQueries({ queryKey: ['achievements'] })
+    await invalidateAchievementAdminQueries(queryClient)
   }
 
   return (

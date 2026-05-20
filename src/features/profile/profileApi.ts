@@ -1,4 +1,5 @@
 import { apiGet, apiPost, apiPut } from '../../api/client'
+import { cacheScope } from '../../api/cacheScope'
 import type {
   AvatarUploadUrlDto,
   CredentialUploadUrlDto,
@@ -9,8 +10,10 @@ import type {
 } from './types'
 
 export const profileKeys = {
-  me: () => ['profile', 'me'] as const,
-  user: (userId: string) => ['profile', userId] as const,
+  me: () => cacheScope.user(undefined, 'profile', 'me'),
+  teachingAccess: () => cacheScope.user(undefined, 'profile', 'me', 'teaching-access'),
+  users: () => cacheScope.public('profile', 'user'),
+  user: (userId: string) => cacheScope.public('profile', 'user', userId),
 }
 
 export const profileApi = {

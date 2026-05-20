@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import {
@@ -22,7 +22,8 @@ import {
   verifyOtp,
   type SignupIntent,
 } from './api/auth'
-import { queryClient } from './api/queryClient'
+import { syncProfileCaches } from './api/cacheInvalidation'
+import { pruneForeignAuthCaches } from './api/cacheLifecycle'
 import { AuthPage, FieldIcon } from './components/AuthLayout'
 import { SiteHeader } from './components/Brand'
 import { LearningHero } from './components/LearningHero'
@@ -32,7 +33,7 @@ import { showToast } from './components/toastEvents'
 
 import { DashboardTabsPage } from './features/dashboard/DashboardTabsPage'
 import { PublicProfilePage } from './features/profile/ProfilePages'
-import { profileApi } from './features/profile/profileApi'
+import { profileApi, profileKeys } from './features/profile/profileApi'
 import { PolicyConsentGate } from './features/policies/PolicyConsentGate'
 import { PoliciesPage, PolicyDetailPage } from './features/policies/PolicyPages'
 import { policyApi, policyKeys } from './features/policies/policyApi'
@@ -223,7 +224,6 @@ function AuthExpiryWatcher() {
 
   useEffect(() => {
     const handleExpiredSession = () => {
-      queryClient.clear()
       navigate('/login', {
         replace: true,
         state: { message: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.' },
@@ -295,12 +295,16 @@ function TeachEntryPage() {
 function TeachAccessRedirect() {
   const navigate = useNavigate()
   const hasTriggeredEnableRef = useRef(false)
+  const queryClient = useQueryClient()
   const profileQuery = useQuery({
-    queryKey: ['profile', 'me', 'teaching-access'],
+    queryKey: profileKeys.teachingAccess(),
     queryFn: profileApi.getMyProfile,
   })
   const enableMutation = useMutation({
     mutationFn: profileApi.enableCompanion,
+    onSuccess: async (profile) => {
+      await syncProfileCaches(queryClient, profile)
+    },
   })
 
   useEffect(() => {
@@ -379,7 +383,9 @@ function LoginPage() {
 
     try {
       const response = await login({ identifier: identifier.trim(), password })
-      setSession(normalizeSession(response))
+      const nextSession = normalizeSession(response)
+      setSession(nextSession)
+      await pruneForeignAuthCaches(nextSession.userId)
       rememberIntent(intent)
       navigate(getPostAuthRoute(), { replace: true })
     } catch (error) {

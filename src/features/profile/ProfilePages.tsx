@@ -14,6 +14,7 @@ import {
   UserRound,
 } from 'lucide-react'
 import { getErrorMessage, isApiError } from '../../api/client'
+import { syncProfileCaches } from '../../api/cacheInvalidation'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
@@ -110,7 +111,6 @@ export function OwnerProfilePage() {
 
     const nextValues = toProfileFormValues(profile)
     queryClient.setQueryData(profileKeys.me(), profile)
-    queryClient.invalidateQueries({ queryKey: profileKeys.user(profile.userId) })
     hasInitializedRef.current = true
     setInitialValues(nextValues)
     setFormValues(nextValues)
@@ -163,8 +163,7 @@ export function OwnerProfilePage() {
 
   function applyProfileSnapshot(profile: ProfileDto) {
     const nextValues = toProfileFormValues(profile)
-    queryClient.setQueryData(profileKeys.me(), profile)
-    queryClient.invalidateQueries({ queryKey: profileKeys.user(profile.userId) })
+    void syncProfileCaches(queryClient, profile)
     hasInitializedRef.current = true
     setInitialValues(nextValues)
     setFormValues(nextValues)

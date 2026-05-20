@@ -1,9 +1,10 @@
 import { apiGet, apiPatch, apiPost } from '../../api/client'
+import { cacheScope } from '../../api/cacheScope'
 import type { AdminConfigItemDto, GrantPointsPayload, GrantPointsResponse } from './types'
 
 export const adminSessionWalletKeys = {
-  all: () => ['admin-session-wallet'] as const,
-  config: () => ['admin-session-wallet', 'config'] as const,
+  all: () => cacheScope.user(undefined, 'admin-session-wallet'),
+  config: () => cacheScope.user(undefined, 'admin-session-wallet', 'config'),
 }
 
 export const adminSessionWalletApi = {

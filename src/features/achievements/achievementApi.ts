@@ -1,4 +1,5 @@
 import { apiGet, apiPatch, apiPost } from '../../api/client'
+import { cacheScope } from '../../api/cacheScope'
 import {
   uploadFileToPresignedUrl,
 } from '../profile/profileApi'
@@ -21,8 +22,10 @@ const ALLOWED_ACHIEVEMENT_ICON_TYPES = new Set<GenerateAchievementIconUploadUrlR
 const MAX_ACHIEVEMENT_ICON_SIZE_BYTES = 10 * 1024 * 1024
 
 export const achievementKeys = {
-  adminList: (includeInactive: boolean) => ['achievements', 'admin', { includeInactive }] as const,
-  me: () => ['achievements', 'me'] as const,
+  all: () => cacheScope.user(undefined, 'achievements'),
+  adminRoot: () => cacheScope.user(undefined, 'achievements', 'admin'),
+  adminList: (includeInactive: boolean) => cacheScope.user(undefined, 'achievements', 'admin', { includeInactive }),
+  me: () => cacheScope.user(undefined, 'achievements', 'me'),
 }
 
 export const achievementApi = {

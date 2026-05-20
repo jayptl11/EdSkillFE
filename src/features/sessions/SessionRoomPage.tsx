@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, Clock3, LoaderCircle, RefreshCcw, Video } from 'lucide-react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { getErrorMessage, isApiError } from '../../api/client'
+import { invalidateSessionCompletionQueries } from '../../api/cacheInvalidation'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
@@ -13,7 +14,6 @@ import {
   formatSessionDateTime,
   getSessionStatusLabel,
   invalidateSessionQueries,
-  invalidateWalletQueries,
   parseSessionDateTime,
 } from './sessionUtils'
 import type { SessionDto, SessionRoomAccessDto } from './types'
@@ -57,6 +57,7 @@ export function SessionRoomPage() {
   })
 
   const accessData = accessQuery.data
+  const canMountRoom = canMountSessionRoom(accessData)
   const shouldRenderRoom =
     pageState === 'ready-to-mount'
     || pageState === 'joining-room'
@@ -127,7 +128,7 @@ export function SessionRoomPage() {
     onSuccess: async () => {
       await Promise.all([
         invalidateSessionQueries(queryClient, sessionId),
-        invalidateWalletQueries(queryClient),
+        invalidateSessionCompletionQueries(queryClient),
       ])
 
       const nextSession = await sessionsApi.getById(sessionId)
@@ -175,35 +176,37 @@ export function SessionRoomPage() {
   }, [accessData, accessQuery])
 
   useEffect(() => {
-    if (!accessData?.canJoin || !shouldRenderRoom) {
+    const roomAccess = accessData
+
+    if (!canMountRoom || !shouldRenderRoom) {
       return undefined
     }
 
-    if (!accessData.roomName) {
+    if (!roomAccess?.roomName) {
       setLocalError('Phòng học chưa sẵn sàng. Vui lòng thử lại sau ít phút.')
       setPageState('access-denied')
       return undefined
     }
 
-    const roomName = accessData.roomName
+    const roomName = roomAccess.roomName
     let disposed = false
     let handleJoined: (() => void) | null = null
     let handleLeft: (() => void) | null = null
 
     const mountJitsi = async () => {
       try {
-        await loadJitsiExternalApiScript(accessData.jitsiDomain)
+        await loadJitsiExternalApiScript(roomAccess.jitsiDomain)
 
         if (disposed || jitsiApiRef.current || !containerRef.current || !window.JitsiMeetExternalAPI) {
           return
         }
 
-        const api = new window.JitsiMeetExternalAPI(accessData.jitsiDomain, {
+        const api = new window.JitsiMeetExternalAPI(roomAccess.jitsiDomain, {
           roomName,
           parentNode: containerRef.current,
           userInfo: {
-            displayName: accessData.displayName,
-            avatarURL: accessData.avatarUrl ?? undefined,
+            displayName: roomAccess.displayName,
+            avatarURL: roomAccess.avatarUrl ?? undefined,
           },
           configOverwrite: {
             disableDeepLinking: true,
@@ -376,7 +379,7 @@ export function SessionRoomPage() {
         />
       ) : null}
 
-      {shouldRenderRoom && accessData?.canJoin ? (
+      {shouldRenderRoom && canMountRoom ? (
         <section className="session-room-layout">
           <div className="session-room-stage">
             <div className="session-room-surface" ref={containerRef} />
@@ -606,7 +609,7 @@ function SessionPostCallPanel({
 }
 
 function buildDeniedPresentation(accessData: SessionRoomAccessDto | undefined, error: unknown) {
-  if (accessData?.denyCode === 'SESSION_HOST_NOT_READY') {
+  if (accessData?.denyCode === 'SESSION_HOST_NOT_READY' || (accessData?.role === 'learner' && accessData.hostReady === false)) {
     return {
       title: 'Đợi Companion mở phòng',
       message: accessData.denyMessage ?? 'Companion chưa vào phòng học. Hệ thống sẽ mở phòng cho bạn ngay khi host sẵn sàng.',
@@ -664,15 +667,30 @@ function resolveAccessPageState(accessData?: SessionRoomAccessDto): Extract<
   SessionRoomPageState,
   'waiting-for-host' | 'access-denied' | 'ready-to-mount'
 > {
-  if (accessData?.canJoin) {
+  if (canMountSessionRoom(accessData)) {
     return 'ready-to-mount'
   }
 
-  if (accessData?.role === 'learner' && accessData.denyCode === 'SESSION_HOST_NOT_READY') {
+  if (
+    accessData?.role === 'learner'
+    && (accessData.denyCode === 'SESSION_HOST_NOT_READY' || accessData.hostReady === false)
+  ) {
     return 'waiting-for-host'
   }
 
   return 'access-denied'
+}
+
+function canMountSessionRoom(accessData?: SessionRoomAccessDto) {
+  if (!accessData?.canJoin) {
+    return false
+  }
+
+  if (accessData.role === 'learner' && !accessData.hostReady) {
+    return false
+  }
+
+  return true
 }
 
 function formatCountdown(ms: number) {

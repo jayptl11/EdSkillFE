@@ -1,4 +1,4 @@
-import type { SessionDto } from '../sessions/types'
+import type { SessionDto, SessionRoomAccessDto } from '../sessions/types'
 
 export interface MySpaceSkillDto {
   skillId: string
@@ -17,6 +17,7 @@ export interface MySpaceSessionDto {
   skill: MySpaceSkillDto | null
   companion: MySpaceUserSummaryDto
   learner: MySpaceUserSummaryDto | null
+  roomAccess?: Pick<SessionRoomAccessDto, 'canOpenRoomPage' | 'denyCode' | 'denyMessage' | 'joinOpenAt' | 'joinCloseAt'>
 }
 
 export interface MySpaceDto {

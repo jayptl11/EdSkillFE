@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, Coins, LoaderCircle, RefreshCcw, Save, Settings2, Shield } from 'lucide-react'
 import { Link, Navigate } from 'react-router-dom'
 import { getErrorMessage } from '../../api/client'
+import { invalidateAdminSessionWalletQueries } from '../../api/cacheInvalidation'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
@@ -32,8 +33,9 @@ export function AdminSessionWalletPage() {
 
   const grantMutation = useMutation({
     mutationFn: adminSessionWalletApi.grantPoints,
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       showToast({ kind: 'success', message: `Đã cấp điểm cho ${response.granted} người dùng.` })
+      await invalidateAdminSessionWalletQueries(queryClient)
       setUserIdsInput('')
       setGrantNote('')
     },
@@ -47,7 +49,7 @@ export function AdminSessionWalletPage() {
       adminSessionWalletApi.patchConfig(key, value),
     onSuccess: async () => {
       showToast({ kind: 'success', message: 'Cấu hình đã được cập nhật.' })
-      await queryClient.invalidateQueries({ queryKey: adminSessionWalletKeys.config() })
+      await invalidateAdminSessionWalletQueries(queryClient)
     },
     onError: (error) => {
       showToast({ kind: 'error', message: getErrorMessage(error) })

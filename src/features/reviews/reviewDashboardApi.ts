@@ -1,8 +1,10 @@
 import { apiGet, apiPost } from '../../api/client'
+import { cacheScope } from '../../api/cacheScope'
 import type { CreateReviewRequest, ReviewDashboardDto, ReviewDto } from './types'
 
 export const reviewDashboardKeys = {
-  me: () => ['reviews', 'me', 'dashboard'] as const,
+  root: () => cacheScope.user(undefined, 'reviews', 'me'),
+  me: () => cacheScope.user(undefined, 'reviews', 'me', 'dashboard'),
 }
 
 export const reviewDashboardApi = {
@@ -10,4 +12,3 @@ export const reviewDashboardApi = {
   createReview: (payload: CreateReviewRequest) =>
     apiPost<ReviewDto>('/api/reviews', payload, { auth: true }),
 }
-

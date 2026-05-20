@@ -1,4 +1,5 @@
 import { apiGet } from '../../api/client'
+import { cacheScope } from '../../api/cacheScope'
 import { toQueryString } from '../../api/query'
 import type { AchievementSummaryDto } from '../achievements/types'
 import type { SessionDto, SessionPricingPreviewDto } from './types'
@@ -133,10 +134,13 @@ export interface CompanionValidationError {
 }
 
 export const companionKeys = {
-  search: (params: CompanionSearchParams) => ['companions', 'search', params] as const,
-  publicProfile: (companionId: string) => ['companions', 'public-profile', companionId] as const,
+  searchRoot: () => cacheScope.user(undefined, 'companions', 'search'),
+  search: (params: CompanionSearchParams) => cacheScope.user(undefined, 'companions', 'search', params),
+  publicProfiles: () => cacheScope.public('companions', 'public-profile'),
+  publicProfile: (companionId: string) => cacheScope.public('companions', 'public-profile', companionId),
+  skillDetails: () => cacheScope.public('companions', 'skill-detail'),
   skillDetail: (companionId: string, skillId: string, params: CompanionSkillDetailParams) =>
-    ['companions', 'skill-detail', companionId, skillId, params] as const,
+    cacheScope.public('companions', 'skill-detail', companionId, skillId, params),
 }
 
 export const companionApi = {
