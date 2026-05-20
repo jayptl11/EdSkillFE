@@ -141,7 +141,7 @@ export const companionKeys = {
 
 export const companionApi = {
   search: (params: CompanionSearchParams) =>
-    apiGet<CompanionSearchResponse>(`/api/companions/search${toQueryString(params)}`),
+    apiGet<CompanionSearchResponse>(`/api/companions/search${toQueryString(params)}`, { auth: true }),
 
   getPublicProfile: (companionId: string) =>
     apiGet<CompanionPublicProfileDto>(`/api/companions/${companionId}/public-profile`),

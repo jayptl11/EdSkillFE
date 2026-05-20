@@ -94,6 +94,9 @@ export function CompanionSearchPage() {
     queryKey: companionKeys.search(searchParams!),
     queryFn: () => companionApi.search(searchParams!),
     enabled: searchParams !== null,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
   })
 
   const quickSkillsQuery = useQuery({
