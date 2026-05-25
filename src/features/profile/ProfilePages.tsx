@@ -464,6 +464,21 @@ export function OwnerProfilePage() {
             </div>
 
             <div className="profile-meta-card profile-panel">
+              <h2>Chứng chỉ / Bằng cấp</h2>
+              {formValues.credentialUrls.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {formValues.credentialUrls.map((url, idx) => (
+                    <a className="profile-degree-link" href={url} key={url} rel="noopener noreferrer" target="_blank">
+                      Chứng chỉ #{idx + 1}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="profile-empty-copy">Bạn chưa tải chứng chỉ nào.</p>
+              )}
+            </div>
+
+            <div className="profile-meta-card profile-panel">
               <h2>Vai trò & hoạt động</h2>
               <div className="profile-role-row">
                 {profileQuery.data.roles.map((role) => (
