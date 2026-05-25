@@ -889,6 +889,20 @@ function PublicProfileCard({ profile }: { profile: ProfileDto }) {
           />
         </div>
 
+        <div className="profile-meta-card">
+          <h3>Chứng chỉ / Bằng cấp</h3>
+          {profile.credentialUrls.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {profile.credentialUrls.map((url, idx) => (
+                <a className="profile-degree-link" href={url} key={url} rel="noopener noreferrer" target="_blank">
+                  Chứng chỉ #{idx + 1}
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p className="profile-empty-copy">Người dùng này chưa cập nhật chứng chỉ.</p>
+          )}
+        </div>
       </div>
     </section>
   )
