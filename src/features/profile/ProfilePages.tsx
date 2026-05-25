@@ -818,6 +818,26 @@ function PublicProfileCard({ profile }: { profile: ProfileDto }) {
           </div>
           <h2>{profile.displayName}</h2>
           <p>{profile.bio || 'Người dùng này chưa cập nhật tiểu sử.'}</p>
+          <div style={{ marginTop: '10px' }}>
+            <h3 style={{ marginBottom: '6px' }}>Chứng chỉ / Bằng cấp</h3>
+            {profile.credentialUrls.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {profile.credentialUrls.map((url, idx) => (
+                  <a
+                    className="profile-degree-link"
+                    href={url}
+                    key={url}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Chứng chỉ #{idx + 1}
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p className="profile-empty-copy">Người dùng này chưa cập nhật chứng chỉ.</p>
+            )}
+          </div>
         </div>
       </div>
 
