@@ -17,7 +17,9 @@ import {
   Plus,
   Save,
   Star,
+  Trash2,
   Trophy,
+  Upload,
   UserRound,
   Video,
   X,
@@ -35,6 +37,7 @@ import {
   profileApi,
   profileKeys,
   requestAvatarUploadUrl,
+  requestCredentialUploadUrl,
   uploadFileToPresignedUrl,
 } from '../profile/profileApi'
 import {
@@ -42,6 +45,7 @@ import {
   formatLastActive,
   toProfileFormValues,
   validateAvatarFile,
+  validateCredentialFile,
   validateProfileForm,
   type ProfileFieldErrors,
 } from '../profile/profileUtils'
@@ -86,6 +90,36 @@ function normalizeGenderOptionValue(value: string): UserGender | '' {
   }
 
   return value as UserGender | ''
+}
+
+function toDashboardProfileFormValues(profile: ProfileDto): ProfileFormValues {
+  const values = toProfileFormValues(profile)
+
+  if (values.credentialUrls.length === 0 && profile.degreeUrl) {
+    values.credentialUrls = [profile.degreeUrl]
+  }
+
+  return values
+}
+
+function getCredentialKind(url: string): 'image' | 'pdf' | 'other' {
+  const normalizedUrl = url.split('?')[0].toLowerCase()
+
+  if (normalizedUrl.endsWith('.pdf')) {
+    return 'pdf'
+  }
+
+  if (
+    normalizedUrl.endsWith('.jpg') ||
+    normalizedUrl.endsWith('.jpeg') ||
+    normalizedUrl.endsWith('.png') ||
+    normalizedUrl.endsWith('.webp') ||
+    normalizedUrl.endsWith('.gif')
+  ) {
+    return 'image'
+  }
+
+  return 'other'
 }
 
 export function DashboardTabsPage() {
@@ -134,18 +168,26 @@ function GeneralInfoTab({ profileQuery }: { profileQuery: UseQueryResult<Profile
 function GeneralInfoForm({ profile }: { profile: ProfileDto }) {
   const queryClient = useQueryClient()
   const avatarInputRef = useRef<HTMLInputElement | null>(null)
-  const [formValues, setFormValues] = useState<ProfileFormValues>(() => toProfileFormValues(profile))
-  const [initialValues, setInitialValues] = useState<ProfileFormValues>(() => toProfileFormValues(profile))
+  const credentialInputRef = useRef<HTMLInputElement | null>(null)
+  const [formValues, setFormValues] = useState<ProfileFormValues>(() => toDashboardProfileFormValues(profile))
+  const [initialValues, setInitialValues] = useState<ProfileFormValues>(() => toDashboardProfileFormValues(profile))
   const [fieldErrors, setFieldErrors] = useState<ProfileFieldErrors>({})
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const [isUploadingCredential, setIsUploadingCredential] = useState(false)
+  const credentialUrls = formValues.credentialUrls
+  const credentialCount = Math.max(profile.credentialCount, credentialUrls.length)
+
+  const applyProfileSnapshot = (nextProfile: ProfileDto) => {
+    const nextValues = toDashboardProfileFormValues(nextProfile)
+    void syncProfileCaches(queryClient, nextProfile)
+    setFormValues(nextValues)
+    setInitialValues(nextValues)
+  }
 
   const updateMutation = useMutation({
     mutationFn: profileApi.updateMyProfile,
     onSuccess: (updatedProfile) => {
-      const nextValues = toProfileFormValues(updatedProfile)
-      void syncProfileCaches(queryClient, updatedProfile)
-      setFormValues(nextValues)
-      setInitialValues(nextValues)
+      applyProfileSnapshot(updatedProfile)
       setFieldErrors({})
       showToast({ kind: 'success', message: 'Thông tin cá nhân đã được cập nhật.' })
     },
@@ -211,15 +253,65 @@ function GeneralInfoForm({ profile }: { profile: ProfileDto }) {
       const uploadMeta = await requestAvatarUploadUrl(file)
       await uploadFileToPresignedUrl(uploadMeta.uploadUrl, file)
       const updatedProfile = await profileApi.updateMyProfile({ avatarUrl: uploadMeta.publicUrl })
-      const nextValues = toProfileFormValues(updatedProfile)
-      void syncProfileCaches(queryClient, updatedProfile)
-      setFormValues(nextValues)
-      setInitialValues(nextValues)
+      applyProfileSnapshot(updatedProfile)
       showToast({ kind: 'success', message: 'Ảnh đại diện đã được cập nhật.' })
     } catch (error) {
       showToast({ kind: 'error', message: getErrorMessage(error) })
     } finally {
       setIsUploadingAvatar(false)
+    }
+  }
+
+  const handleCredentialInputChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!file) {
+      return
+    }
+
+    const validationMessage = validateCredentialFile(file)
+    if (validationMessage) {
+      showToast({ kind: 'error', message: validationMessage })
+      return
+    }
+
+    setIsUploadingCredential(true)
+    clearFieldError('credentialUrls')
+
+    try {
+      const uploadMeta = await requestCredentialUploadUrl(file)
+      await uploadFileToPresignedUrl(uploadMeta.uploadUrl, file)
+      const updatedProfile = await profileApi.updateMyProfile({
+        credentialUrls: [...credentialUrls, uploadMeta.publicUrl],
+      })
+      applyProfileSnapshot(updatedProfile)
+      showToast({ kind: 'success', message: 'Chứng chỉ đã được tải lên thành công.' })
+    } catch (error) {
+      showToast({
+        kind: 'error',
+        message: error instanceof Error ? error.message : 'Tải chứng chỉ thất bại. Vui lòng thử lại.',
+      })
+    } finally {
+      setIsUploadingCredential(false)
+    }
+  }
+
+  const handleRemoveCredential = async (urlToRemove: string) => {
+    setIsUploadingCredential(true)
+    clearFieldError('credentialUrls')
+
+    try {
+      const nextUrls = credentialUrls.filter((url) => url !== urlToRemove)
+      const updatedProfile = await profileApi.updateMyProfile({
+        credentialUrls: nextUrls.length > 0 ? nextUrls : null,
+      })
+      applyProfileSnapshot(updatedProfile)
+      showToast({ kind: 'success', message: 'Chứng chỉ đã được xóa khỏi hồ sơ.' })
+    } catch (error) {
+      showToast({ kind: 'error', message: getErrorMessage(error) })
+    } finally {
+      setIsUploadingCredential(false)
     }
   }
 
@@ -307,6 +399,73 @@ function GeneralInfoForm({ profile }: { profile: ProfileDto }) {
           </DashboardField>
           <DashboardField className="full" error={fieldErrors.bio} label="Giới thiệu về bản thân">
             <textarea rows={5} value={formValues.bio} onChange={(event) => handleChange('bio', event.target.value)} />
+          </DashboardField>
+          <DashboardField className="full" error={fieldErrors.credentialUrls} label="Chứng chỉ / Bằng cấp">
+            <div className="dashboard-credential-panel">
+              <div className="dashboard-credential-meta">
+                <strong>{credentialCount}</strong>
+                <span>chứng chỉ đã tải lên</span>
+              </div>
+              <input
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                className="dashboard-file-input"
+                onChange={handleCredentialInputChange}
+                ref={credentialInputRef}
+                type="file"
+              />
+              <div className="dashboard-credential-actions">
+                <button
+                  className="dashboard-soft-button"
+                  disabled={isUploadingCredential}
+                  onClick={() => credentialInputRef.current?.click()}
+                  type="button"
+                >
+                  {isUploadingCredential ? <LoaderCircle className="spin" size={16} /> : <Upload size={16} />}
+                  {isUploadingCredential ? 'Đang tải...' : 'Tải lên chứng chỉ'}
+                </button>
+              </div>
+              {credentialUrls.length > 0 ? (
+                <div className="dashboard-credential-list">
+                  {credentialUrls.map((url, index) => {
+                    const credentialKind = getCredentialKind(url)
+
+                    return (
+                      <article className="dashboard-credential-card" key={url}>
+                        <div className="dashboard-credential-preview">
+                          {credentialKind === 'image' ? (
+                            <img alt={`Chứng chỉ ${index + 1}`} src={url} />
+                          ) : credentialKind === 'pdf' ? (
+                            <iframe src={url} title={`Chứng chỉ ${index + 1}`} />
+                          ) : (
+                            <div className="dashboard-credential-fallback">
+                              <Award size={28} />
+                              <span>Không xem trước được định dạng này</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="dashboard-credential-card-foot">
+                          <a className="dashboard-credential-link" href={url} rel="noopener noreferrer" target="_blank">
+                            <Award size={16} />
+                            {`Chứng chỉ #${index + 1}`}
+                          </a>
+                          <button
+                            aria-label={`Xóa chứng chỉ ${index + 1}`}
+                            className="dashboard-credential-remove"
+                            disabled={isUploadingCredential}
+                            onClick={() => void handleRemoveCredential(url)}
+                            type="button"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="dashboard-credential-empty">Chưa có chứng chỉ nào được cập nhật.</p>
+              )}
+            </div>
           </DashboardField>
         </div>
       </form>
