@@ -464,6 +464,21 @@ export function OwnerProfilePage() {
             </div>
 
             <div className="profile-meta-card profile-panel">
+              <h2>Chứng chỉ / Bằng cấp</h2>
+              {formValues.credentialUrls.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {formValues.credentialUrls.map((url, idx) => (
+                    <a className="profile-degree-link" href={url} key={url} rel="noopener noreferrer" target="_blank">
+                      Chứng chỉ #{idx + 1}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="profile-empty-copy">Bạn chưa tải chứng chỉ nào.</p>
+              )}
+            </div>
+
+            <div className="profile-meta-card profile-panel">
               <h2>Vai trò & hoạt động</h2>
               <div className="profile-role-row">
                 {profileQuery.data.roles.map((role) => (
@@ -818,6 +833,26 @@ function PublicProfileCard({ profile }: { profile: ProfileDto }) {
           </div>
           <h2>{profile.displayName}</h2>
           <p>{profile.bio || 'Người dùng này chưa cập nhật tiểu sử.'}</p>
+          <div style={{ marginTop: '10px' }}>
+            <h3 style={{ marginBottom: '6px' }}>Chứng chỉ / Bằng cấp</h3>
+            {profile.credentialUrls.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {profile.credentialUrls.map((url, idx) => (
+                  <a
+                    className="profile-degree-link"
+                    href={url}
+                    key={url}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Chứng chỉ #{idx + 1}
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p className="profile-empty-copy">Người dùng này chưa cập nhật chứng chỉ.</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -868,6 +903,7 @@ function PublicProfileCard({ profile }: { profile: ProfileDto }) {
             emptyLabel="Người dùng này chưa có thành tích nào."
           />
         </div>
+
       </div>
     </section>
   )
