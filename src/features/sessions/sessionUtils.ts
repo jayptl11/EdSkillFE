@@ -1,7 +1,14 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { walletKeys } from '../wallet/walletApi'
 import { sessionKeys } from './sessionsApi'
-import type { AllowedDurationMinutes, CreateSessionRequest, SessionActorRole, SessionDto, SessionStatus } from './types'
+import type {
+  AllowedDurationMinutes,
+  CreateSessionRequest,
+  SessionActorRole,
+  SessionDto,
+  SessionRoomAccessDto,
+  SessionStatus,
+} from './types'
 
 const activePollingStatuses: SessionStatus[] = ['Pending', 'Confirmed', 'InProgress', 'PendingReview']
 const SESSION_DATE_TIME_WITHOUT_ZONE_PATTERN = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,7})?)?$/
@@ -98,6 +105,45 @@ export function buildJitsiUrl(roomId: string) {
 
 export function getSessionRoomRoute(sessionId: string) {
   return `/sessions/${sessionId}/room`
+}
+
+export function canOpenSessionRoomPage(
+  access?: Pick<SessionRoomAccessDto, 'canOpenRoomPage' | 'canJoin'> | null,
+) {
+  if (!access) {
+    return false
+  }
+
+  return access.canOpenRoomPage === true || access.canJoin === true
+}
+
+export function getSessionRoomEntryLabel(
+  access?: Pick<SessionRoomAccessDto, 'denyCode' | 'joinOpenAt' | 'joinCloseAt'> | null,
+  isLoading = false,
+) {
+  if (isLoading) {
+    return 'Đang kiểm tra phòng học'
+  }
+
+  if (access?.denyCode === 'SESSION_HOST_NOT_READY') {
+    return 'Đợi Companion mở phòng'
+  }
+
+  if (access?.denyCode === 'SESSION_JOIN_WINDOW_CLOSED') {
+    const now = Date.now()
+    const openAt = parseSessionDateTime(access.joinOpenAt)?.getTime() ?? Number.NaN
+    const closeAt = parseSessionDateTime(access.joinCloseAt)?.getTime() ?? Number.NaN
+
+    if (Number.isFinite(closeAt) && now > closeAt) {
+      return 'Đã qua thời gian vào phòng'
+    }
+
+    if (Number.isFinite(openAt) && now < openAt) {
+      return 'Chưa tới giờ vào phòng'
+    }
+  }
+
+  return 'Chưa thể vào phòng'
 }
 
 export function canRenderSessionRoomEntry(session: Pick<SessionDto, 'deliveryMode' | 'status' | 'jitsiRoomId'>) {

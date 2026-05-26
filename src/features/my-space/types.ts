@@ -17,7 +17,7 @@ export interface MySpaceSessionDto {
   skill: MySpaceSkillDto | null
   companion: MySpaceUserSummaryDto
   learner: MySpaceUserSummaryDto | null
-  roomAccess?: Pick<SessionRoomAccessDto, 'canOpenRoomPage' | 'denyCode' | 'denyMessage' | 'joinOpenAt' | 'joinCloseAt'>
+  roomAccess?: Pick<SessionRoomAccessDto, 'canOpenRoomPage' | 'canJoin' | 'denyCode' | 'denyMessage' | 'joinOpenAt' | 'joinCloseAt'>
 }
 
 export interface MySpaceDto {

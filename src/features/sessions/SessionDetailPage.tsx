@@ -22,19 +22,22 @@ import { useAppStore } from '../../store/useAppStore'
 import {
   canBookSession,
   canCancelSession,
+  canOpenSessionRoomPage,
   formatSessionDateTime,
   formatSessionPoints,
   getCurrentSessionRole,
+  getSessionRoomEntryLabel,
   getSessionRoomRoute,
   getSessionStatusLabel,
   invalidateSessionQueries,
   invalidateWalletQueries,
+  parseSessionDateTime,
   shouldPollSessionStatus,
 } from './sessionUtils'
 import { reviewDashboardKeys } from '../reviews/reviewDashboardApi'
 import { sessionsApi, sessionKeys } from './sessionsApi'
 import { reviewApi } from './reviewApi'
-import type { AllowedDurationMinutes, BookSessionRequest, DurationPricingOptionDto, SessionDto, SessionRoomAccessDto, SessionStatusDto } from './types'
+import type { AllowedDurationMinutes, BookSessionRequest, DurationPricingOptionDto, SessionDto, SessionStatusDto } from './types'
 
 export function SessionDetailPage() {
   const { sessionId = '' } = useParams()
@@ -69,8 +72,29 @@ export function SessionDetailPage() {
     refetchInterval: (query) =>
       query.state.data?.denyCode === 'SESSION_HOST_NOT_READY' ? 12_000 : false,
   })
-  const canOpenRoomPage = roomAccessQuery.data?.canOpenRoomPage === true
+  const canOpenRoomPage = canOpenSessionRoomPage(roomAccessQuery.data)
   const showRoomEntryAction = sessionData?.deliveryMode === 'Online' && viewerRole !== 'viewer' && (roomAccessQuery.data || roomAccessQuery.isLoading)
+
+  useEffect(() => {
+    const access = roomAccessQuery.data
+
+    if (!access || canOpenSessionRoomPage(access) || access.denyCode !== 'SESSION_JOIN_WINDOW_CLOSED') {
+      return undefined
+    }
+
+    const now = Date.now()
+    const openAt = parseSessionDateTime(access.joinOpenAt)?.getTime() ?? Number.NaN
+
+    if (!Number.isFinite(openAt) || now >= openAt) {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void roomAccessQuery.refetch()
+    }, Math.max(0, openAt - now) + 500)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [roomAccessQuery.data, roomAccessQuery.refetch])
 
   useEffect(() => {
     if (!detailQuery.data || !statusQuery.data) {
@@ -432,22 +456,6 @@ function mergeSessionStatus(sessionData?: SessionDto, statusData?: SessionStatus
     learnerConfirmed: statusData.learnerConfirmed,
     companionConfirmed: statusData.companionConfirmed,
   }
-}
-
-function getSessionRoomEntryLabel(access: SessionRoomAccessDto | undefined, isLoading: boolean) {
-  if (isLoading) {
-    return 'Đang kiểm tra phòng học'
-  }
-
-  if (access?.denyCode === 'SESSION_HOST_NOT_READY') {
-    return 'Đợi Companion mở phòng'
-  }
-
-  if (access?.denyCode === 'SESSION_JOIN_WINDOW_CLOSED') {
-    return 'Chưa thể vào phòng'
-  }
-
-  return 'Chưa thể vào phòng'
 }
 
 const emptySession: SessionDto = {

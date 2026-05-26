@@ -52,7 +52,13 @@ import {
 import type { ProfileDto, ProfileField, ProfileFormValues, UserGender } from '../profile/types'
 import { reviewDashboardApi, reviewDashboardKeys } from '../reviews/reviewDashboardApi'
 import type { ReviewTaskDto } from '../reviews/types'
-import { formatSessionDateTime, getSessionRoomRoute, getSessionStatusLabel } from '../sessions/sessionUtils'
+import {
+  canOpenSessionRoomPage,
+  formatSessionDateTime,
+  getSessionRoomEntryLabel,
+  getSessionRoomRoute,
+  getSessionStatusLabel,
+} from '../sessions/sessionUtils'
 import type { SessionDto } from '../sessions/types'
 import { walletApi, walletKeys } from '../wallet/walletApi'
 import type { PaymentStatus, PaymentTransactionDto, PointTransactionDto } from '../wallet/types'
@@ -620,7 +626,7 @@ function MySpaceSessionCard({
   const personLabel = role === 'learner' ? 'Companion' : 'Learner'
   const isOnline = session.deliveryMode === 'Online'
   const roomAccess = item.roomAccess
-  const canOpenRoomPage = roomAccess?.canOpenRoomPage === true
+  const canOpenRoomPage = canOpenSessionRoomPage(roomAccess)
   const showRoomEntryAction = isOnline && roomAccess !== undefined
 
   return (
@@ -678,7 +684,7 @@ function MySpaceSessionCard({
             </Link>
           ) : (
             <button className="dashboard-primary-button" disabled type="button">
-              {getMySpaceRoomEntryLabel(roomAccess?.denyCode)}
+              {getSessionRoomEntryLabel(roomAccess)}
             </button>
           )
         ) : null}
@@ -712,18 +718,6 @@ function getMySpacePointsLabel(session: SessionDto) {
   }
 
   return `${formatPoints(session.pointCost)} điểm`
-}
-
-function getMySpaceRoomEntryLabel(denyCode: string | null | undefined) {
-  if (denyCode === 'SESSION_HOST_NOT_READY') {
-    return 'Đợi Companion mở phòng'
-  }
-
-  if (denyCode === 'SESSION_JOIN_WINDOW_CLOSED') {
-    return 'Chưa tới giờ vào phòng'
-  }
-
-  return 'Chưa thể vào phòng'
 }
 
 function AchievementsTab() {
