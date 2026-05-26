@@ -627,6 +627,8 @@ function MySpaceSessionCard({
   const isOnline = session.deliveryMode === 'Online'
   const roomAccess = item.roomAccess
   const canOpenRoomPage = canOpenSessionRoomPage(roomAccess)
+  const detailRoute = `/dashboard/skills/${session.sessionId}`
+  const showConfirmLearnerAction = role === 'companion' && session.status === 'Pending' && Boolean(session.learnerId)
   const showRoomEntryAction = isOnline && roomAccess !== undefined
 
   return (
@@ -677,7 +679,11 @@ function MySpaceSessionCard({
         {session.jitsiRoomId ? <span>Có phòng Online</span> : null}
       </div>
       <div className="dashboard-space-actions">
-        {showRoomEntryAction ? (
+        {showConfirmLearnerAction ? (
+          <Link className="dashboard-primary-button" to={detailRoute}>
+            Xác nhận sinh viên
+          </Link>
+        ) : showRoomEntryAction ? (
           canOpenRoomPage ? (
             <Link className="dashboard-primary-button" to={getSessionRoomRoute(session.sessionId)}>
               Join session
@@ -688,7 +694,7 @@ function MySpaceSessionCard({
             </button>
           )
         ) : null}
-        <Link className="dashboard-outline-button" to={`/dashboard/skills/${session.sessionId}`}>
+        <Link className="dashboard-outline-button" to={detailRoute}>
           Xem chi tiết
         </Link>
       </div>

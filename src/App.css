@@ -8830,7 +8830,7 @@
 
 .session-room-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.8fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.5rem;
   align-items: start;
 }
@@ -8855,6 +8855,25 @@
   width: 100%;
   min-height: 72vh;
   border: 0;
+}
+
+.session-room-side {
+  max-width: 880px;
+}
+
+.session-room-side .session-action-panel {
+  padding: 1rem 1.15rem;
+}
+
+.session-room-side .session-action-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.session-room-side .session-action-head p {
+  max-width: 72ch;
 }
 
 .session-room-inline-state,
@@ -8883,10 +8902,6 @@
 }
 
 @media (max-width: 960px) {
-  .session-room-layout {
-    grid-template-columns: 1fr;
-  }
-
   .session-room-surface,
   .session-room-surface iframe {
     min-height: 60vh;

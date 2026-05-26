@@ -1,4 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query'
+import { mySpaceKeys } from '../my-space/mySpaceApi'
 import { walletKeys } from '../wallet/walletApi'
 import { sessionKeys } from './sessionsApi'
 import type {
@@ -200,6 +201,7 @@ export async function invalidateWalletQueries(queryClient: QueryClient) {
 
 export async function invalidateSessionQueries(queryClient: QueryClient, sessionId?: string) {
   const tasks = [
+    queryClient.invalidateQueries({ queryKey: mySpaceKeys.root() }),
     queryClient.invalidateQueries({ queryKey: sessionKeys.lists() }),
     queryClient.invalidateQueries({ queryKey: sessionKeys.roomAccesses() }),
     queryClient.invalidateQueries({ queryKey: sessionKeys.statuses() }),
