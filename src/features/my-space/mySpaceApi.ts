@@ -1,6 +1,7 @@
 import { apiGet } from '../../api/client'
 import { cacheScope } from '../../api/cacheScope'
 import type { MySpaceDto, MySpaceRoomAccessDto } from './types'
+import { normalizeSessionDto } from '../sessions/sessionNormalization'
 
 interface RawMySpaceRoomAccessDto extends Omit<MySpaceRoomAccessDto, 'canJoin'> {
   canJoin?: boolean
@@ -30,10 +31,12 @@ function normalizeMySpace(dto: RawMySpaceDto): MySpaceDto {
     ...dto,
     companionSessions: dto.companionSessions.map((item) => ({
       ...item,
+      session: normalizeSessionDto(item.session),
       roomAccess: normalizeRoomAccess(item.roomAccess),
     })),
     learnerSessions: dto.learnerSessions.map((item) => ({
       ...item,
+      session: normalizeSessionDto(item.session),
       roomAccess: normalizeRoomAccess(item.roomAccess),
     })),
   }

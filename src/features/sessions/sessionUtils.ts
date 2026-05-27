@@ -10,6 +10,7 @@ import type {
   SessionRoomAccessDto,
   SessionStatus,
 } from './types'
+import { getSessionStatusClassName as getNormalizedSessionStatusClassName, normalizeSessionStatus } from './sessionNormalization'
 
 const activePollingStatuses: SessionStatus[] = ['Pending', 'Confirmed', 'InProgress', 'PendingReview']
 const SESSION_DATE_TIME_WITHOUT_ZONE_PATTERN = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,7})?)?$/
@@ -54,7 +55,9 @@ export function formatSessionPoints(value: number) {
   return `${new Intl.NumberFormat().format(value)} points`
 }
 
-export function getSessionStatusLabel(status: SessionStatus) {
+export function getSessionStatusLabel(status: SessionStatus | string | number) {
+  const normalizedStatus = normalizeSessionStatus(status)
+
   return {
     Available: 'Available',
     Pending: 'Pending',
@@ -64,7 +67,11 @@ export function getSessionStatusLabel(status: SessionStatus) {
     Completed: 'Completed',
     Cancelled: 'Cancelled',
     Disputed: 'Disputed',
-  }[status]
+  }[normalizedStatus]
+}
+
+export function getSessionStatusClassName(status: SessionStatus | string | number) {
+  return getNormalizedSessionStatusClassName(status)
 }
 
 export function getCurrentSessionRole(session: SessionDto, userId?: string | null): SessionActorRole {

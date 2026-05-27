@@ -13,6 +13,12 @@ import type {
   SessionStatusDto,
   SessionsListParams,
 } from './types'
+import {
+  normalizePaginatedSessions,
+  normalizeSessionDto,
+  normalizeSessionRoomAccessDto,
+  normalizeSessionStatusDto,
+} from './sessionNormalization'
 
 export const sessionKeys = {
   all: () => cacheScope.user(undefined, 'sessions'),
@@ -27,36 +33,39 @@ export const sessionKeys = {
 }
 
 export const sessionsApi = {
-  create: (payload: CreateSessionRequest) => apiPost<SessionDto>('/api/sessions', payload, { auth: true }),
+  create: async (payload: CreateSessionRequest) =>
+    normalizeSessionDto(await apiPost<SessionDto>('/api/sessions', payload, { auth: true })),
 
-  list: (params: SessionsListParams) =>
-    apiGet<PaginatedResponse<SessionDto>>(`/api/sessions${toQueryString(params)}`, { auth: true }),
+  list: async (params: SessionsListParams) =>
+    normalizePaginatedSessions(await apiGet<PaginatedResponse<SessionDto>>(`/api/sessions${toQueryString(params)}`, { auth: true })),
 
-  getById: (sessionId: string) => apiGet<SessionDto>(`/api/sessions/${sessionId}`, { auth: true }),
+  getById: async (sessionId: string) =>
+    normalizeSessionDto(await apiGet<SessionDto>(`/api/sessions/${sessionId}`, { auth: true })),
 
-  getRoomAccess: (sessionId: string) =>
-    apiGet<SessionRoomAccessDto>(`/api/sessions/${sessionId}/room-access`, { auth: true }),
+  getRoomAccess: async (sessionId: string) =>
+    normalizeSessionRoomAccessDto(await apiGet<SessionRoomAccessDto>(`/api/sessions/${sessionId}/room-access`, { auth: true })),
 
-  book: (sessionId: string, payload: BookSessionRequest) =>
-    apiPost<SessionDto>(`/api/sessions/${sessionId}/book`, payload, { auth: true }),
+  book: async (sessionId: string, payload: BookSessionRequest) =>
+    normalizeSessionDto(await apiPost<SessionDto>(`/api/sessions/${sessionId}/book`, payload, { auth: true })),
 
-  confirm: (sessionId: string) =>
-    apiPost<SessionDto>(`/api/sessions/${sessionId}/confirm`, undefined, { auth: true }),
+  confirm: async (sessionId: string) =>
+    normalizeSessionDto(await apiPost<SessionDto>(`/api/sessions/${sessionId}/confirm`, undefined, { auth: true })),
 
-  reject: (sessionId: string, payload: RejectSessionPayload) =>
-    apiPost<SessionDto>(`/api/sessions/${sessionId}/reject`, payload, { auth: true }),
+  reject: async (sessionId: string, payload: RejectSessionPayload) =>
+    normalizeSessionDto(await apiPost<SessionDto>(`/api/sessions/${sessionId}/reject`, payload, { auth: true })),
 
-  cancel: (sessionId: string, payload: CancelSessionPayload) =>
-    apiPost<SessionDto>(`/api/sessions/${sessionId}/cancel`, payload, { auth: true }),
+  cancel: async (sessionId: string, payload: CancelSessionPayload) =>
+    normalizeSessionDto(await apiPost<SessionDto>(`/api/sessions/${sessionId}/cancel`, payload, { auth: true })),
 
-  join: (sessionId: string) => apiPost<SessionDto>(`/api/sessions/${sessionId}/join`, undefined, { auth: true }),
+  join: async (sessionId: string) =>
+    normalizeSessionDto(await apiPost<SessionDto>(`/api/sessions/${sessionId}/join`, undefined, { auth: true })),
 
-  leave: (sessionId: string, payload: LeaveSessionPayload) =>
-    apiPost<SessionDto>(`/api/sessions/${sessionId}/leave`, payload, { auth: true }),
+  leave: async (sessionId: string, payload: LeaveSessionPayload) =>
+    normalizeSessionDto(await apiPost<SessionDto>(`/api/sessions/${sessionId}/leave`, payload, { auth: true })),
 
   confirmCompletion: (sessionId: string) =>
     apiPost<void>(`/api/sessions/${sessionId}/confirm-completion`, undefined, { auth: true }),
 
-  getStatus: (sessionId: string) =>
-    apiGet<SessionStatusDto>(`/api/sessions/${sessionId}/status`, { auth: true }),
+  getStatus: async (sessionId: string) =>
+    normalizeSessionStatusDto(await apiGet<SessionStatusDto>(`/api/sessions/${sessionId}/status`, { auth: true })),
 }

@@ -16,6 +16,7 @@ import type { MySpaceDto } from '../my-space/types'
 import { mySpaceKeys } from '../my-space/mySpaceApi'
 import { sessionKeys } from './sessionsApi'
 import { patchMySpaceRoomStateData, patchMySpaceSessionData, patchSessionRoomAccessData } from './sessionRealtimeCache'
+import { normalizeSessionDto, normalizeSessionRoomStateDto } from './sessionNormalization'
 import type { SessionDto, SessionRoomAccessDto, SessionRoomStateDto } from './types'
 
 export const SESSION_UPDATED_EVENT = 'session.updated'
@@ -139,7 +140,9 @@ export function SessionRealtimeProvider({ children }: { children: ReactNode }) {
     connectionRef.current = connection
     setConnectionState('connecting')
 
-    connection.on(SESSION_UPDATED_EVENT, (payload: SessionDto) => {
+    connection.on(SESSION_UPDATED_EVENT, (rawPayload: SessionDto) => {
+      const payload = normalizeSessionDto(rawPayload)
+
       queryClient.setQueryData(sessionKeys.detail(payload.sessionId), payload)
 
       let foundInMySpace = false
@@ -158,7 +161,9 @@ export function SessionRealtimeProvider({ children }: { children: ReactNode }) {
       notifySessionUpdated(payload)
     })
 
-    connection.on(SESSION_ROOM_STATE_UPDATED_EVENT, (payload: SessionRoomStateDto) => {
+    connection.on(SESSION_ROOM_STATE_UPDATED_EVENT, (rawPayload: SessionRoomStateDto) => {
+      const payload = normalizeSessionRoomStateDto(rawPayload)
+
       queryClient.setQueryData(sessionKeys.roomAccess(payload.sessionId), (current: unknown) => {
         return patchSessionRoomAccessData(current as SessionRoomAccessDto | undefined, payload)
       })

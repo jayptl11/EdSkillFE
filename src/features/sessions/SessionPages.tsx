@@ -32,6 +32,7 @@ import {
   formatSessionPoints,
   getCurrentSessionRole,
   getSessionRoomRoute,
+  getSessionStatusClassName,
   getSessionStatusLabel,
   invalidateSessionQueries,
   invalidateWalletQueries,
@@ -586,7 +587,7 @@ function SessionCard({
   return (
     <article className="session-card session-discovery-card">
       <div className="session-card-top">
-        <span className={`session-status-chip status-${session.status.toLowerCase()}`}>
+        <span className={`session-status-chip ${getSessionStatusClassName(session.status)}`}>
           {getSessionStatusLabel(session.status)}
         </span>
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>

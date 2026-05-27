@@ -29,6 +29,7 @@ import {
   getCurrentSessionRole,
   getSessionRoomEntryLabel,
   getSessionRoomRoute,
+  getSessionStatusClassName,
   getSessionStatusLabel,
   invalidateSessionQueries,
   invalidateWalletQueries,
@@ -241,7 +242,7 @@ export function SessionDetailPage() {
           <article className="profile-form-card session-detail-card">
             <div className="profile-form-heading">
               <div>
-                <span className={`session-status-chip status-${sessionData.status.toLowerCase()}`}>
+                <span className={`session-status-chip ${getSessionStatusClassName(sessionData.status)}`}>
                   {getSessionStatusLabel(sessionData.status)}
                 </span>
                 <h2>{sessionData.skill}</h2>

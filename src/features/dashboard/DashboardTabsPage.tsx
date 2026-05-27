@@ -57,6 +57,7 @@ import {
   formatSessionDateTime,
   getSessionRoomEntryLabel,
   getSessionRoomRoute,
+  getSessionStatusClassName,
   getSessionStatusLabel,
 } from '../sessions/sessionUtils'
 import type { SessionDto } from '../sessions/types'
@@ -645,7 +646,7 @@ function MySpaceSessionCard({
         <strong>{getMySpacePointsLabel(session)}</strong>
       </div>
       <div className="dashboard-review-task-tags">
-        <span className={`session-status-chip status-${session.status.toLowerCase()}`}>
+        <span className={`session-status-chip ${getSessionStatusClassName(session.status)}`}>
           {getSessionStatusLabel(session.status)}
         </span>
         <span className={`session-delivery-badge ${isOnline ? 'online' : 'offline'}`}>

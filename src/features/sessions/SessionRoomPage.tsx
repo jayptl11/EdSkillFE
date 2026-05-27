@@ -14,6 +14,7 @@ import { loadJitsiExternalApiScript } from './jitsiLoader'
 import { sessionKeys, sessionsApi } from './sessionsApi'
 import {
   formatSessionDateTime,
+  getSessionStatusClassName,
   getSessionStatusLabel,
   invalidateSessionQueries,
   parseSessionDateTime,
@@ -633,7 +634,7 @@ function SessionPostCallPanel({
 
         {session ? (
           <div className="dashboard-review-task-tags session-room-post-call-meta">
-            <span className={`session-status-chip status-${session.status.toLowerCase()}`}>
+            <span className={`session-status-chip ${getSessionStatusClassName(session.status)}`}>
               {getSessionStatusLabel(session.status)}
             </span>
             <span>{formatSessionDateTime(session.scheduledAt)}</span>
