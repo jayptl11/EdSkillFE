@@ -2,7 +2,7 @@ import { useAppStore } from '../store/useAppStore'
 import { clearUserQueryCache, pruneForeignAuthCaches } from './cacheLifecycle'
 import { normalizeSession, type LoginResponse } from './session'
 
-const API_BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ??
   'https://edskill-production.up.railway.app'
 

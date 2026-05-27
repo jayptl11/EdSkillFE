@@ -12,12 +12,17 @@ export interface MySpaceUserSummaryDto {
   avatarUrl: string | null
 }
 
+export type MySpaceRoomAccessDto = Pick<
+  SessionRoomAccessDto,
+  'canOpenRoomPage' | 'canJoin' | 'denyCode' | 'denyMessage' | 'joinOpenAt' | 'joinCloseAt' | 'hostReady' | 'hasCompanionJoined'
+>
+
 export interface MySpaceSessionDto {
   session: SessionDto
   skill: MySpaceSkillDto | null
   companion: MySpaceUserSummaryDto
   learner: MySpaceUserSummaryDto | null
-  roomAccess?: Pick<SessionRoomAccessDto, 'canOpenRoomPage' | 'canJoin' | 'denyCode' | 'denyMessage' | 'joinOpenAt' | 'joinCloseAt'>
+  roomAccess?: MySpaceRoomAccessDto
 }
 
 export interface MySpaceDto {

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, Clock3, LoaderCircle, RefreshCcw, Video } from 'lucide-react'
@@ -8,6 +9,7 @@ import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
 import { useAppStore } from '../../store/useAppStore'
+import { useSessionRealtimeEffect } from './SessionRealtimeProvider'
 import { loadJitsiExternalApiScript } from './jitsiLoader'
 import { sessionKeys, sessionsApi } from './sessionsApi'
 import {
@@ -16,7 +18,7 @@ import {
   invalidateSessionQueries,
   parseSessionDateTime,
 } from './sessionUtils'
-import type { SessionDto, SessionRoomAccessDto } from './types'
+import type { SessionDto, SessionRoomAccessDto, SessionRoomStateDto } from './types'
 
 type SessionRoomPageState =
   | 'loading-access'
@@ -41,19 +43,12 @@ export function SessionRoomPage() {
   const [pageState, setPageState] = useState<SessionRoomPageState>('loading-access')
   const [localError, setLocalError] = useState<string | null>(null)
   const [postCallSession, setPostCallSession] = useState<SessionDto | null>(null)
+  const [roomStateSnapshot, setRoomStateSnapshot] = useState<SessionRoomStateDto | null>(null)
 
   const accessQuery = useQuery({
     queryKey: sessionKeys.roomAccess(sessionId),
     queryFn: () => sessionsApi.getRoomAccess(sessionId),
     enabled: Boolean(sessionId),
-    refetchInterval: pageState === 'waiting-for-host' ? 10_000 : false,
-  })
-
-  const statusQuery = useQuery({
-    queryKey: sessionKeys.status(sessionId),
-    queryFn: () => sessionsApi.getStatus(sessionId),
-    enabled: pageState === 'post-call' && postCallSession?.status === 'InProgress',
-    refetchInterval: 15_000,
   })
 
   const accessData = accessQuery.data
@@ -63,6 +58,59 @@ export function SessionRoomPage() {
     || pageState === 'joining-room'
     || pageState === 'in-room'
     || pageState === 'leaving-room'
+
+  useSessionRealtimeEffect({
+    enabled: Boolean(sessionId),
+    onReconnect: () => {
+      void accessQuery.refetch()
+
+      if (pageState === 'post-call' || postCallSession) {
+        void sessionsApi.getById(sessionId).then((session) => {
+          if (!unmountedRef.current) {
+            setPostCallSession(session)
+          }
+        })
+      }
+    },
+    onRoomStateUpdated: (payload) => {
+      if (payload.sessionId !== sessionId) {
+        return
+      }
+
+      setRoomStateSnapshot(payload)
+      void accessQuery.refetch().then((result) => {
+        if (unmountedRef.current) {
+          return
+        }
+
+        if (
+          pageState === 'loading-access'
+          || pageState === 'waiting-for-host'
+          || pageState === 'access-denied'
+          || pageState === 'ready-to-mount'
+        ) {
+          setPageState(resolveAccessPageState(result.data))
+        }
+      })
+    },
+    onSessionUpdated: (payload) => {
+      if (payload.sessionId !== sessionId) {
+        return
+      }
+
+      if (pageState === 'post-call' || postCallSession) {
+        setPostCallSession(payload)
+      }
+    },
+    onSubscribeError: (error) => {
+      if (isApiError(error) && (error.code === 'FORBIDDEN' || error.code === 'UNAUTHORIZED')) {
+        void accessQuery.refetch()
+      }
+
+      showToast({ kind: 'error', message: getErrorMessage(error) })
+    },
+    sessionId,
+  })
 
   const joinMutation = useMutation({
     mutationFn: () => sessionsApi.join(sessionId),
@@ -144,6 +192,8 @@ export function SessionRoomPage() {
       showToast({ kind: 'error', message: getErrorMessage(error) })
     },
   })
+  const joinSession = joinMutation.mutate
+  const leaveSession = leaveMutation.mutateAsync
 
   const deniedPresentation = useMemo(
     () => buildDeniedPresentation(accessData, accessQuery.error),
@@ -151,10 +201,18 @@ export function SessionRoomPage() {
   )
 
   useEffect(() => {
-    if (!accessQuery.isLoading) {
+    if (
+      !accessQuery.isLoading
+      && (
+        pageState === 'loading-access'
+        || pageState === 'waiting-for-host'
+        || pageState === 'access-denied'
+        || pageState === 'ready-to-mount'
+      )
+    ) {
       setPageState(resolveAccessPageState(accessData))
     }
-  }, [accessData, accessQuery.isLoading])
+  }, [accessData, accessQuery.isLoading, pageState])
 
   useEffect(() => {
     if (!accessData || accessData.canJoin || accessData.denyCode !== 'SESSION_JOIN_WINDOW_CLOSED') {
@@ -226,7 +284,7 @@ export function SessionRoomPage() {
 
           joinedPostedRef.current = true
           setPageState('joining-room')
-          joinMutation.mutate()
+          joinSession()
         }
 
         handleLeft = () => {
@@ -253,7 +311,7 @@ export function SessionRoomPage() {
 
       leavePostedRef.current = true
       setPageState('leaving-room')
-      await leaveMutation.mutateAsync()
+      await leaveSession()
     }
 
     void mountJitsi()
@@ -286,25 +344,17 @@ export function SessionRoomPage() {
       void ensureLeave()
     }
   }, [
+    accessData,
     accessData?.avatarUrl,
     accessData?.canJoin,
     accessData?.displayName,
     accessData?.jitsiDomain,
     accessData?.roomName,
+    canMountRoom,
+    joinSession,
+    leaveSession,
     shouldRenderRoom,
   ])
-
-  useEffect(() => {
-    if (!postCallSession || !statusQuery.data || statusQuery.data.status === postCallSession.status) {
-      return
-    }
-
-    void sessionsApi.getById(sessionId).then((session) => {
-      if (!unmountedRef.current) {
-        setPostCallSession(session)
-      }
-    })
-  }, [postCallSession, sessionId, statusQuery.data])
 
   useEffect(() => {
     return () => {
@@ -372,6 +422,7 @@ export function SessionRoomPage() {
       {pageState === 'waiting-for-host' ? (
         <SessionRoomWaitingState
           access={accessData}
+          roomState={roomStateSnapshot}
           onRetry={() => {
             setLocalError(null)
             void accessQuery.refetch()
@@ -418,6 +469,7 @@ export function SessionRoomPage() {
           errorMessage={localError}
           isConfirming={confirmCompletionMutation.isPending}
           onConfirmCompletion={() => confirmCompletionMutation.mutate()}
+          roomState={roomStateSnapshot}
           session={postCallSession}
         />
       ) : null}
@@ -471,11 +523,15 @@ function SessionRoomDeniedState({
 
 function SessionRoomWaitingState({
   access,
+  roomState,
   onRetry,
 }: {
   access?: SessionRoomAccessDto
+  roomState: SessionRoomStateDto | null
   onRetry: () => void
 }) {
+  void roomState
+
   return (
     <section className="session-room-denied-grid">
       <section className="profile-state-card">
@@ -514,9 +570,11 @@ function SessionRoomCountdown({
   joinOpenAt: string
   scheduledAt: string
 }) {
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(0)
 
   useEffect(() => {
+    setNow(Date.now())
+
     const intervalId = window.setInterval(() => {
       setNow(Date.now())
     }, 1000)
@@ -549,11 +607,13 @@ function SessionPostCallPanel({
   errorMessage,
   isConfirming,
   onConfirmCompletion,
+  roomState,
   session,
 }: {
   errorMessage: string | null
   isConfirming: boolean
   onConfirmCompletion: () => void
+  roomState: SessionRoomStateDto | null
   session: SessionDto | null
 }) {
   const status = session?.status
@@ -561,6 +621,7 @@ function SessionPostCallPanel({
     session &&
       status === 'PendingReview',
   )
+  const participantMeta = roomState ? `${roomState.activeParticipantCount} participant` : null
 
   return (
     <section className="session-room-post-call">
@@ -576,6 +637,7 @@ function SessionPostCallPanel({
               {getSessionStatusLabel(session.status)}
             </span>
             <span>{formatSessionDateTime(session.scheduledAt)}</span>
+            {participantMeta ? <span>{participantMeta}</span> : null}
           </div>
         ) : null}
 

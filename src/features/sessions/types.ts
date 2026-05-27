@@ -107,6 +107,21 @@ export interface SessionRoomAccessDto {
   joinCloseAt: string
 }
 
+export interface SessionRoomStateDto {
+  sessionId: string
+  status: SessionStatus
+  jitsiRoomId: string | null
+  hasCompanionJoined: boolean
+  hasLearnerJoined: boolean
+  activeParticipantCount: number
+  actualStartAt: string | null
+  actualEndAt: string | null
+  actualDuration: number | null
+  joinOpenAt: string
+  joinCloseAt: string
+  updatedAt: string
+}
+
 /** @deprecated Dùng CreateSessionRequest thay thế */
 export interface CreateSessionPayload {
   skill: string

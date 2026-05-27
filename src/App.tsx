@@ -47,6 +47,7 @@ import { AdminAchievementsPage } from './features/achievements/AdminAchievements
 import { AdminSkillsPage } from './features/skills/AdminSkillsPage'
 import { SessionDetailPage } from './features/sessions/SessionDetailPage'
 import { SessionRoomPage } from './features/sessions/SessionRoomPage'
+import { SessionRealtimeProvider } from './features/sessions/SessionRealtimeProvider'
 import {
   CreateSessionOfferPage,
   LearningSessionsPage,
@@ -82,139 +83,141 @@ function App() {
     <>
       <AuthExpiryWatcher />
       <ToastViewport />
-      <AnimatePresence mode="wait">
-        <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/learn" element={<LearnEntryPage />} />
-          <Route path="/teach" element={<TeachEntryPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/policies" element={<PoliciesPage />} />
-          <Route path="/policies/:slug" element={<PolicyDetailPage />} />
-          <Route path="/verify-otp" element={<VerifyOtpPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/profile"
-            element={
-              <ProtectedRoute>
-                <Navigate replace to="/dashboard?tab=profile" />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/admin/skills"
-            element={
-              <ProtectedRoute>
-                <AdminSkillsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/admin/session-wallet"
-            element={
-              <ProtectedRoute>
-                <AdminSessionWalletPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/admin/achievements"
-            element={
-              <ProtectedRoute>
-                <AdminAchievementsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/wallet"
-            element={
-              <ProtectedRoute>
-                <WalletPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/dashboard/wallet/points/return" element={<PointPurchaseReturnPage />} />
-          <Route
-            path="/dashboard/wallet/subscriptions/return"
-            element={<SubscriptionPurchaseReturnPage />}
-          />
-          <Route
-            path="/dashboard/skills/learning"
-            element={
-              <ProtectedRoute>
-                <LearningSessionsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/skills/teaching"
-            element={
-              <ProtectedRoute>
-                <TeachingSessionsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/skills/new"
-            element={
-              <ProtectedRoute>
-                <CreateSessionOfferPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/skills/:sessionId"
-            element={
-              <ProtectedRoute>
-                <SessionDetailPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sessions/:sessionId/room"
-            element={
-              <ProtectedRoute>
-                <SessionRoomPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/profile/:userId" element={<PublicProfilePage />} />
-          <Route
-            path="/dashboard/companions"
-            element={
-              <ProtectedRoute>
-                <CompanionSearchPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/companions/:companionId"
-            element={
-              <ProtectedRoute>
-                <CompanionDetailPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/companions/:companionId/skills/:skillId"
-            element={
-              <ProtectedRoute>
-                <CompanionSkillDetailPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate replace to="/" />} />
-        </Routes>
-      </AnimatePresence>
+      <SessionRealtimeProvider>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/learn" element={<LearnEntryPage />} />
+            <Route path="/teach" element={<TeachEntryPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/policies" element={<PoliciesPage />} />
+            <Route path="/policies/:slug" element={<PolicyDetailPage />} />
+            <Route path="/verify-otp" element={<VerifyOtpPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/profile"
+              element={
+                <ProtectedRoute>
+                  <Navigate replace to="/dashboard?tab=profile" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/skills"
+              element={
+                <ProtectedRoute>
+                  <AdminSkillsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/session-wallet"
+              element={
+                <ProtectedRoute>
+                  <AdminSessionWalletPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/achievements"
+              element={
+                <ProtectedRoute>
+                  <AdminAchievementsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/wallet"
+              element={
+                <ProtectedRoute>
+                  <WalletPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/dashboard/wallet/points/return" element={<PointPurchaseReturnPage />} />
+            <Route
+              path="/dashboard/wallet/subscriptions/return"
+              element={<SubscriptionPurchaseReturnPage />}
+            />
+            <Route
+              path="/dashboard/skills/learning"
+              element={
+                <ProtectedRoute>
+                  <LearningSessionsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/skills/teaching"
+              element={
+                <ProtectedRoute>
+                  <TeachingSessionsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/skills/new"
+              element={
+                <ProtectedRoute>
+                  <CreateSessionOfferPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/skills/:sessionId"
+              element={
+                <ProtectedRoute>
+                  <SessionDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sessions/:sessionId/room"
+              element={
+                <ProtectedRoute>
+                  <SessionRoomPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/profile/:userId" element={<PublicProfilePage />} />
+            <Route
+              path="/dashboard/companions"
+              element={
+                <ProtectedRoute>
+                  <CompanionSearchPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/companions/:companionId"
+              element={
+                <ProtectedRoute>
+                  <CompanionDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/companions/:companionId/skills/:skillId"
+              element={
+                <ProtectedRoute>
+                  <CompanionSkillDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate replace to="/" />} />
+          </Routes>
+        </AnimatePresence>
+      </SessionRealtimeProvider>
     </>
   )
 }

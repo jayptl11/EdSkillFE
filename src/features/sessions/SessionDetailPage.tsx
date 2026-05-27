@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
@@ -13,12 +13,13 @@ import {
   XCircle,
 } from 'lucide-react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { getErrorMessage } from '../../api/client'
+import { getErrorMessage, isApiError } from '../../api/client'
 import { invalidateSessionCompletionQueries } from '../../api/cacheInvalidation'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
 import { useAppStore } from '../../store/useAppStore'
+import { useSessionRealtimeEffect } from './SessionRealtimeProvider'
 import {
   canBookSession,
   canCancelSession,
@@ -32,12 +33,11 @@ import {
   invalidateSessionQueries,
   invalidateWalletQueries,
   parseSessionDateTime,
-  shouldPollSessionStatus,
 } from './sessionUtils'
 import { reviewDashboardKeys } from '../reviews/reviewDashboardApi'
 import { sessionsApi, sessionKeys } from './sessionsApi'
 import { reviewApi } from './reviewApi'
-import type { AllowedDurationMinutes, BookSessionRequest, DurationPricingOptionDto, SessionDto, SessionStatusDto } from './types'
+import type { AllowedDurationMinutes, BookSessionRequest, DurationPricingOptionDto, SessionDto } from './types'
 
 export function SessionDetailPage() {
   const { sessionId = '' } = useParams()
@@ -52,14 +52,7 @@ export function SessionDetailPage() {
     enabled: Boolean(sessionId),
   })
 
-  const statusQuery = useQuery({
-    queryKey: sessionKeys.status(sessionId),
-    queryFn: () => sessionsApi.getStatus(sessionId),
-    enabled: Boolean(sessionId) && shouldPollSessionStatus(detailQuery.data?.status),
-    refetchInterval: 15_000,
-  })
-
-  const sessionData = useMemo(() => mergeSessionStatus(detailQuery.data, statusQuery.data), [detailQuery.data, statusQuery.data])
+  const sessionData = detailQuery.data
   const viewerRole = getCurrentSessionRole(sessionData ?? emptySession, authSession?.userId)
 
   const roomAccessQuery = useQuery({
@@ -67,16 +60,20 @@ export function SessionDetailPage() {
     queryFn: () => sessionsApi.getRoomAccess(sessionId),
     enabled:
       Boolean(sessionId)
-      && detailQuery.data?.deliveryMode === 'Online'
+      && sessionData?.deliveryMode === 'Online'
       && viewerRole !== 'viewer',
-    refetchInterval: (query) =>
-      query.state.data?.denyCode === 'SESSION_HOST_NOT_READY' ? 12_000 : false,
   })
-  const canOpenRoomPage = canOpenSessionRoomPage(roomAccessQuery.data)
-  const showRoomEntryAction = sessionData?.deliveryMode === 'Online' && viewerRole !== 'viewer' && (roomAccessQuery.data || roomAccessQuery.isLoading)
+  const roomAccessData = roomAccessQuery.data
+  const roomAccessRefetch = roomAccessQuery.refetch
+  const canOpenRoomPage = canOpenSessionRoomPage(roomAccessData)
+  const showRoomEntryAction = sessionData?.deliveryMode === 'Online' && viewerRole !== 'viewer' && (roomAccessData || roomAccessQuery.isLoading)
+  const shouldUseRealtimeSubscription =
+    Boolean(sessionId)
+    && sessionData?.deliveryMode === 'Online'
+    && viewerRole !== 'viewer'
 
   useEffect(() => {
-    const access = roomAccessQuery.data
+    const access = roomAccessData
 
     if (!access || canOpenSessionRoomPage(access) || access.denyCode !== 'SESSION_JOIN_WINDOW_CLOSED') {
       return undefined
@@ -90,21 +87,34 @@ export function SessionDetailPage() {
     }
 
     const timeoutId = window.setTimeout(() => {
-      void roomAccessQuery.refetch()
+      void roomAccessRefetch()
     }, Math.max(0, openAt - now) + 500)
 
     return () => window.clearTimeout(timeoutId)
-  }, [roomAccessQuery.data, roomAccessQuery.refetch])
+  }, [roomAccessData, roomAccessRefetch])
 
-  useEffect(() => {
-    if (!detailQuery.data || !statusQuery.data) {
-      return
-    }
+  useSessionRealtimeEffect({
+    enabled: shouldUseRealtimeSubscription,
+    onReconnect: () => {
+      void detailQuery.refetch()
+      void roomAccessQuery.refetch()
+    },
+    onRoomStateUpdated: (payload) => {
+      if (payload.sessionId !== sessionId) {
+        return
+      }
 
-    if (detailQuery.data.status !== statusQuery.data.status) {
-      void queryClient.invalidateQueries({ queryKey: sessionKeys.detail(sessionId) })
-    }
-  }, [detailQuery.data, queryClient, sessionId, statusQuery.data])
+      void roomAccessQuery.refetch()
+    },
+    onSubscribeError: (error) => {
+      if (isApiError(error) && (error.code === 'FORBIDDEN' || error.code === 'UNAUTHORIZED')) {
+        void detailQuery.refetch()
+      }
+
+      showToast({ kind: 'error', message: getErrorMessage(error) })
+    },
+    sessionId,
+  })
 
   const [bookingOpen, setBookingOpen] = useState(false)
 
@@ -199,7 +209,6 @@ export function SessionDetailPage() {
             className="button secondary"
             onClick={() => {
               void detailQuery.refetch()
-              void statusQuery.refetch()
               void roomAccessQuery.refetch()
             }}
             type="button"
@@ -439,23 +448,6 @@ function DetailItem({ label, value }: { label: string; value: string }) {
       <dd>{value}</dd>
     </div>
   )
-}
-
-function mergeSessionStatus(sessionData?: SessionDto, statusData?: SessionStatusDto) {
-  if (!sessionData) {
-    return undefined
-  }
-
-  if (!statusData) {
-    return sessionData
-  }
-
-  return {
-    ...sessionData,
-    status: statusData.status,
-    learnerConfirmed: statusData.learnerConfirmed,
-    companionConfirmed: statusData.companionConfirmed,
-  }
 }
 
 const emptySession: SessionDto = {
