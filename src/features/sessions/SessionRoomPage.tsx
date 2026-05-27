@@ -54,6 +54,10 @@ export function SessionRoomPage() {
 
   const accessData = accessQuery.data
   const canMountRoom = canMountSessionRoom(accessData)
+  const roomName = accessData?.roomName ?? null
+  const jitsiDomain = accessData?.jitsiDomain ?? null
+  const displayName = accessData?.displayName ?? ''
+  const avatarUrl = accessData?.avatarUrl ?? null
   const shouldRenderRoom =
     pageState === 'ready-to-mount'
     || pageState === 'joining-room'
@@ -235,37 +239,34 @@ export function SessionRoomPage() {
   }, [accessData, accessQuery])
 
   useEffect(() => {
-    const roomAccess = accessData
-
     if (!canMountRoom || !shouldRenderRoom) {
       return undefined
     }
 
-    if (!roomAccess?.roomName) {
+    if (!roomName || !jitsiDomain) {
       setLocalError('Phòng học chưa sẵn sàng. Vui lòng thử lại sau ít phút.')
       setPageState('access-denied')
       return undefined
     }
 
-    const roomName = roomAccess.roomName
     let disposed = false
     let handleJoined: (() => void) | null = null
     let handleLeft: (() => void) | null = null
 
     const mountJitsi = async () => {
       try {
-        await loadJitsiExternalApiScript(roomAccess.jitsiDomain)
+        await loadJitsiExternalApiScript(jitsiDomain)
 
         if (disposed || jitsiApiRef.current || !containerRef.current || !window.JitsiMeetExternalAPI) {
           return
         }
 
-        const api = new window.JitsiMeetExternalAPI(roomAccess.jitsiDomain, {
+        const api = new window.JitsiMeetExternalAPI(jitsiDomain, {
           roomName,
           parentNode: containerRef.current,
           userInfo: {
-            displayName: roomAccess.displayName,
-            avatarURL: roomAccess.avatarUrl ?? undefined,
+            displayName,
+            avatarURL: avatarUrl ?? undefined,
           },
           configOverwrite: {
             disableDeepLinking: true,
@@ -345,15 +346,13 @@ export function SessionRoomPage() {
       void ensureLeave()
     }
   }, [
-    accessData,
-    accessData?.avatarUrl,
-    accessData?.canJoin,
-    accessData?.displayName,
-    accessData?.jitsiDomain,
-    accessData?.roomName,
+    avatarUrl,
     canMountRoom,
+    displayName,
+    jitsiDomain,
     joinSession,
     leaveSession,
+    roomName,
     shouldRenderRoom,
   ])
 
