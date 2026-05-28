@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { API_BASE_URL } from '../../api/client'
+import { API_BASE_URL, expireCurrentSession, tryRefreshSession } from '../../api/client'
 import { useAppStore } from '../../store/useAppStore'
 import type { MySpaceDto } from '../my-space/types'
 import { mySpaceKeys } from '../my-space/mySpaceApi'
@@ -49,10 +49,19 @@ function buildSessionHubUrl() {
   return `${API_BASE_URL}/hubs/sessions`
 }
 
+function isUnauthorizedHubError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  return /\b401\b|unauthor/i.test(error.message)
+}
+
 export function SessionRealtimeProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const authSession = useAppStore((state) => state.session)
   const connectionRef = useRef<HubConnection | null>(null)
+  const authRecoveryRef = useRef<Promise<boolean> | null>(null)
   const listenersRef = useRef(new Map<number, SessionRealtimeListener>())
   const nextListenerIdRef = useRef(0)
   const subscriptionCountsRef = useRef(new Map<string, number>())
@@ -114,6 +123,28 @@ export function SessionRealtimeProvider({ children }: { children: ReactNode }) {
     }
 
     await connectionRef.current.invoke('UnsubscribeSession', sessionId)
+  }
+
+  const recoverHubAuthorization = async () => {
+    if (!authRecoveryRef.current) {
+      authRecoveryRef.current = (async () => {
+        const refreshed = await tryRefreshSession()
+
+        if (!refreshed) {
+          await expireCurrentSession()
+        }
+
+        return refreshed
+      })()
+
+      authRecoveryRef.current.finally(() => {
+        if (authRecoveryRef.current) {
+          authRecoveryRef.current = null
+        }
+      })
+    }
+
+    return authRecoveryRef.current
   }
 
   useEffect(() => {
@@ -188,7 +219,11 @@ export function SessionRealtimeProvider({ children }: { children: ReactNode }) {
       notifyReconnected()
     })
 
-    connection.onclose(() => {
+    connection.onclose((error) => {
+      if (error && isUnauthorizedHubError(error)) {
+        void recoverHubAuthorization()
+      }
+
       if (connectionRef.current === connection) {
         setConnectionState('disconnected')
       }
@@ -204,7 +239,11 @@ export function SessionRealtimeProvider({ children }: { children: ReactNode }) {
           setConnectionState('connected')
         }
       })
-      .catch(() => {
+      .catch((error) => {
+        if (isUnauthorizedHubError(error)) {
+          void recoverHubAuthorization()
+        }
+
         if (!disposed && connectionRef.current === connection) {
           setConnectionState('disconnected')
         }

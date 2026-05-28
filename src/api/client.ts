@@ -116,21 +116,14 @@ export const apiRequest = async <T>(path: string, options: ApiRequestOptions): P
   const response = await request(path, options)
 
   if (response.status === 401 && options.auth && options.retryOnUnauthorized !== false) {
-    const refreshed = await refreshSession()
+    const refreshed = await tryRefreshSession()
 
     if (refreshed) {
       const retry = await request(path, { ...options, retryOnUnauthorized: false })
       return parseResponse<T>(retry)
     }
 
-    const expiredUserId = useAppStore.getState().session?.userId
-
-    if (expiredUserId) {
-      await clearUserQueryCache(expiredUserId)
-    }
-
-    useAppStore.getState().clearSession()
-    window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT))
+    await expireCurrentSession()
   }
 
   return parseResponse<T>(response)
@@ -165,7 +158,7 @@ const parseResponse = async <T>(response: Response): Promise<T> => {
   return data as T
 }
 
-const refreshSession = async () => {
+export const tryRefreshSession = async () => {
   const refreshToken = useAppStore.getState().session?.refreshToken
 
   if (!refreshToken) {
@@ -189,6 +182,17 @@ const refreshSession = async () => {
   } catch {
     return false
   }
+}
+
+export const expireCurrentSession = async () => {
+  const expiredUserId = useAppStore.getState().session?.userId
+
+  if (expiredUserId) {
+    await clearUserQueryCache(expiredUserId)
+  }
+
+  useAppStore.getState().clearSession()
+  window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT))
 }
 
 const safeJsonParse = (value: string) => {
