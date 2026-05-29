@@ -115,15 +115,16 @@ export function CompanionSearchPage() {
     setOpenDropdown(null)
   }
 
-  const handleSearch = () => {
-    if (!skillId) {
+  const handleSearch = (overrideSkillId?: string) => {
+    const activeSkillId = overrideSkillId || skillId
+    if (!activeSkillId) {
       return
     }
 
     const pointsNum = maxLearnerChargePoints ? Number(maxLearnerChargePoints) : undefined
 
     const params: CompanionSearchParams = {
-      skillId,
+      skillId: activeSkillId,
       page: 1,
       limit: COMPANION_LIMIT,
     }
@@ -192,6 +193,7 @@ export function CompanionSearchPage() {
                 onSelectWithId={(id, name) => {
                   setSkillId(id)
                   setSkillName(name)
+                  handleSearch(id)
                 }}
                 placeholder="Hãy thử học thêm..."
                 selectedSkills={skillName ? [skillName] : []}
@@ -201,7 +203,7 @@ export function CompanionSearchPage() {
             <button
               className="button primary discovery-search-btn"
               disabled={!skillId || searchQuery.isFetching}
-              onClick={handleSearch}
+              onClick={() => handleSearch()}
               type="button"
             >
               {searchQuery.isFetching ? <LoaderCircle className="spin" size={20} /> : 'Tìm kiếm'}
@@ -395,6 +397,7 @@ export function CompanionSearchPage() {
                       onClick={() => {
                         setSkillId(skill.id)
                         setSkillName(skill.name)
+                        handleSearch(skill.id)
                       }}
                       type="button"
                     >
@@ -448,17 +451,7 @@ export function CompanionSearchPage() {
           ) : null}
 
           {companions.length > 0 ? (
-            <div
-              className="discovery-hz-grid"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gridAutoFlow: 'row',
-                alignItems: 'stretch',
-                gap: '22px',
-                width: '100%',
-              }}
-            >
+            <div className="discovery-hz-grid">
               {companions.map((companion) => {
                 const priceLabel = companion.pricingPreview
                   ? companion.pricingPreview.minLearnerChargePoints === companion.pricingPreview.maxLearnerChargePoints
@@ -472,12 +465,6 @@ export function CompanionSearchPage() {
                   <article
                     className="discovery-hz-card"
                     key={companion.companionId}
-                    style={{
-                      gridColumn: 'auto / span 1',
-                      width: '100%',
-                      maxWidth: '100%',
-                      minWidth: 0,
-                    }}
                   >
                     <div className="discovery-hz-card-link">
                       <Link
