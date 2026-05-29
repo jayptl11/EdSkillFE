@@ -201,14 +201,14 @@ export function SiteHeader() {
         )}
       </nav>
       <div className="header-actions">
-        {session && <UserNavDropdown />}
         <button 
+          aria-label="Toggle menu"
           className="mobile-menu-toggle" 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          aria-label="Toggle menu"
         >
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
+        {session && <UserNavDropdown />}
       </div>
     </motion.header>
   )
