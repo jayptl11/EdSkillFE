@@ -7506,12 +7506,11 @@
 }
 
 @media (max-width: 1180px) {
-  .discovery-hz-grid {
-    grid-template-columns: 1fr;
-  }
 
   .discovery-hz-card-link {
-    grid-template-columns: 152px minmax(0, 1fr);
+    grid-template-columns: 144px minmax(0, 1fr);
+    padding: 16px;
+    gap: 16px;
   }
 
   .discovery-hz-name {
@@ -9700,4 +9699,4 @@
   }
 }
 
-
+
