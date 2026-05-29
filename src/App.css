@@ -2353,14 +2353,14 @@
 
 .dashboard-space-rail {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 18px;
   overflow: visible;
   padding: 4px;
 }
 
 .dashboard-add-card {
-  min-height: 280px;
+  height: 380px;
   display: grid;
   place-items: center;
   align-content: center;
@@ -2421,12 +2421,45 @@
   box-shadow: 0 18px 30px rgba(34, 45, 57, 0.1);
 }
 
+.dashboard-space-nav-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(67, 81, 95, 0.14);
+  box-shadow: 0 4px 12px rgba(34, 45, 57, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  color: #355165;
+  transition: all 0.18s ease;
+}
+
+.dashboard-space-nav-button:hover {
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(34, 45, 57, 0.2);
+  transform: translateY(-50%) scale(1.05);
+}
+
+.dashboard-space-nav-button.prev {
+  left: -22px;
+}
+
+.dashboard-space-nav-button.next {
+  right: -22px;
+}
+
 .dashboard-space-card {
-  min-height: 280px;
-  display: grid;
-  gap: 8px;
+  height: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   padding: 20px;
-  align-content: start;
 }
 
 .dashboard-space-card:hover {
@@ -2464,6 +2497,11 @@
   font-size: 20px;
   font-weight: 700;
   line-height: 1.15;
+  height: 46px; /* Exactly 2 lines (20 * 1.15 * 2) */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .dashboard-space-card-head strong {
@@ -2556,7 +2594,29 @@
 
 .dashboard-space-card p {
   font-size: 12px;
-  min-height: 34px;
+  height: 35px; /* Exactly 2 lines (12 * 1.45 * 2) */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.dashboard-space-card-foot {
+  margin-top: auto;
+}
+
+.dashboard-space-card .dashboard-space-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.dashboard-space-card .dashboard-space-actions .dashboard-primary-button,
+.dashboard-space-card .dashboard-space-actions .dashboard-outline-button {
+  width: 100%;
+  justify-content: center;
 }
 
 @media (prefers-reduced-motion: reduce) {

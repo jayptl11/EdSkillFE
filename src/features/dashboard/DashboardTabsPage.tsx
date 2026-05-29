@@ -8,6 +8,7 @@ import {
   Camera,
   Check,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Clock3,
   Coins,
@@ -581,64 +582,71 @@ function MySpaceSection({
 }) {
   const railRef = useRef<HTMLDivElement | null>(null)
   const cardSlotsPerRow = useMySpaceCardSlotsPerRow(railRef)
-  const maxSessionsWithoutPagination = Math.max(1, cardSlotsPerRow - 1)
-  const hasPagination = sessions.length > maxSessionsWithoutPagination
-  const reservedSlots = 1 + (hasPagination ? 1 : 0)
-  const sessionsPerPage = Math.max(1, cardSlotsPerRow - reservedSlots)
+  const itemsPerPage = Math.max(1, cardSlotsPerRow)
+  const allItemsCount = 1 + sessions.length
+  const totalPages = Math.max(1, Math.ceil(allItemsCount / itemsPerPage))
   const [page, setPage] = useState(0)
-  const totalPages = Math.max(1, Math.ceil(sessions.length / sessionsPerPage))
-  const startIndex = page * sessionsPerPage
-  const visibleSessions = sessions.slice(startIndex, startIndex + sessionsPerPage)
 
   useEffect(() => {
     setPage((current) => Math.min(current, Math.max(0, totalPages - 1)))
   }, [totalPages])
 
   const handleNext = () => {
-    if (totalPages <= 1) {
-      return
-    }
-
-    setPage((current) => (current + 1) % totalPages)
+    if (totalPages <= 1) return
+    setPage((current) => Math.min(totalPages - 1, current + 1))
   }
+
+  const handlePrev = () => {
+    setPage((current) => Math.max(0, current - 1))
+  }
+
+  const startIndex = page * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const showCta = startIndex === 0
+  const visibleSessionsStartIndex = showCta ? 0 : startIndex - 1
+  const visibleSessionsEndIndex = endIndex - 1
+  const visibleSessions = sessions.slice(visibleSessionsStartIndex, visibleSessionsEndIndex)
 
   return (
     <section className="dashboard-space-section">
       <div className="dashboard-section-head">
         <h1>{title}</h1>
       </div>
-      <div className="dashboard-space-rail" ref={railRef}>
-        {ctaDisabled ? (
-          <button className="dashboard-add-card" disabled type="button">
-            <Plus size={92} />
-            {ctaDisabledLabel ?? ctaLabel}
+      <div className="dashboard-space-rail-container" style={{ position: 'relative' }}>
+        <div className="dashboard-space-rail" ref={railRef}>
+          {showCta ? (
+            ctaDisabled ? (
+              <button className="dashboard-add-card" disabled type="button">
+                <Plus size={92} />
+                {ctaDisabledLabel ?? ctaLabel}
+              </button>
+            ) : (
+              <Link className="dashboard-add-card" to={ctaTo}>
+                <Plus size={92} />
+                {ctaLabel}
+              </Link>
+            )
+          ) : null}
+          {visibleSessions.map((item) => (
+            <MySpaceSessionCard
+              fallbackAvatarUrl={fallbackAvatarUrl}
+              item={item}
+              key={item.session.sessionId}
+              role={role}
+            />
+          ))}
+          {sessions.length === 0 ? <DashboardEmpty text={emptyText} title={emptyTitle} /> : null}
+        </div>
+        {page > 0 && (
+          <button className="dashboard-space-nav-button prev" onClick={handlePrev} type="button" aria-label="Previous">
+            <ChevronLeft size={24} />
           </button>
-        ) : (
-          <Link className="dashboard-add-card" to={ctaTo}>
-            <Plus size={92} />
-            {ctaLabel}
-          </Link>
         )}
-        {visibleSessions.map((item) => (
-          <MySpaceSessionCard
-            fallbackAvatarUrl={fallbackAvatarUrl}
-            item={item}
-            key={item.session.sessionId}
-            role={role}
-          />
-        ))}
-        {sessions.length > sessionsPerPage ? (
-          <button
-            aria-label={`Xem thêm trong ${title}`}
-            className="dashboard-space-nav-card"
-            onClick={handleNext}
-            type="button"
-          >
-            <ChevronRight size={44} />
-            <span>Next</span>
+        {page < totalPages - 1 && (
+          <button className="dashboard-space-nav-button next" onClick={handleNext} type="button" aria-label="Next">
+            <ChevronRight size={24} />
           </button>
-        ) : null}
-        {sessions.length === 0 ? <DashboardEmpty text={emptyText} title={emptyTitle} /> : null}
+        )}
       </div>
     </section>
   )
@@ -745,7 +753,6 @@ function MySpaceSessionCard({
       <p>{session.description || 'Chưa có mô tả buổi học.'}</p>
       <div className="dashboard-space-card-foot">
         <span>{item.skill?.name ?? session.skill}</span>
-        {session.jitsiRoomId ? <span>Có phòng Online</span> : null}
       </div>
       <div className="dashboard-space-actions">
         {showConfirmLearnerAction ? (

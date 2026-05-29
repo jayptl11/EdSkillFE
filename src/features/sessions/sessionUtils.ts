@@ -143,7 +143,7 @@ export function getSessionRoomEntryLabel(
     const closeAt = parseSessionDateTime(access.joinCloseAt)?.getTime() ?? Number.NaN
 
     if (Number.isFinite(closeAt) && now > closeAt) {
-      return 'Đã qua thời gian vào phòng'
+      return 'Đã qua thời gian'
     }
 
     if (Number.isFinite(openAt) && now < openAt) {

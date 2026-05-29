@@ -589,7 +589,7 @@ function SessionRoomCountdown({
   return (
     <section className="profile-section-card session-action-panel">
       <div className="session-action-head">
-        <h3>{msUntilOpen > 0 ? 'Phòng học chưa mở' : 'Đã qua thời gian vào phòng'}</h3>
+        <h3>{msUntilOpen > 0 ? 'Phòng học chưa mở' : 'Đã qua thời gian'}</h3>
         <p>{msUntilOpen > 0 ? `Buổi học dự kiến bắt đầu lúc ${formatSessionDateTime(scheduledAt)}.` : 'Cửa sổ vào phòng đã kết thúc.'}</p>
       </div>
       <div className="session-room-countdown">
@@ -692,7 +692,7 @@ function buildDeniedPresentation(accessData: SessionRoomAccessDto | undefined, e
 
     if (Number.isFinite(closeAt) && now > closeAt) {
       return {
-        title: 'Đã qua thời gian vào phòng',
+        title: 'Đã qua thời gian',
         message: accessData.denyMessage ?? 'Cửa sổ tham gia phòng học đã kết thúc.',
       }
     }
