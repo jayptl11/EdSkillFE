@@ -13,7 +13,7 @@ import {
   UserRound,
   X,
 } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getErrorMessage } from '../../api/client'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
@@ -69,8 +69,12 @@ function mapValidationError(errorCode: string): string {
 }
 
 export function CompanionSearchPage() {
-  const [skillId, setSkillId] = useState('')
-  const [skillName, setSkillName] = useState('')
+  const [urlParams] = useSearchParams()
+  const initialSkillId = urlParams.get('skillId') ?? ''
+  const initialSkillName = urlParams.get('skillName') ?? ''
+
+  const [skillId, setSkillId] = useState(initialSkillId)
+  const [skillName, setSkillName] = useState(initialSkillName)
   const [minimumDurationMinutes, setMinimumDurationMinutes] = useState<30 | 45 | 60 | 90 | 120 | undefined>(
     undefined,
   )
@@ -78,6 +82,7 @@ export function CompanionSearchPage() {
   const [credentialCountGroup, setCredentialCountGroup] = useState<CredentialCountGroup | undefined>(undefined)
   const [openDropdown, setOpenDropdown] = useState<'duration' | 'points' | 'credential' | null>(null)
   const [searchParams, setSearchParams] = useState<CompanionSearchParams | null>({
+    ...(initialSkillId ? { skillId: initialSkillId } : {}),
     page: 1,
     limit: COMPANION_LIMIT,
   })

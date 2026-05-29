@@ -10346,3 +10346,46 @@ ul.wallet-benefit-list {
     font-size: 13px;
   }
 }
+
+/* Landing search — live autocomplete mode */
+.landing-search-live {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.landing-search-live .profile-skills-card {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+
+.landing-search-live .skill-autocomplete {
+  gap: 0;
+}
+
+.landing-search-live .skill-autocomplete-input-shell {
+  min-height: 54px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 4px 18px rgba(0, 45, 114, 0.08),
+    0 0 0 1px rgba(0, 45, 114, 0.06);
+  padding: 0 18px;
+}
+
+.landing-search-live .skill-autocomplete-input-shell input {
+  font-size: 0.95rem;
+}
+
+.landing-search-live .skill-autocomplete-popover {
+  border-radius: 16px;
+  margin-top: 6px;
+}
+
+@media (max-width: 720px) {
+  .landing-search-live {
+    grid-template-columns: 1fr;
+  }
+}

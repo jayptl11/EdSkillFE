@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
   Award,
@@ -23,6 +23,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { motion, useReducedMotion, type Variants } from 'motion/react'
+import { SkillAutocomplete } from '../features/skills/SkillAutocomplete'
 import personalOne from '../assets/landing-personal-1.jpg'
 import personalTwo from '../assets/landing-personal-2.jpg'
 import personalThree from '../assets/landing-personal-3.jpg'
@@ -216,16 +217,30 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
             quản lý cả hành trình học lẫn dạy trong cùng một tài khoản.
           </p>
 
-          <div className="landing-search-shell">
-            <div className="landing-search-bar">
-              <Search size={18} />
-              <span>Ví dụ: IELTS speaking, Excel, React cơ bản, Guitar đệm hát</span>
-            </div>
-            <Link className="button primary" to={discoverHref}>
-              {isSignedIn ? 'Tìm buổi học' : 'Đăng ký để bắt đầu'}
-              <ArrowRight size={18} />
-            </Link>
-          </div>
+          {isSignedIn ? (
+            <LandingSkillSearch />
+          ) : (
+            <>
+              <div className="landing-search-shell">
+                <div className="landing-search-bar">
+                  <Search size={18} />
+                  <span>Ví dụ: IELTS speaking, Excel, React cơ bản, Guitar đệm hát</span>
+                </div>
+                <Link className="button primary" to={discoverHref}>
+                  Đăng ký để bắt đầu
+                  <ArrowRight size={18} />
+                </Link>
+              </div>
+
+              <div className="hero-skill-chips">
+                {popularSkills.map((skill) => (
+                  <Link className="hero-skill-chip" key={skill} to="/register">
+                    {skill}
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
 
           <div className="hero-actions">
             <Link className="button primary" to={registerHref}>
@@ -234,14 +249,6 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
             <Link className="button secondary" to={secondaryHref}>
               {isSignedIn ? 'Dạy học' : 'Đăng nhập'}
             </Link>
-          </div>
-
-          <div className="hero-skill-chips">
-            {popularSkills.map((skill) => (
-              <Link className="hero-skill-chip" key={skill} to={discoverHref}>
-                {skill}
-              </Link>
-            ))}
           </div>
         </div>
 
@@ -671,5 +678,51 @@ function OverviewCard({
       <h3>{title}</h3>
       <p>{copy}</p>
     </article>
+  )
+}
+
+/* ══════════════════════════════════════════════════════════ */
+/*  Landing Skill Search (signed-in only)                    */
+/* ══════════════════════════════════════════════════════════ */
+function LandingSkillSearch() {
+  const navigate = useNavigate()
+  const [selectedSkill, setSelectedSkill] = useState('')
+
+  const handleSelectWithId = (id: string, name: string) => {
+    setSelectedSkill(name)
+    navigate(`/dashboard/companions?skillId=${encodeURIComponent(id)}&skillName=${encodeURIComponent(name)}`)
+  }
+
+  return (
+    <>
+      <div className="landing-search-shell landing-search-live">
+        <SkillAutocomplete
+          helperText=""
+          label=""
+          mode="single"
+          onRemove={() => setSelectedSkill('')}
+          onSelect={(name) => setSelectedSkill(name)}
+          onSelectWithId={handleSelectWithId}
+          placeholder="Tìm kỹ năng: IELTS, Excel, Guitar..."
+          selectedSkills={selectedSkill ? [selectedSkill] : []}
+        />
+        <Link className="button primary" to="/dashboard/companions">
+          Tìm buổi học
+          <ArrowRight size={18} />
+        </Link>
+      </div>
+
+      <div className="hero-skill-chips">
+        {popularSkills.map((skill) => (
+          <Link
+            className="hero-skill-chip"
+            key={skill}
+            to={`/dashboard/companions?skillName=${encodeURIComponent(skill)}`}
+          >
+            {skill}
+          </Link>
+        ))}
+      </div>
+    </>
   )
 }
