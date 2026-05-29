@@ -524,9 +524,9 @@ export function CompanionSearchPage() {
                           )}
                         </div>
 
-                        <div className="discovery-hz-skill" title={featuredSkill}>
+                        {/* <div className="discovery-hz-skill" title={featuredSkill}>
                           {featuredSkill}
-                        </div>
+                        </div> */}
 
                         <p className="discovery-hz-bio">
                           {companion.bio || 'Hồ sơ đang được cập nhật. Giáo viên chưa có thông tin giới thiệu chi tiết.'}
