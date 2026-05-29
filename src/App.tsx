@@ -55,7 +55,7 @@ import {
 } from './features/sessions/SessionPages'
 import { CompanionSearchPage } from './features/sessions/CompanionSearchPage'
 import { CompanionDetailPage } from './features/sessions/CompanionDetailPage'
-import { CompanionSkillDetailPage } from './features/sessions/CompanionSkillDetailPage'
+import { CompanionLessonDetailPage } from './features/sessions/CompanionLessonDetailPage'
 import {
   PointPurchaseReturnPage,
   SubscriptionPurchaseReturnPage,
@@ -210,7 +210,7 @@ function App() {
               path="/dashboard/companions/:companionId/skills/:skillId"
               element={
                 <ProtectedRoute>
-                  <CompanionSkillDetailPage />
+                  <CompanionLessonDetailPage />
                 </ProtectedRoute>
               }
             />

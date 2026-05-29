@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode, type RefObject } from 'react'
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
@@ -8,6 +8,7 @@ import {
   Camera,
   Check,
   ChevronDown,
+  ChevronRight,
   Clock3,
   Coins,
   CreditCard,
@@ -578,12 +579,35 @@ function MySpaceSection({
   sessions: MySpaceSessionDto[]
   title: string
 }) {
+  const railRef = useRef<HTMLDivElement | null>(null)
+  const cardSlotsPerRow = useMySpaceCardSlotsPerRow(railRef)
+  const maxSessionsWithoutPagination = Math.max(1, cardSlotsPerRow - 1)
+  const hasPagination = sessions.length > maxSessionsWithoutPagination
+  const reservedSlots = 1 + (hasPagination ? 1 : 0)
+  const sessionsPerPage = Math.max(1, cardSlotsPerRow - reservedSlots)
+  const [page, setPage] = useState(0)
+  const totalPages = Math.max(1, Math.ceil(sessions.length / sessionsPerPage))
+  const startIndex = page * sessionsPerPage
+  const visibleSessions = sessions.slice(startIndex, startIndex + sessionsPerPage)
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, Math.max(0, totalPages - 1)))
+  }, [totalPages])
+
+  const handleNext = () => {
+    if (totalPages <= 1) {
+      return
+    }
+
+    setPage((current) => (current + 1) % totalPages)
+  }
+
   return (
     <section className="dashboard-space-section">
       <div className="dashboard-section-head">
         <h1>{title}</h1>
       </div>
-      <div className="dashboard-space-rail">
+      <div className="dashboard-space-rail" ref={railRef}>
         {ctaDisabled ? (
           <button className="dashboard-add-card" disabled type="button">
             <Plus size={92} />
@@ -595,7 +619,7 @@ function MySpaceSection({
             {ctaLabel}
           </Link>
         )}
-        {sessions.map((item) => (
+        {visibleSessions.map((item) => (
           <MySpaceSessionCard
             fallbackAvatarUrl={fallbackAvatarUrl}
             item={item}
@@ -603,10 +627,54 @@ function MySpaceSection({
             role={role}
           />
         ))}
+        {sessions.length > sessionsPerPage ? (
+          <button
+            aria-label={`Xem thêm trong ${title}`}
+            className="dashboard-space-nav-card"
+            onClick={handleNext}
+            type="button"
+          >
+            <ChevronRight size={44} />
+            <span>Next</span>
+          </button>
+        ) : null}
         {sessions.length === 0 ? <DashboardEmpty text={emptyText} title={emptyTitle} /> : null}
       </div>
     </section>
   )
+}
+
+function useMySpaceCardSlotsPerRow(containerRef: RefObject<HTMLDivElement | null>) {
+  const [cardSlotsPerRow, setCardSlotsPerRow] = useState(3)
+
+  useEffect(() => {
+    const element = containerRef.current
+    if (!element) {
+      return undefined
+    }
+
+    const updateSlots = () => {
+      const minCardWidth = 220
+      const gap = 18
+      const width = element.clientWidth
+      const slots = Math.max(1, Math.floor((width + gap) / (minCardWidth + gap)))
+      setCardSlotsPerRow(slots)
+    }
+
+    updateSlots()
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', updateSlots)
+      return () => window.removeEventListener('resize', updateSlots)
+    }
+
+    const observer = new ResizeObserver(() => updateSlots())
+    observer.observe(element)
+
+    return () => observer.disconnect()
+  }, [containerRef])
+
+  return cardSlotsPerRow
 }
 
 function MySpaceSessionCard({

@@ -28,21 +28,11 @@ export function CompanionDetailPage() {
     <MotionPage className="page dashboard-page profile-page session-hub-page">
       <SiteHeader />
 
-      <section className="dashboard-hero profile-hero">
-        <div>
-          <span className="eyebrow">
-            <BookOpen size={15} />
-            Public companion profile
-          </span>
-          <h1>Khám phá hồ sơ công khai và kỹ năng giảng dạy của companion.</h1>
-          <p>Từ trang này, người học xem thành tích, danh sách kỹ năng và đi tiếp vào từng skill để đăng ký.</p>
-        </div>
-        <div className="profile-hero-actions">
-          <Link className="button secondary" to="/dashboard/companions">
-            Quay lại tìm kiếm
-          </Link>
-        </div>
-      </section>
+      <div className="companion-detail-topbar">
+        <Link className="button secondary" to="/dashboard/companions">
+          Quay lại tìm kiếm
+        </Link>
+      </div>
 
       {profileQuery.isLoading ? (
         <section className="profile-state-card">
@@ -99,7 +89,7 @@ export function CompanionDetailPage() {
                   <div className="companion-public-skill-list">
                     {profileQuery.data.teachingSkills.map((skill) => (
                       <PublicSkillCard
-                        companionId={profileQuery.data!.companionId}
+                        companionId={profileQuery.data.companionId}
                         highlighted={highlightedSkillId === skill.skillId}
                         key={skill.skillId}
                         skill={skill}

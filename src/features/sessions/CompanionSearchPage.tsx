@@ -143,11 +143,13 @@ export function CompanionSearchPage() {
     setSearchParams(params)
   }
 
-  const buildDetailLink = (companionId: string) => {
+  const buildProfileLink = (companionId: string) => {
     const queryString = new URLSearchParams({ skillId })
 
     return `/dashboard/companions/${companionId}?${queryString.toString()}`
   }
+
+  const buildSkillDetailLink = (companionId: string) => `/dashboard/companions/${companionId}/skills/${skillId}`
 
   const companions = searchQuery.data?.data ?? []
   const quickSkills = quickSkillsQuery.data ?? []
@@ -477,8 +479,12 @@ export function CompanionSearchPage() {
                       minWidth: 0,
                     }}
                   >
-                    <Link className="discovery-hz-card-link" to={buildDetailLink(companion.companionId)}>
-                      <div className="discovery-hz-image">
+                    <div className="discovery-hz-card-link">
+                      <Link
+                        aria-label={`Xem profile ${companion.displayName}`}
+                        className="discovery-hz-image"
+                        to={buildProfileLink(companion.companionId)}
+                      >
                         {companion.avatarUrl ? (
                           <img alt={companion.displayName} src={companion.avatarUrl} />
                         ) : (
@@ -486,7 +492,7 @@ export function CompanionSearchPage() {
                             <UserRound color="#9ca3af" size={48} />
                           </div>
                         )}
-                      </div>
+                      </Link>
 
                       <div className="discovery-hz-info">
                         <div className="discovery-hz-header">
@@ -501,7 +507,9 @@ export function CompanionSearchPage() {
                         </div>
 
                         <div className="discovery-hz-name">
-                          <strong>{companion.displayName}</strong>
+                          <Link className="discovery-hz-name-link" to={buildProfileLink(companion.companionId)}>
+                            <strong>{companion.displayName}</strong>
+                          </Link>
                         </div>
 
                         <div className="discovery-hz-rating">
@@ -536,11 +544,15 @@ export function CompanionSearchPage() {
                         </div>
 
                         <div className="discovery-hz-actions">
-                          <span className="hz-btn-view">Xem chi tiết</span>
-                          <span className="hz-btn-book">Profile</span>
+                          <Link className="hz-btn-view" to={buildSkillDetailLink(companion.companionId)}>
+                            Xem chi tiết
+                          </Link>
+                          <Link className="hz-btn-book" to={buildProfileLink(companion.companionId)}>
+                            Profile
+                          </Link>
                         </div>
                       </div>
-                    </Link>
+                    </div>
                   </article>
                 )
               })}
