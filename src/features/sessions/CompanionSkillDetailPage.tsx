@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, CalendarDays, Clock3, LoaderCircle, MapPin, Star, Video, X } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -304,7 +305,7 @@ export function CompanionSkillDetailPage() {
   )
 }
 
-function OfferBookingModal({
+export function OfferBookingModal({
   offer,
   isPending,
   onClose,
@@ -323,7 +324,7 @@ function OfferBookingModal({
   const canSubmit = isFormula ? selectedOption !== null : true
   const selectedPoints = selectedOption?.learnerChargePoints ?? offer.pointCost
 
-  return (
+  const modalContent = (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(event) => event.stopPropagation()}>
         <div className="modal-header">
@@ -385,6 +386,8 @@ function OfferBookingModal({
       </div>
     </div>
   )
+
+  return createPortal(modalContent, document.body)
 }
 
 function getOfferPriceLabel(offer: SessionDto) {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
   Award,
@@ -13,7 +13,7 @@ import {
   UserRound,
   X,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { getErrorMessage } from '../../api/client'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
@@ -23,10 +23,16 @@ import { SkillAutocomplete } from '../skills/SkillAutocomplete'
 import {
   companionApi,
   companionKeys,
+  mapSearchItemToCardVm,
   type CompanionSearchParams,
   type CompanionValidationError,
   type CredentialCountGroup,
 } from '../sessions/companionApi'
+import { sessionsApi } from './sessionsApi'
+import { invalidateSessionQueries, invalidateWalletQueries } from './sessionUtils'
+import { OfferBookingModal } from './CompanionSkillDetailPage'
+import { showToast } from '../../components/toastEvents'
+import type { AllowedDurationMinutes, SessionDto } from './types'
 
 const COMPANION_LIMIT = 12
 const QUICK_SKILLS_WINDOW = 5
@@ -76,7 +82,25 @@ export function CompanionSearchPage() {
     limit: COMPANION_LIMIT,
   })
   const [quickSkillsStartIndex, setQuickSkillsStartIndex] = useState(0)
+  const [bookingOffer, setBookingOffer] = useState<SessionDto | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+
+  const bookMutation = useMutation({
+    mutationFn: ({ sessionId, selectedDurationMinutes }: { sessionId: string; selectedDurationMinutes: AllowedDurationMinutes }) =>
+      sessionsApi.book(sessionId, { selectedDurationMinutes }),
+    onSuccess: async (updatedSession) => {
+      setBookingOffer(null)
+      showToast({ kind: 'success', message: 'Đăng ký buổi học thành công.' })
+      await Promise.all([invalidateSessionQueries(queryClient, updatedSession.sessionId), invalidateWalletQueries(queryClient)])
+      navigate(`/dashboard/skills/${updatedSession.sessionId}`)
+    },
+    onError: (error) => {
+      showToast({ kind: 'error', message: getErrorMessage(error) })
+    },
+  })
 
   useEffect(() => {
     if (!openDropdown) {
@@ -97,7 +121,7 @@ export function CompanionSearchPage() {
     queryKey: companionKeys.search(searchParams!),
     queryFn: () => companionApi.search(searchParams!),
     enabled: searchParams !== null,
-    staleTime: 60 * 1000,
+    gcTime: 0,
   })
 
   const quickSkillsQuery = useQuery({
@@ -157,7 +181,6 @@ export function CompanionSearchPage() {
     return `/dashboard/companions/${companionId}?${queryString.toString()}`
   }
 
-  const buildSkillDetailLink = (companionId: string) => `/dashboard/companions/${companionId}/skills/${skillId}`
 
   const companions = searchQuery.data?.data ?? []
   const quickSkills = quickSkillsQuery.data ?? []
@@ -470,15 +493,14 @@ export function CompanionSearchPage() {
               }}
             >
               {companions.map((companion) => {
-                const priceLabel = companion.pricingPreview
-                  ? companion.pricingPreview.minLearnerChargePoints === companion.pricingPreview.maxLearnerChargePoints
-                    ? `${companion.pricingPreview.minLearnerChargePoints} điểm`
-                    : `${companion.pricingPreview.minLearnerChargePoints} – ${companion.pricingPreview.maxLearnerChargePoints} điểm`
-                  : `${companion.lowestPointCost} điểm`
+                const vm = mapSearchItemToCardVm(companion, skillId)
+                const priceLabel = vm.priceMin === vm.priceMax
+                  ? `${vm.priceMin} điểm`
+                  : `${vm.priceMin} – ${vm.priceMax} điểm`
                 return (
                   <article
                     className="discovery-hz-card"
-                    key={companion.companionId}
+                    key={vm.sessionId}
                     style={{
                       gridColumn: 'auto / span 1',
                       width: '100%',
@@ -486,14 +508,14 @@ export function CompanionSearchPage() {
                       minWidth: 0,
                     }}
                   >
-                    <div className="discovery-hz-card-link">
+                    <div className="discovery-hz-card-link" style={{ gridTemplateColumns: '200px minmax(0, 1fr)', padding: '10px', gap: '20px' }}>
                       <Link
-                        aria-label={`Xem profile ${companion.displayName}`}
+                        aria-label={`Xem profile ${vm.displayName}`}
                         className="discovery-hz-image"
-                        to={buildProfileLink(companion.companionId)}
+                        to={buildProfileLink(vm.companionId)}
                       >
-                        {companion.avatarUrl ? (
-                          <img alt={companion.displayName} src={companion.avatarUrl} />
+                        {vm.avatarUrl ? (
+                          <img alt={vm.displayName} src={vm.avatarUrl} />
                         ) : (
                           <div className="discovery-hz-placeholder">
                             <UserRound color="#9ca3af" size={48} />
@@ -501,59 +523,74 @@ export function CompanionSearchPage() {
                         )}
                       </Link>
 
-                      <div className="discovery-hz-info">
-                        <div className="discovery-hz-header">
+                      <div className="discovery-hz-info" style={{ width: '100%', maxWidth: '100%', justifySelf: 'stretch', alignItems: 'flex-end', textAlign: 'right' }}>
+                        <div className="discovery-hz-header" style={{ justifyContent: 'flex-end', width: '100%' }}>
                           <div className="discovery-hz-price-stack">
-                            <span className="discovery-hz-points">{priceLabel}</span>
-                            {companion.subscriptionBadge ? (
+                            {vm.subscriptionBadge ? (
                               <span className="wallet-premium-badge search-premium-badge">
-                                {companion.subscriptionBadge}
+                                {vm.subscriptionBadge}
                               </span>
                             ) : null}
+                            <span className="discovery-hz-points">{priceLabel}</span>
                           </div>
                         </div>
 
                         <div className="discovery-hz-name">
-                          <Link className="discovery-hz-name-link" to={buildProfileLink(companion.companionId)}>
-                            <strong>{companion.displayName}</strong>
+                          <Link className="discovery-hz-name-link" to={buildProfileLink(vm.companionId)}>
+                            <strong>{vm.displayName}</strong>
                           </Link>
                         </div>
 
-                        <div className="discovery-hz-rating">
-                          {companion.totalReviews > 0 ? (
+                        <div className="discovery-hz-rating" style={{ justifyContent: 'flex-end', width: '100%' }}>
+                          {vm.totalReviews > 0 ? (
                             <>
-                              <strong>{companion.avgRating.toFixed(1)}</strong>
+                              <strong>{vm.avgRating.toFixed(1)}</strong>
                               <Star fill="#f59e0b" size={16} style={{ color: '#f59e0b', margin: '0 4px' }} />
-                              <span>({companion.totalReviews} Review)</span>
+                              <span>({vm.totalReviews} Review)</span>
                             </>
                           ) : (
                             <span className="discovery-hz-new">New Companion</span>
                           )}
                         </div>
 
+                        <div className="discovery-hz-skill-title" style={{ width: '100%', fontSize: '18px', lineHeight: 1.2, fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>
+                          {vm.skillName}
+                        </div>
 
-                        <p className="discovery-hz-bio">
-                          {companion.bio || 'Hồ sơ đang được cập nhật. Giáo viên chưa có thông tin giới thiệu chi tiết.'}
+                        <p className="discovery-hz-bio" style={{ textAlign: 'right' }}>
+                          {vm.classDescription || 'Hồ sơ đang được cập nhật. Giáo viên chưa có thông tin giới thiệu chi tiết.'}
                         </p>
 
-                        <div className="discovery-hz-tags">
-                          {companion.skillsToTeach?.slice(0, 3).map((skill) => (
+                        <div className="discovery-hz-tags" style={{ justifyContent: 'flex-end', width: '100%' }}>
+                          {vm.tags.map((skill) => (
                             <span className="hz-tag" key={skill}>
                               {skill}
                             </span>
                           ))}
-                          {(!companion.skillsToTeach || companion.skillsToTeach.length === 0) && (
+                          {vm.tags.length === 0 && (
                             <span className="hz-tag">Kỹ năng chung</span>
                           )}
                         </div>
 
-                        <div className="discovery-hz-actions">
-                          <Link className="hz-btn-view" to={buildSkillDetailLink(companion.companionId)}>
+                        <div className="discovery-hz-actions" style={{ justifyContent: 'flex-end', width: '100%' }}>
+                          <Link
+                            className="hz-btn-view"
+                            to={
+                              vm.skillId
+                                ? `/dashboard/companions/${vm.companionId}/skills/${vm.skillId}`
+                                : `/dashboard/companions/${vm.companionId}`
+                            }
+                          >
                             Xem chi tiết
                           </Link>
-                          <Link className="hz-btn-book" to={buildProfileLink(companion.companionId)}>
-                            Profile
-                          </Link>
+                          <button
+                            className="hz-btn-view"
+                            style={{ background: 'var(--blue)', color: '#ffffff', border: 'none', cursor: 'pointer' }}
+                            onClick={() => setBookingOffer(companion.offer)}
+                            type="button"
+                          >
+                            Đăng Kí
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -563,6 +600,20 @@ export function CompanionSearchPage() {
             </div>
           ) : null}
         </section>
+      ) : null}
+      
+      {bookingOffer ? (
+        <OfferBookingModal
+          isPending={bookMutation.isPending}
+          offer={bookingOffer}
+          onClose={() => setBookingOffer(null)}
+          onConfirm={(selectedDurationMinutes) =>
+            bookMutation.mutate({
+              sessionId: bookingOffer.sessionId,
+              selectedDurationMinutes,
+            })
+          }
+        />
       ) : null}
     </MotionPage>
   )

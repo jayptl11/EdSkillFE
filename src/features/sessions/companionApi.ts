@@ -2,7 +2,7 @@ import { apiGet } from '../../api/client'
 import { cacheScope } from '../../api/cacheScope'
 import { toQueryString } from '../../api/query'
 import type { AchievementSummaryDto } from '../achievements/types'
-import type { SessionDto, SessionPricingPreviewDto } from './types'
+import type { SessionDto, DurationPricingOptionDto } from './types'
 
 export type CredentialCountGroup = 'Zero' | 'One' | 'Two' | 'ThreeOrMore'
 
@@ -31,13 +31,49 @@ export interface CompanionSearchItemDto {
   credentialCount: number
   avgRating: number
   totalReviews: number
-  matchingSessionCount: number
-  lowestPointCost: number
-  pricingPreview: SessionPricingPreviewDto | null
-  nextScheduledAt: string
-  matchedOffers: SessionDto[]
+  offer: SessionDto
   subscriptionBadge: string | null
   hasPriorityVisibility: boolean
+}
+
+export interface CompanionSearchCardVm {
+  sessionId: string
+  companionId: string
+  durationOptions: number[]
+  durationPricingOptions: DurationPricingOptionDto[]
+  avatarUrl: string | null
+  displayName: string
+  avgRating: number
+  totalReviews: number
+  skillName: string
+  skillId: string
+  classDescription: string
+  pointCost: number
+  priceMin: number
+  priceMax: number
+  tags: string[]
+  subscriptionBadge: string | null
+}
+
+export function mapSearchItemToCardVm(item: CompanionSearchItemDto, activeSkillId: string): CompanionSearchCardVm {
+  return {
+    sessionId: item.offer.sessionId,
+    companionId: item.companionId,
+    durationOptions: item.offer.durationOptions,
+    durationPricingOptions: item.offer.durationPricingOptions,
+    avatarUrl: item.avatarUrl,
+    displayName: item.displayName,
+    avgRating: item.avgRating,
+    totalReviews: item.totalReviews,
+    skillName: item.offer.skill,
+    skillId: item.offer.skillId || activeSkillId,
+    classDescription: item.offer.description ?? item.bio ?? '',
+    pointCost: item.offer.pointCost,
+    priceMin: item.offer.pricingPreview?.minLearnerChargePoints ?? item.offer.pointCost,
+    priceMax: item.offer.pricingPreview?.maxLearnerChargePoints ?? item.offer.pointCost,
+    tags: item.skillsToTeach.slice(0, 3),
+    subscriptionBadge: item.subscriptionBadge,
+  }
 }
 
 export interface CompanionSearchResponse {

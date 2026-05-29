@@ -54,6 +54,7 @@ export interface SessionDto {
   companionId: string
   learnerId: string | null
   skill: string
+  skillId?: string
   description: string | null
   deliveryMode: SessionDeliveryMode
   location: string | null
