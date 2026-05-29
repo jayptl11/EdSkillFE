@@ -4,6 +4,7 @@ import {
   cacheScope,
   getAuthQueryUserId,
   isAuthQueryKey,
+  isWalletSummaryQueryKey,
   QUERY_CACHE_BUSTER,
   QUERY_CACHE_STORAGE_KEY,
 } from './cacheScope'
@@ -33,10 +34,12 @@ export async function clearUserQueryCache(userId: string) {
 
 export async function pruneForeignAuthCaches(currentUserId: string | null) {
   const shouldRemove = (queryKey: QueryKey) =>
-    isAuthQueryKey(queryKey) && (!currentUserId || getAuthQueryUserId(queryKey) !== currentUserId)
+    isWalletSummaryQueryKey(queryKey)
+    || (isAuthQueryKey(queryKey) && (!currentUserId || getAuthQueryUserId(queryKey) !== currentUserId))
 
   updatePersistedQueries((queryKey) =>
-    !isAuthQueryKey(queryKey) || (currentUserId !== null && getAuthQueryUserId(queryKey) === currentUserId),
+    !isWalletSummaryQueryKey(queryKey)
+    && (!isAuthQueryKey(queryKey) || (currentUserId !== null && getAuthQueryUserId(queryKey) === currentUserId)),
   )
   await queryClient.cancelQueries({ predicate: (query) => shouldRemove(query.queryKey) })
   queryClient.removeQueries({ predicate: (query) => shouldRemove(query.queryKey) })

@@ -6,7 +6,7 @@ import { Award, BookOpen, CalendarRange, Coins, LogOut, Menu, PlusCircle, Settin
 import edSkillLogo from '../assets/edskill-logo.png'
 import { clearUserQueryCache } from '../api/cacheLifecycle'
 import { useAppStore } from '../store/useAppStore'
-import { walletApi, walletKeys } from '../features/wallet/walletApi'
+import { liveWalletSummaryQueryOptions, walletApi, walletKeys } from '../features/wallet/walletApi'
 import { getErrorMessage, logout } from '../api/auth'
 import { showToast } from './toastEvents'
 
@@ -152,6 +152,7 @@ export function SiteHeader() {
     queryKey: walletKeys.summary(),
     queryFn: walletApi.getSummary,
     enabled: Boolean(session?.accessToken),
+    ...liveWalletSummaryQueryOptions,
   })
   const balance = walletQuery.data?.balance
 

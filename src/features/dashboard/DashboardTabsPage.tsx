@@ -64,7 +64,7 @@ import {
   getSessionStatusLabel,
 } from '../sessions/sessionUtils'
 import type { SessionDto } from '../sessions/types'
-import { walletApi, walletKeys } from '../wallet/walletApi'
+import { liveWalletSummaryQueryOptions, walletApi, walletKeys } from '../wallet/walletApi'
 import type { PaymentStatus, PaymentTransactionDto, PointTransactionDto } from '../wallet/types'
 import {
   formatCurrencyVnd,
@@ -1069,6 +1069,7 @@ function TransactionsTab() {
   const summaryQuery = useQuery({
     queryKey: walletKeys.summary(),
     queryFn: walletApi.getSummary,
+    ...liveWalletSummaryQueryOptions,
   })
   const pointTransactionsQuery = useQuery({
     queryKey: walletKeys.transactions({ page: pointPage, limit: 20 }),

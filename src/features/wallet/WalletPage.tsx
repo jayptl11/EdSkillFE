@@ -22,7 +22,7 @@ import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
 import { useAppStore } from '../../store/useAppStore'
 import { SubscriptionSummaryCard } from './SubscriptionSummaryCard'
-import { walletApi, walletKeys } from './walletApi'
+import { liveWalletSummaryQueryOptions, walletApi, walletKeys } from './walletApi'
 import type {
   ActiveSubscriptionSummaryDto,
   PaymentStatus,
@@ -70,6 +70,7 @@ export function WalletPage() {
     queryKey: walletKeys.summary(),
     queryFn: walletApi.getSummary,
     refetchInterval: SUMMARY_REFRESH_MS,
+    ...liveWalletSummaryQueryOptions,
   })
 
   if (!session?.accessToken) {

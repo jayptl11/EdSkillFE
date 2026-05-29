@@ -30,3 +30,13 @@ export function getAuthQueryUserId(queryKey: QueryKey) {
 
   return queryKey[1]
 }
+
+export function isWalletSummaryQueryKey(queryKey: QueryKey) {
+  return (
+    Array.isArray(queryKey)
+    && queryKey[0] === AUTH_SCOPE
+    && queryKey[2] === 'wallet'
+    && queryKey[3] === 'points'
+    && queryKey[4] === 'summary'
+  )
+}

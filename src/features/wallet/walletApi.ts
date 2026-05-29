@@ -35,6 +35,14 @@ export const walletKeys = {
     cacheScope.user(undefined, 'wallet', variant, 'return', queryString),
 }
 
+export const liveWalletSummaryQueryOptions = {
+  gcTime: 0,
+  refetchOnMount: 'always' as const,
+  refetchOnReconnect: 'always' as const,
+  refetchOnWindowFocus: 'always' as const,
+  staleTime: 0,
+}
+
 export const walletApi = {
   getSummary: () => apiGet<WalletSummaryDto>('/api/wallet/points', { auth: true }),
 

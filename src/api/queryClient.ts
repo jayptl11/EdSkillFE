@@ -1,6 +1,7 @@
-import { QueryClient } from '@tanstack/react-query'
+import { QueryClient, type Query } from '@tanstack/react-query'
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
 import {
+  isWalletSummaryQueryKey,
   QUERY_CACHE_BUSTER,
   QUERY_CACHE_MAX_AGE,
   QUERY_CACHE_STORAGE_KEY,
@@ -24,6 +25,9 @@ export const queryPersister = createSyncStoragePersister({
 
 export const queryPersistOptions = {
   buster: QUERY_CACHE_BUSTER,
+  dehydrateOptions: {
+    shouldDehydrateQuery: (query: Query) => !isWalletSummaryQueryKey(query.queryKey),
+  },
   maxAge: QUERY_CACHE_MAX_AGE,
   persister: queryPersister,
 }
