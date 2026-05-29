@@ -7,7 +7,7 @@ import type { SessionDto, SessionPricingPreviewDto } from './types'
 export type CredentialCountGroup = 'Zero' | 'One' | 'Two' | 'ThreeOrMore'
 
 export interface CompanionSearchParams {
-  skillId: string
+  skillId?: string
   minimumDurationMinutes?: 30 | 45 | 60 | 90 | 120
   maxLearnerChargePoints?: number
   credentialCountGroup?: CredentialCountGroup

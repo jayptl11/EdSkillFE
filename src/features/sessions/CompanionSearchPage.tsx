@@ -71,7 +71,10 @@ export function CompanionSearchPage() {
   const [maxLearnerChargePoints, setMaxLearnerChargePoints] = useState('')
   const [credentialCountGroup, setCredentialCountGroup] = useState<CredentialCountGroup | undefined>(undefined)
   const [openDropdown, setOpenDropdown] = useState<'duration' | 'points' | 'credential' | null>(null)
-  const [searchParams, setSearchParams] = useState<CompanionSearchParams | null>(null)
+  const [searchParams, setSearchParams] = useState<CompanionSearchParams | null>({
+    page: 1,
+    limit: COMPANION_LIMIT,
+  })
   const [quickSkillsStartIndex, setQuickSkillsStartIndex] = useState(0)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -116,17 +119,21 @@ export function CompanionSearchPage() {
   }
 
   const handleSearch = (overrideSkillId?: string) => {
-    const activeSkillId = overrideSkillId || skillId
-    if (!activeSkillId) {
-      return
+    // Determine activeSkillId, but treat empty string or '00000000-0000-0000-0000-000000000000' as undefined
+    let activeSkillId = overrideSkillId ?? skillId
+    if (activeSkillId === '00000000-0000-0000-0000-000000000000') {
+      activeSkillId = ''
     }
 
     const pointsNum = maxLearnerChargePoints ? Number(maxLearnerChargePoints) : undefined
 
     const params: CompanionSearchParams = {
-      skillId: activeSkillId,
       page: 1,
       limit: COMPANION_LIMIT,
+    }
+
+    if (activeSkillId) {
+      params.skillId = activeSkillId
     }
 
     if (minimumDurationMinutes) {
@@ -202,7 +209,7 @@ export function CompanionSearchPage() {
 
             <button
               className="button primary discovery-search-btn"
-              disabled={!skillId || searchQuery.isFetching}
+              disabled={searchQuery.isFetching}
               onClick={() => handleSearch()}
               type="button"
             >
