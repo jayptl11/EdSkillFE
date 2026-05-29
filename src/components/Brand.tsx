@@ -167,13 +167,6 @@ export function SiteHeader() {
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
     >
       <LogoLink />
-      <button 
-        className="mobile-menu-toggle" 
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        aria-label="Toggle menu"
-      >
-        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
       <nav className={isMobileMenuOpen ? 'is-open' : ''}>
         <a className="nav-link" href="#" onClick={(e) => { e.preventDefault(); showToast({ kind: 'info', message: 'Tính năng đang phát triển.' }) }}>
           Giải pháp doanh nghiệp
@@ -195,7 +188,6 @@ export function SiteHeader() {
               <Wallet size={16} />
               {balance != null ? balance.toLocaleString('vi-VN') : '—'}
             </Link>
-            <UserNavDropdown />
           </>
         ) : (
           <>
@@ -208,6 +200,16 @@ export function SiteHeader() {
           </>
         )}
       </nav>
+      <div className="header-actions">
+        {session && <UserNavDropdown />}
+        <button 
+          className="mobile-menu-toggle" 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
     </motion.header>
   )
 }

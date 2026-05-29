@@ -143,16 +143,23 @@ export function DashboardTabsPage() {
   return (
     <MotionPage className="page dashboard-tabs-page">
       <SiteHeader />
-      <nav className="dashboard-tab-nav" aria-label="Dashboard tabs">
-        {dashboardTabs.map((tab) => (
-          <DashboardTabButton
-            active={activeTab === tab.id}
-            key={tab.id}
-            onClick={() => setSearchParams(tab.id === 'profile' ? {} : { tab: tab.id })}
-            tab={tab}
-          />
-        ))}
-      </nav>
+      <div className="dashboard-tab-container">
+        <DashboardMobileTabSelect
+          activeTab={activeTab}
+          onTabChange={(tabId) => setSearchParams(tabId === 'profile' ? {} : { tab: tabId })}
+        />
+
+        <nav className="dashboard-tab-nav" aria-label="Dashboard tabs">
+          {dashboardTabs.map((tab) => (
+            <DashboardTabButton
+              active={activeTab === tab.id}
+              key={tab.id}
+              onClick={() => setSearchParams(tab.id === 'profile' ? {} : { tab: tab.id })}
+              tab={tab}
+            />
+          ))}
+        </nav>
+      </div>
 
       {activeTab === 'profile' ? <GeneralInfoTab profileQuery={profileQuery} /> : null}
       {activeTab === 'my-space' ? <MySpaceTab profileQuery={profileQuery} /> : null}
@@ -1440,4 +1447,81 @@ function getReviewStatusLabel(status: ReviewTaskDto['reviewStatus']) {
   }
 
   return 'Đánh giá ngay'
+}
+
+function DashboardMobileTabSelect({
+  activeTab,
+  onTabChange,
+}: {
+  activeTab: string
+  onTabChange: (tabId: string) => void
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const selectRef = useRef<HTMLDivElement | null>(null)
+  const selectedOption = dashboardTabs.find((option) => option.id === activeTab) ?? dashboardTabs[0]
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen])
+
+  return (
+    <div className="dashboard-select dashboard-tab-dropdown" ref={selectRef}>
+      <button
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        className={`dashboard-select-trigger${isOpen ? ' open' : ''}`}
+        onClick={() => setIsOpen((current) => !current)}
+        type="button"
+      >
+        <span>{selectedOption.label}</span>
+        <ChevronDown className="dashboard-select-chevron" size={17} />
+      </button>
+      {isOpen ? (
+        <div className="dashboard-select-menu" role="listbox">
+          {dashboardTabs.map((option) => {
+            const isSelected = option.id === activeTab
+
+            return (
+              <button
+                aria-selected={isSelected}
+                className={`dashboard-select-option${isSelected ? ' selected' : ''}`}
+                key={option.id}
+                onClick={() => {
+                  onTabChange(option.id)
+                  setIsOpen(false)
+                }}
+                role="option"
+                type="button"
+              >
+                <span>{option.label}</span>
+                {isSelected ? <Check size={15} /> : null}
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
+    </div>
+  )
 }
