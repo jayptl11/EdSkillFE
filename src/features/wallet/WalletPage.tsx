@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
+  Check,
   CheckCircle2,
   Coins,
   Crown,
+  Gift,
   LoaderCircle,
   RefreshCcw,
   Sparkles,
   Wallet,
   XCircle,
+  Zap,
 } from 'lucide-react'
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { getErrorMessage } from '../../api/client'
@@ -520,21 +523,34 @@ function PointPackageCard({
 }) {
   return (
     <article className={`wallet-offer-card point-card${packageItem.isHighlighted ? ' featured' : ''}`}>
-      <div className="wallet-offer-head">
-        <div className="wallet-offer-copy">
-          <span className="wallet-offer-kicker">Nạp nhanh qua VNPay</span>
-          <h3>{packageItem.name}</h3>
-          {packageItem.badgeText ? <span className="wallet-premium-badge">{packageItem.badgeText}</span> : null}
-        </div>
-        <strong>{formatCurrencyVnd(packageItem.priceVnd)} {packageItem.currency}</strong>
+      <div className="wallet-offer-copy">
+        <span className="wallet-offer-kicker">
+          <Zap size={13} />
+          Nạp nhanh qua VNPay
+        </span>
+        <h3>{packageItem.name}</h3>
+        {packageItem.badgeText ? <span className="wallet-premium-badge">{packageItem.badgeText}</span> : null}
       </div>
 
-      <dl className="wallet-offer-grid compact">
-        <div>
-          <dt>Nhận được</dt>
-          <dd>{formatPoints(packageItem.totalPoints)} point</dd>
+      <div className="wallet-offer-price">
+        <strong>{formatCurrencyVnd(packageItem.priceVnd)}</strong>
+        <span>{packageItem.currency}</span>
+      </div>
+
+      <div className="wallet-offer-details">
+        <div className="wallet-offer-detail-row">
+          <Coins size={16} />
+          <span>Nhận được</span>
+          <strong>{formatPoints(packageItem.points)} point</strong>
         </div>
-      </dl>
+        {packageItem.bonusPoints > 0 ? (
+          <div className="wallet-offer-detail-row bonus">
+            <Gift size={16} />
+            <span>Bonus thêm</span>
+            <strong>+{formatPoints(packageItem.bonusPoints)} point</strong>
+          </div>
+        ) : null}
+      </div>
 
       <button className="button primary wallet-offer-cta" disabled={isPending} onClick={onPurchase} type="button">
         {isPending ? <LoaderCircle className="spin" size={18} /> : null}
@@ -578,35 +594,41 @@ function SubscriptionPlanCard({
   })
 
   return (
-    <article className="wallet-offer-card premium subscription-card">
-      <div className="wallet-offer-head">
-        <div className="wallet-offer-copy">
-          <span className="wallet-offer-kicker premium">
-            <Sparkles size={14} />
-            Gói premium theo tháng
+    <article className={`wallet-offer-card subscription-card${isActive ? ' is-active' : ''}`}>
+      <div className="wallet-offer-copy">
+        <span className="wallet-offer-kicker premium">
+          <Sparkles size={13} />
+          Gói premium theo tháng
+        </span>
+        <h3>{plan.name}</h3>
+        {isActive ? (
+          <span className="wallet-premium-badge subtle">
+            <CheckCircle2 size={14} />
+            Gói đang hoạt động
           </span>
-          <h3>{plan.name}</h3>
-          {isActive ? (
-            <span className="wallet-premium-badge subtle">
-              <CheckCircle2 size={14} />
-              Gói đang hoạt động
-            </span>
-          ) : null}
-        </div>
-        <strong>{formatCurrencyVnd(plan.priceVnd)} {plan.currency} / tháng</strong>
+        ) : null}
       </div>
 
-      <div className="wallet-benefit-list">
-        {plan.displayBenefits.map((benefit) => (
-          <span className="wallet-benefit-chip" key={benefit}>
-            {benefit}
-          </span>
-        ))}
+      <div className="wallet-offer-price gold">
+        <strong>{formatCurrencyVnd(plan.priceVnd)}</strong>
+        <span>{plan.currency} / tháng</span>
+      </div>
+
+      <div className="wallet-benefit-section">
+        <span className="wallet-benefit-title">Quyền lợi bao gồm</span>
+        <ul className="wallet-benefit-list">
+          {plan.displayBenefits.map((benefit) => (
+            <li className="wallet-benefit-item" key={benefit}>
+              <Check size={16} />
+              <span>{benefit}</span>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div className="wallet-offer-cta-shell">
         <button
-          className="button primary wallet-offer-cta"
+          className={`button wallet-offer-cta${isActive ? ' is-active-cta' : ' primary'}`}
           disabled={isPending || isActive}
           onClick={onPurchase}
           type="button"
