@@ -1859,12 +1859,13 @@
 }
 
 .dashboard-tab-nav {
-  width: min(1108px, calc(100% - 24px));
+  width: fit-content;
+  max-width: calc(100% - 24px);
   min-height: 56px;
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  gap: 18px;
+  justify-content: center;
+  gap: 12px;
   margin: -2px auto 64px;
   border-radius: 0 0 28px 28px;
   border: 1px solid rgba(41, 52, 64, 0.08);
@@ -8464,12 +8465,13 @@
 }
 
 .dashboard-tab-nav {
-  width: min(980px, calc(100% - 32px)) !important;
+  width: fit-content !important;
+  max-width: calc(100% - 32px) !important;
   min-height: 52px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 4px !important;
+  gap: 8px !important;
   margin: 0 auto 48px !important;
   border-radius: 999px !important;
   border: 1px solid var(--glass-border) !important;
