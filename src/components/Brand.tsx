@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'motion/react'
-import { Award, BookOpen, CalendarRange, Coins, LogOut, PlusCircle, Settings, User, Wallet } from 'lucide-react'
+import { Award, BookOpen, CalendarRange, Coins, LogOut, Menu, PlusCircle, Settings, User, Wallet, X } from 'lucide-react'
 import edSkillLogo from '../assets/edskill-logo.png'
 import { clearUserQueryCache } from '../api/cacheLifecycle'
 import { useAppStore } from '../store/useAppStore'
@@ -145,6 +145,8 @@ function UserNavDropdown() {
 }
 
 export function SiteHeader() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const location = useLocation()
   const session = useAppStore((state) => state.session)
   const walletQuery = useQuery({
     queryKey: walletKeys.summary(),
@@ -152,6 +154,10 @@ export function SiteHeader() {
     enabled: Boolean(session?.accessToken),
   })
   const balance = walletQuery.data?.balance
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [location.pathname])
 
   return (
     <motion.header
@@ -161,7 +167,14 @@ export function SiteHeader() {
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
     >
       <LogoLink />
-      <nav>
+      <button 
+        className="mobile-menu-toggle" 
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        aria-label="Toggle menu"
+      >
+        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+      <nav className={isMobileMenuOpen ? 'is-open' : ''}>
         <a className="nav-link" href="#" onClick={(e) => { e.preventDefault(); showToast({ kind: 'info', message: 'Tính năng đang phát triển.' }) }}>
           Giải pháp doanh nghiệp
         </a>

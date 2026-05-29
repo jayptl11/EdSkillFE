@@ -175,6 +175,12 @@ export function CompanionSearchPage() {
     setSearchParams(params)
   }
 
+  const handlePageChange = (newPage: number) => {
+    if (!searchParams) return
+    setSearchParams({ ...searchParams, page: newPage })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const buildProfileLink = (companionId: string) => {
     const queryString = new URLSearchParams({ skillId })
 
@@ -598,6 +604,30 @@ export function CompanionSearchPage() {
                   </article>
                 )
               })}
+            </div>
+          ) : null}
+
+          {searchQuery.data && searchQuery.data.total > (searchParams?.limit || COMPANION_LIMIT) ? (
+            <div className="session-pagination" style={{ marginTop: '30px' }}>
+              <button
+                className="button secondary"
+                disabled={searchQuery.data.page <= 1}
+                onClick={() => handlePageChange(searchQuery.data.page - 1)}
+                type="button"
+              >
+                Trang trước
+              </button>
+              <span>
+                Trang {searchQuery.data.page} / {Math.ceil(searchQuery.data.total / (searchParams?.limit || COMPANION_LIMIT))}
+              </span>
+              <button
+                className="button secondary"
+                disabled={searchQuery.data.page >= Math.ceil(searchQuery.data.total / (searchParams?.limit || COMPANION_LIMIT))}
+                onClick={() => handlePageChange(searchQuery.data.page + 1)}
+                type="button"
+              >
+                Trang sau
+              </button>
             </div>
           ) : null}
         </section>

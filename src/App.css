@@ -83,6 +83,16 @@
   filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.16));
 }
 
+.mobile-menu-toggle {
+  display: none;
+  background: transparent;
+  color: var(--sapphire);
+  padding: 8px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
 .site-header nav {
   gap: 10px;
 }
@@ -1742,10 +1752,20 @@
 
 @media (max-width: 1040px) {
 
-  .hero-section,
+  .hero-section {
+    min-height: auto;
+    grid-template-columns: 1fr;
+  }
+
   .auth-shell {
     min-height: auto;
     grid-template-columns: 1fr;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .auth-brand-panel {
+    display: none;
   }
 
   .learning-stage {
@@ -1784,12 +1804,29 @@
 
   .site-header {
     min-height: auto;
-    align-items: flex-start;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .mobile-menu-toggle {
+    display: flex;
   }
 
   .site-header nav {
-    flex-wrap: wrap;
-    justify-content: flex-end;
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 0;
+    gap: 12px;
+  }
+
+  .site-header nav.is-open {
+    display: flex;
+  }
+
+  .nav-link {
+    justify-content: flex-start;
   }
 
   .brand-link {
@@ -1852,11 +1889,6 @@
 
   .auth-shell {
     gap: 13px;
-  }
-
-  .auth-brand-panel {
-    min-height: 387px;
-    padding: 20px;
   }
 
   .auth-card {
