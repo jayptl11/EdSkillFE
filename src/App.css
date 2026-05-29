@@ -7506,6 +7506,10 @@
 }
 
 @media (max-width: 1180px) {
+  .discovery-hz-grid {
+    grid-template-columns: 1fr;
+  }
+
   .discovery-hz-card-link {
     grid-template-columns: 152px minmax(0, 1fr);
   }
@@ -7520,9 +7524,6 @@
 }
 
 @media (max-width: 768px) {
-  .discovery-hz-grid {
-    grid-template-columns: 1fr;
-  }
 
   .discovery-hz-card {
     max-width: 100%;

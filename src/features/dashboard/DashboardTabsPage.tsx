@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import { getErrorMessage } from '../../api/client'
 import { syncProfileCaches } from '../../api/cacheInvalidation'
+import { SkillAutocomplete } from '../skills/SkillAutocomplete'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
 import { showToast } from '../../components/toastEvents'
@@ -208,7 +209,7 @@ function GeneralInfoForm({ profile }: { profile: ProfileDto }) {
   const payload = buildProfileUpdatePayload(formValues, initialValues)
   const isDirty = Object.keys(payload).length > 0
 
-  const handleChange = (field: keyof ProfileFormValues, value: string | boolean | null) => {
+  const handleChange = (field: keyof ProfileFormValues, value: string | boolean | null | string[]) => {
     setFormValues((current) => ({ ...current, [field]: value }))
     clearFieldError(field)
   }
@@ -408,6 +409,46 @@ function GeneralInfoForm({ profile }: { profile: ProfileDto }) {
           </DashboardField>
           <DashboardField className="full" error={fieldErrors.bio} label="Giới thiệu về bản thân">
             <textarea rows={5} value={formValues.bio} onChange={(event) => handleChange('bio', event.target.value)} />
+          </DashboardField>
+          <DashboardField className="full" error={fieldErrors.skillsToTeach} label="Kỹ năng muốn dạy">
+            <SkillAutocomplete
+              helperText=""
+              label=""
+              mode="multiple"
+              onRemove={(skill) =>
+                handleChange(
+                  'skillsToTeach',
+                  formValues.skillsToTeach.filter((s) => s !== skill)
+                )
+              }
+              onSelect={(skill) => {
+                if (!formValues.skillsToTeach.includes(skill)) {
+                  handleChange('skillsToTeach', [...formValues.skillsToTeach, skill])
+                }
+              }}
+              placeholder="Thêm kỹ năng muốn dạy..."
+              selectedSkills={formValues.skillsToTeach}
+            />
+          </DashboardField>
+          <DashboardField className="full" error={fieldErrors.skillsToLearn} label="Kỹ năng muốn học">
+            <SkillAutocomplete
+              helperText=""
+              label=""
+              mode="multiple"
+              onRemove={(skill) =>
+                handleChange(
+                  'skillsToLearn',
+                  formValues.skillsToLearn.filter((s) => s !== skill)
+                )
+              }
+              onSelect={(skill) => {
+                if (!formValues.skillsToLearn.includes(skill)) {
+                  handleChange('skillsToLearn', [...formValues.skillsToLearn, skill])
+                }
+              }}
+              placeholder="Thêm kỹ năng muốn học..."
+              selectedSkills={formValues.skillsToLearn}
+            />
           </DashboardField>
           <DashboardField className="full" error={fieldErrors.credentialUrls} label="Chứng chỉ / Bằng cấp">
             <div className="dashboard-credential-panel">
