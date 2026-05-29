@@ -494,6 +494,7 @@ export function CompanionSearchPage() {
             >
               {companions.map((companion) => {
                 const vm = mapSearchItemToCardVm(companion, skillId)
+                const resolvedSkillId = vm.skillId || quickSkills.find((s) => s.name === vm.skillName)?.id
                 const priceLabel = vm.priceMin === vm.priceMax
                   ? `${vm.priceMin} điểm`
                   : `${vm.priceMin} – ${vm.priceMax} điểm`
@@ -576,8 +577,8 @@ export function CompanionSearchPage() {
                           <Link
                             className="hz-btn-view"
                             to={
-                              vm.skillId
-                                ? `/dashboard/companions/${vm.companionId}/skills/${vm.skillId}`
+                              resolvedSkillId
+                                ? `/dashboard/companions/${vm.companionId}/skills/${resolvedSkillId}?sessionId=${vm.sessionId}`
                                 : `/dashboard/companions/${vm.companionId}`
                             }
                           >

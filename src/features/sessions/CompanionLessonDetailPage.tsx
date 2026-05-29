@@ -12,7 +12,7 @@ import {
   Video,
   X,
 } from 'lucide-react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { getErrorMessage, isApiError } from '../../api/client'
 import { SiteHeader } from '../../components/Brand'
 import { MotionPage } from '../../components/MotionPage'
@@ -29,6 +29,8 @@ const OFFER_LIMIT = 20
 
 export function CompanionLessonDetailPage() {
   const { companionId = '', skillId = '' } = useParams()
+  const [searchParams] = useSearchParams()
+  const urlSessionId = searchParams.get('sessionId')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [reviewPage, setReviewPage] = useState(1)
@@ -90,12 +92,13 @@ export function CompanionLessonDetailPage() {
 
   const profile = profileQuery.data
   const detail = detailQuery.data
-  const offers = detail?.offers.data ?? []
+  const rawOffers = detail?.offers.data ?? []
+  const filteredOffers = urlSessionId ? rawOffers.filter((o) => o.sessionId === urlSessionId) : rawOffers
+  const offers = filteredOffers.length > 0 ? filteredOffers : rawOffers
   const reviews = detail?.reviews.data ?? []
+  
   const featuredOffer = offers.find((offer) => Boolean(offer.description?.trim())) ?? offers[0] ?? null
-  const lessonTitle = featuredOffer?.description?.trim() || (detail && profile
-    ? `Học ${detail.skill.name} cùng ${profile.displayName}.`
-    : 'Chi tiết môn học')
+  const lessonTitle = detail?.skill.name || 'Chi tiết môn học'
   const lessonDescription = featuredOffer?.description?.trim()
     || (detail && profile
       ? `${profile.displayName} hiện có ${detail.offers.total} lịch mở cho môn ${detail.skill.name}. Chọn lịch phù hợp ở danh sách bên dưới để xem thời lượng, hình thức và gửi yêu cầu đặt lịch.`
@@ -297,7 +300,7 @@ export function CompanionLessonDetailPage() {
                     </div>
                   )}
 
-                  {detail.offers.total > OFFER_LIMIT ? (
+                  {!urlSessionId && detail.offers.total > OFFER_LIMIT ? (
                     <div className="session-pagination">
                       <button
                         className="button secondary"
