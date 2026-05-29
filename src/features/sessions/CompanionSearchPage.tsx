@@ -487,17 +487,7 @@ export function CompanionSearchPage() {
           ) : null}
 
           {companions.length > 0 ? (
-            <div
-              className="discovery-hz-grid"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gridAutoFlow: 'row',
-                alignItems: 'stretch',
-                gap: '22px',
-                width: '100%',
-              }}
-            >
+            <div className="discovery-hz-grid">
               {companions.map((companion) => {
                 const vm = mapSearchItemToCardVm(companion, skillId)
                 const resolvedSkillId = vm.skillId || quickSkills.find((s) => s.name === vm.skillName)?.id
@@ -508,14 +498,8 @@ export function CompanionSearchPage() {
                   <article
                     className="discovery-hz-card"
                     key={vm.sessionId}
-                    style={{
-                      gridColumn: 'auto / span 1',
-                      width: '100%',
-                      maxWidth: '100%',
-                      minWidth: 0,
-                    }}
                   >
-                    <div className="discovery-hz-card-link" style={{ gridTemplateColumns: '200px minmax(0, 1fr)', padding: '10px', gap: '20px' }}>
+                    <div className="discovery-hz-card-link">
                       <Link
                         aria-label={`Xem profile ${vm.displayName}`}
                         className="discovery-hz-image"
@@ -530,8 +514,8 @@ export function CompanionSearchPage() {
                         )}
                       </Link>
 
-                      <div className="discovery-hz-info" style={{ width: '100%', maxWidth: '100%', justifySelf: 'stretch', alignItems: 'flex-end', textAlign: 'right' }}>
-                        <div className="discovery-hz-header" style={{ justifyContent: 'flex-end', width: '100%' }}>
+                      <div className="discovery-hz-info">
+                        <div className="discovery-hz-header">
                           <div className="discovery-hz-price-stack">
                             {vm.subscriptionBadge ? (
                               <span className="wallet-premium-badge search-premium-badge">
@@ -548,7 +532,7 @@ export function CompanionSearchPage() {
                           </Link>
                         </div>
 
-                        <div className="discovery-hz-rating" style={{ justifyContent: 'flex-end', width: '100%' }}>
+                        <div className="discovery-hz-rating">
                           {vm.totalReviews > 0 ? (
                             <>
                               <strong>{vm.avgRating.toFixed(1)}</strong>
@@ -560,15 +544,15 @@ export function CompanionSearchPage() {
                           )}
                         </div>
 
-                        <div className="discovery-hz-skill-title" style={{ width: '100%', fontSize: '18px', lineHeight: 1.2, fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>
+                        <div className="discovery-hz-skill-title">
                           {vm.skillName}
                         </div>
 
-                        <p className="discovery-hz-bio" style={{ textAlign: 'right' }}>
+                        <p className="discovery-hz-bio">
                           {vm.classDescription || 'Hồ sơ đang được cập nhật. Giáo viên chưa có thông tin giới thiệu chi tiết.'}
                         </p>
 
-                        <div className="discovery-hz-tags" style={{ justifyContent: 'flex-end', width: '100%' }}>
+                        <div className="discovery-hz-tags">
                           {vm.tags.map((skill) => (
                             <span className="hz-tag" key={skill}>
                               {skill}
@@ -579,7 +563,7 @@ export function CompanionSearchPage() {
                           )}
                         </div>
 
-                        <div className="discovery-hz-actions" style={{ justifyContent: 'flex-end', width: '100%' }}>
+                        <div className="discovery-hz-actions">
                           <Link
                             className="hz-btn-view"
                             to={
@@ -591,8 +575,7 @@ export function CompanionSearchPage() {
                             Xem chi tiết
                           </Link>
                           <button
-                            className="hz-btn-view"
-                            style={{ background: 'var(--blue)', color: '#ffffff', border: 'none', cursor: 'pointer' }}
+                            className="hz-btn-view hz-btn-primary"
                             onClick={() => setBookingOffer(companion.offer)}
                             type="button"
                           >
