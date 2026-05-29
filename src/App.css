@@ -1324,7 +1324,7 @@
 }
 
 .landing-section {
-  padding: 60px 0;
+  padding: 44px 0;
 }
 
 .landing-overview {
@@ -1332,30 +1332,30 @@
 }
 
 .landing-section-heading {
-  max-width: 830px;
-  margin: 0 auto 34px;
+  max-width: 720px;
+  margin: 0 auto 20px;
   text-align: center;
 }
 
 .landing-section-heading h2 {
-  margin: 16px auto 10px;
+  margin: 10px auto 8px;
   color: var(--sapphire);
-  font-size: clamp(30px, 4vw, 48px);
+  font-size: clamp(22px, 3vw, 36px);
   font-weight: 1000;
-  line-height: 1.12;
-  letter-spacing: 0;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
 }
 
 .landing-section-heading p {
-  max-width: 760px;
+  max-width: 640px;
   margin: 0 auto;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
 }
 
 .landing-card-grid {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .skills-grid,
@@ -1365,14 +1365,18 @@
 }
 
 .landing-skill-card {
-  min-height: 215px;
-  padding: 20px;
+  min-height: 180px;
+  padding: 17px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.98), rgba(245,250,255,0.95));
   transition:
-    transform 180ms ease,
-    box-shadow 180ms ease;
+    transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 220ms ease;
 }
 
-.landing-skill-card:hover,
+.landing-skill-card:hover {
+  box-shadow: 0 10px 36px rgba(0, 45, 114, 0.14), 0 2px 8px rgba(0, 45, 114, 0.06);
+}
+
 .landing-info-card:hover,
 .landing-testimonial-card:hover,
 .landing-overview-card:hover {
@@ -1384,7 +1388,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 13px;
 }
 
 .landing-skill-icon,
@@ -1428,11 +1432,11 @@
 .landing-info-card h3,
 .landing-testimonial-card h3,
 .landing-overview-card h3 {
-  margin: 0 0 9px;
+  margin: 0 0 6px;
   color: var(--sapphire);
-  font-size: 21px;
+  font-size: 17px;
   font-weight: 1000;
-  line-height: 1.22;
+  line-height: 1.2;
   letter-spacing: 0;
 }
 
@@ -1442,12 +1446,14 @@
 .landing-overview-card p {
   margin: 0;
   font-weight: 700;
+  font-size: 13.5px;
+  line-height: 1.6;
 }
 
 .landing-feature-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(360px, 1.08fr);
-  gap: 22px;
+  grid-template-columns: minmax(0, 0.92fr) minmax(340px, 1.08fr);
+  gap: 18px;
   align-items: stretch;
 }
 
@@ -1462,23 +1468,88 @@
 .landing-feature-list {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 10px;
 }
 
 .landing-info-card {
-  min-height: 128px;
-  padding: 20px;
+  min-height: 100px;
+  padding: 15px 16px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 200ms ease, box-shadow 200ms ease;
 }
 
-.landing-info-card span {
+.landing-info-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--gold), var(--blue));
+  opacity: 0.65;
+  transition: opacity 200ms ease, width 200ms ease;
+}
+
+.landing-info-card:hover::before {
+  opacity: 1;
+  width: 4px;
+}
+
+.landing-info-card:hover {
+  transform: translateX(3px);
+  box-shadow: var(--shadow-strong);
+}
+
+.landing-feature.reverse .landing-info-card:hover {
+  transform: translateX(-3px);
+}
+
+.info-card-icon-bubble {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
   margin-bottom: 10px;
-  color: var(--blue-dark);
+  flex-shrink: 0;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.landing-info-card:hover .info-card-icon-bubble {
+  transform: scale(1.14) rotate(-4deg);
+}
+
+.info-card-icon-bubble.gold {
+  background: linear-gradient(135deg, #fff3c4, #ffd84d);
+  color: #a0620a;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.28);
+}
+
+.info-card-icon-bubble.blue {
+  background: linear-gradient(135deg, #ddeeff, #93c5fd);
+  color: #1258c0;
+  box-shadow: 0 4px 12px rgba(30, 136, 229, 0.22);
+}
+
+.info-card-icon-bubble.sky {
+  background: linear-gradient(135deg, #d4f8e8, #6ee7b7);
+  color: #0b7a52;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.22);
+}
+
+.info-card-icon-bubble.violet {
+  background: linear-gradient(135deg, #ede9fe, #c4b5fd);
+  color: #5b21b6;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.22);
 }
 
 .landing-feature-image {
-  min-height: 438px;
-  padding: 12px;
+  min-height: 400px;
+  padding: 10px;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .landing-feature-image img {
@@ -1488,11 +1559,58 @@
   border-radius: 8px;
   object-fit: cover;
   object-position: center;
+  transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-feature-image:hover img {
+  transform: scale(1.03);
 }
 
 .landing-feature:not(.reverse) .landing-feature-image img {
   object-fit: contain;
   background: linear-gradient(145deg, #f6fbff, #ffffff);
+  transition: none;
+}
+
+/* Enterprise section gold tint */
+.landing-feature.reverse {
+  background: radial-gradient(ellipse at 90% 50%, rgba(255, 212, 90, 0.07) 0%, transparent 65%);
+  border-radius: 16px;
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+/* Enterprise: compact image, single-viewport layout */
+.landing-feature.reverse .landing-feature-grid {
+  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.landing-feature.reverse .landing-feature-image {
+  min-height: 0;
+  max-height: 320px;
+  height: 320px;
+}
+
+.landing-feature.reverse .landing-section-heading h2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.landing-feature.reverse .landing-section-heading {
+  margin-bottom: 14px;
+}
+
+.landing-feature.reverse .landing-feature-list {
+  gap: 8px;
+}
+
+.landing-feature.reverse .landing-info-card {
+  min-height: 80px;
+  padding: 11px 14px;
 }
 
 .landing-testimonial-card {
@@ -1825,7 +1943,7 @@
   }
 
   .landing-section {
-    padding: 44px 0;
+    padding: 34px 0;
   }
 
   .skills-grid,
@@ -1839,7 +1957,12 @@
   }
 
   .landing-feature-image {
-    min-height: 320px;
+    min-height: 280px;
+  }
+
+  .landing-feature.reverse {
+    background: none;
+    border-radius: 0;
   }
 
   .landing-testimonial-card {
@@ -9027,3 +9150,553 @@
     min-height: 60vh;
   }
 }
+
+/* =================================================================
+   SECTION 1 â€“ NHOM KY NANG NOI BAT: Bento Spotlight Grid
+================================================================= */
+
+.skills-bento {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+/* Base card */
+.skills-bento__card {
+  padding: 20px;
+  border: 1px solid rgba(0, 45, 114, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  cursor: default;
+  will-change: transform, opacity, box-shadow;
+  transition: opacity 200ms ease;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Subtle gradient shimmer per tone */
+.skills-bento__card--gold {
+  background: linear-gradient(145deg, rgba(255,253,235,0.98), rgba(255,248,200,0.9));
+}
+.skills-bento__card--blue {
+  background: linear-gradient(145deg, rgba(240,249,255,0.98), rgba(219,241,255,0.9));
+}
+.skills-bento__card--sky {
+  background: linear-gradient(145deg, rgba(236,253,245,0.98), rgba(209,250,229,0.9));
+}
+
+/* Large card extras */
+.skills-bento__card--large {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 240px;
+  padding: 24px;
+}
+
+.skills-bento__card--large .bento-card__title {
+  font-size: 22px;
+}
+
+.skills-bento__card--large .landing-skill-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  margin-bottom: 4px;
+}
+
+/* Card header */
+.bento-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+/* Card title */
+.bento-card__title {
+  margin: 0 0 6px;
+  color: var(--sapphire);
+  font-size: 15px;
+  font-weight: 1000;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+/* Copy – hidden on small cards, revealed on hover */
+.bento-card__copy {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.6;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(5px);
+  transition: opacity 200ms ease, transform 220ms ease, visibility 0ms 220ms;
+}
+
+.bento-card__copy--always,
+.skills-bento__card:hover .bento-card__copy {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity 200ms ease, transform 220ms ease;
+}
+
+/* Responsive */
+@media (max-width: 1040px) {
+  .skills-bento {
+    grid-template-columns: 1.4fr 1fr 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .skills-bento {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .skills-bento__left-col {
+    flex-direction: column;
+  }
+
+  .skills-bento__card--large,
+  .skills-bento__card--secondary {
+    min-height: 0;
+    flex: none;
+  }
+
+  .bento-card__copy {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+  }
+}
+
+
+/* =================================================================
+   SECTION 2 – MO HINH HOC DOI MOI: Horizontal Step Flow
+================================================================= */
+
+.model-section {
+  position: relative;
+  padding: 56px clamp(14px, 3.6vw, 50px);
+  overflow: hidden;
+  z-index: 2;
+}
+
+/* Background image */
+.model-section__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.model-section__bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: blur(2px) brightness(0.18) saturate(0.6);
+}
+
+/* Inner content */
+.model-section__inner {
+  position: relative;
+  z-index: 2;
+  max-width: calc(100% - clamp(28px, 7.2vw, 100px));
+  margin: 0 auto;
+}
+
+/* Heading */
+.model-section__heading {
+  text-align: center;
+  margin-bottom: 80px;
+}
+
+.model-section__heading h2 {
+  color: var(--sapphire);
+  font-size: clamp(34px, 5vw, 64px);
+  margin: 10px auto 8px;
+  line-height: 1;
+}
+
+.model-section__heading p {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+/* eyebrow on dark bg */
+.eyebrow--light {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Step flow container */
+.model-step-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.model-step-flow__item {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Step card – glassmorphism */
+.model-step-card {
+  flex: 1;
+  padding: 40px 32px;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 45, 114, 0.1);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--sapphire);
+  cursor: default;
+  will-change: transform, box-shadow;
+  position: relative;
+}
+
+.model-step-card h3 {
+  margin: 16px 0 8px;
+  color: var(--sapphire);
+  font-size: 18px;
+  font-weight: 1000;
+  line-height: 1.25;
+}
+
+.model-step-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+/* Step number badge */
+.model-step-card__num {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(0, 45, 114, 0.04);
+  border: 1px solid rgba(0, 45, 114, 0.1);
+  color: var(--sapphire);
+  font-size: 11px;
+  font-weight: 1000;
+  letter-spacing: 0.04em;
+}
+
+/* Icon on model step card */
+.model-step-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+/* Connector between cards */
+.model-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 0 6px;
+  position: relative;
+  flex: 0 0 44px;
+}
+
+.model-connector__line {
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(0,45,114,0.05), rgba(0,45,114,0.15), rgba(0,45,114,0.05));
+  border-radius: 2px;
+}
+
+.model-connector__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 10px var(--gold);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  animation: connector-slide 2.4s ease-in-out infinite;
+}
+
+.model-connector__arrow {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  transform: translateY(-50%);
+  color: rgba(0, 45, 114, 0.25);
+}
+
+@keyframes connector-slide {
+  0%   { left: 0; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { left: calc(100% - 8px); opacity: 0; }
+}
+
+/* Responsive */
+@media (max-width: 720px) {
+  .model-step-flow {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .model-step-flow__item {
+    flex-direction: column;
+  }
+
+  .model-connector {
+    flex-direction: row;
+    width: 100%;
+    flex: 0 0 24px;
+    padding: 0;
+  }
+
+  .model-connector__line {
+    width: 100%;
+    height: 2px;
+  }
+
+  .model-connector__dot {
+    animation: none;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+  }
+
+  .model-connector__arrow {
+    right: auto;
+    top: auto;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%) rotate(90deg);
+  }
+}
+
+
+/* =================================================================
+   SECTION 3 â€“ GIAI PHAP DOANH NGHIEP: Enterprise Dark Panel
+================================================================= */
+
+.enterprise-section {
+  position: relative;
+  z-index: 2;
+  margin: 0 0 0 0;
+  padding: clamp(40px, 5vw, 64px) clamp(14px, 3.6vw, 50px);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* 2-column grid */
+.enterprise-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+  gap: clamp(28px, 4vw, 52px);
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+/* Left column */
+.enterprise-copy {}
+
+.enterprise-copy__heading {
+  margin: 12px 0 10px;
+  color: var(--sapphire);
+  font-size: clamp(34px, 5vw, 64px);
+  font-weight: 1000;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.enterprise-copy__sub {
+  margin: 0 0 28px;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.65;
+}
+
+/* Solution cards list */
+.enterprise-solutions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.enterprise-solution-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 45, 114, 0.1);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  cursor: default;
+  will-change: transform;
+  transition: background 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+}
+
+.enterprise-solution-card:hover {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 24px rgba(0, 45, 114, 0.06);
+}
+
+.enterprise-solution-card h3 {
+  margin: 0 0 3px;
+  color: var(--sapphire);
+  font-size: 14px;
+  font-weight: 1000;
+  line-height: 1.3;
+}
+
+.enterprise-solution-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.enterprise-solution-card__icon {
+  margin-bottom: 0;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+/* Right column: visual */
+.enterprise-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Metric chips row */
+.enterprise-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.enterprise-metric-chip {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 45, 114, 0.1);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  animation: metric-pulse 3.5s ease-in-out infinite;
+}
+
+.enterprise-metric-chip:nth-child(2) {
+  animation-delay: 1.2s;
+}
+
+.enterprise-metric-chip strong {
+  display: block;
+  color: var(--gold);
+  font-size: 22px;
+  font-weight: 1000;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.enterprise-metric-chip span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+@keyframes metric-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 185, 36, 0); }
+  50%       { box-shadow: 0 0 16px 2px rgba(245, 185, 36, 0.12); }
+}
+
+/* Image wrap */
+.enterprise-image-wrap {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 45, 114, 0.15);
+}
+
+.enterprise-image-wrap img {
+  width: 100%;
+  height: 420px;
+  display: block;
+  object-fit: cover;
+  object-position: center top;
+  border-radius: 16px;
+  transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.enterprise-image-wrap:hover img {
+  transform: scale(1.04);
+}
+
+.enterprise-image-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+/* Responsive */
+@media (max-width: 1040px) {
+  .enterprise-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .enterprise-visual {
+    order: -1;
+  }
+
+  .enterprise-metrics {
+    max-width: 400px;
+  }
+
+  .enterprise-image-wrap img {
+    height: 200px;
+  }
+}
+
+@media (max-width: 720px) {
+  .enterprise-section {
+    border-radius: 12px;
+    padding: 32px clamp(14px, 3.6vw, 50px);
+  }
+
+  .enterprise-metrics {
+    max-width: 100%;
+  }
+}
+
+

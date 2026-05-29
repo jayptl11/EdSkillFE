@@ -1,18 +1,25 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
+  Award,
   BarChart3,
   BookOpen,
   Camera,
+  FolderOpen,
   GraduationCap,
   Lightbulb,
   Mic2,
   Music2,
   PenTool,
+  Rocket,
+  Route,
   Search,
   Sparkles,
   Star,
   Target,
+  TrendingUp,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
@@ -20,6 +27,7 @@ import personalOne from '../assets/landing-personal-1.jpg'
 import personalTwo from '../assets/landing-personal-2.jpg'
 import personalThree from '../assets/landing-personal-3.jpg'
 
+/* ── Types ────────────────────────────────────────────────── */
 interface SkillCard {
   title: string
   tag: string
@@ -28,6 +36,14 @@ interface SkillCard {
   tone: 'gold' | 'blue' | 'sky'
 }
 
+interface FeatureCard {
+  title: string
+  copy: string
+  Icon: LucideIcon
+  tone: 'gold' | 'blue' | 'sky' | 'violet'
+}
+
+/* ── Data ─────────────────────────────────────────────────── */
 const popularSkills = [
   'Tiếng Anh giao tiếp',
   'Toán',
@@ -90,33 +106,45 @@ const skillCards: SkillCard[] = [
   },
 ]
 
-const modelCards = [
+const modelCards: FeatureCard[] = [
   {
     title: 'Học qua dự án ngắn hạn',
     copy: 'Người học đi từ vấn đề thực tế đến sản phẩm đầu ra rõ ràng.',
+    Icon: FolderOpen,
+    tone: 'gold',
   },
   {
     title: 'Lộ trình cá nhân hóa',
     copy: 'Chia theo năng lực đầu vào, mục tiêu và nhịp học của từng người.',
+    Icon: Route,
+    tone: 'blue',
   },
   {
     title: 'Đánh giá bằng ứng dụng',
     copy: 'Kết quả được nhìn qua khả năng vận dụng trong bối cảnh thật.',
+    Icon: Award,
+    tone: 'sky',
   },
 ]
 
-const enterpriseCards = [
+const enterpriseCards: FeatureCard[] = [
   {
     title: 'Workshop kỹ năng nội bộ',
     copy: 'Tập trung vào giao tiếp, phối hợp và khả năng tự học cho đội ngũ trẻ.',
+    Icon: Users,
+    tone: 'blue',
   },
   {
     title: 'Upskill theo phòng ban',
     copy: 'Xây bộ kỹ năng sát nhu cầu từng bộ phận và mục tiêu vận hành.',
+    Icon: TrendingUp,
+    tone: 'gold',
   },
   {
     title: 'Phát triển nhân tài mới',
     copy: 'Tăng tốc khả năng thích nghi cho thực tập sinh, nhân sự mới và đội ngũ kế cận.',
+    Icon: Rocket,
+    tone: 'violet',
   },
 ]
 
@@ -149,14 +177,33 @@ const topUniPromo = {
   highlights: ['Luyện thi đại học', 'DGNL', 'HOCMAI'],
 }
 
+/* ── Shared animation variants ────────────────────────────── */
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+}
+
+const staggerContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.07 } },
+}
+
+const cardVariant = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
+}
+
+/* ══════════════════════════════════════════════════════════ */
+/*  Main export                                               */
+/* ══════════════════════════════════════════════════════════ */
 export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
   const registerHref = isSignedIn ? '/dashboard' : '/register'
   const discoverHref = isSignedIn ? '/dashboard/companions' : '/register'
   const secondaryHref = isSignedIn ? '/teach' : '/login'
-  const reduceMotion = useReducedMotion()
 
   return (
     <>
+      {/* ── Hero ─────────────────────────────────────────── */}
       <section className="landing-hero superprof-hero">
         <div className="landing-hero-copy">
           <span className="eyebrow">
@@ -223,6 +270,7 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
         </motion.div>
       </section>
 
+      {/* ── Stat strip ───────────────────────────────────── */}
       <section className="landing-section landing-stat-strip">
         <div className="landing-stat-grid">
           {trustStats.map((item) => (
@@ -234,61 +282,16 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
         </div>
       </section>
 
-      <section className="landing-section landing-skills" id="skills">
-        <SectionHeading
-          eyebrow="Nhóm kỹ năng nổi bật"
-          title="Kỹ năng được chia thành 3 nhóm phù hợp cho nhiều mục tiêu phát triển."
-          copy="Từ sở thích cá nhân, năng lực học thuật đến kỹ năng hỗ trợ công việc, EdSkill giúp người học bắt đầu dễ dàng và tiến bộ bền vững."
-        />
-        <motion.div
-          className="landing-card-grid skills-grid"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={{ visible: { transition: { staggerChildren: 0.055 } } }}
-        >
-          {skillCards.map(({ title, tag, copy, Icon, tone }) => (
-            <motion.article
-              className="landing-skill-card"
-              key={title}
-              variants={{
-                hidden: { opacity: 0, y: 18 },
-                visible: { opacity: 1, y: 0 },
-              }}
-              whileHover={reduceMotion ? undefined : { y: -5 }}
-            >
-              <div className="landing-card-top">
-                <span className={`landing-skill-icon ${tone}`}>
-                  <Icon size={21} />
-                </span>
-                <span className="landing-tag">{tag}</span>
-              </div>
-              <h3>{title}</h3>
-              <p>{copy}</p>
-            </motion.article>
-          ))}
-        </motion.div>
-      </section>
+      {/* ── Section 1: Nhóm kỹ năng nổi bật ─────────────── */}
+      <SkillsBento />
 
-      <FeatureSection
-        eyebrow="Mô hình học đổi mới"
-        title="Nội dung thực tế, lộ trình linh hoạt và đầu ra rõ ràng."
-        copy="Các bài học được thiết kế để người học hiểu nhanh, thực hành sớm và nhìn thấy tiến bộ sau từng chặng."
-        image="/hero-2.jpg"
-        imageAlt="Minh họa cộng đồng học tập EdSkill"
-        cards={modelCards}
-      />
+      {/* ── Section 2: Mô hình học đổi mới ──────────────── */}
+      <ModelSection />
 
-      <FeatureSection
-        eyebrow="Giải pháp cho doanh nghiệp"
-        title="Đồng hành với doanh nghiệp phát triển đội ngũ bằng kỹ năng thực chiến."
-        copy="EdSkill hỗ trợ chương trình đào tạo theo nhu cầu cụ thể, ưu tiên khả năng ứng dụng và đo lường."
-        image="/hero-3.jpg"
-        imageAlt="Hoạt động trải nghiệm và phát triển kỹ năng"
-        cards={enterpriseCards}
-        reverse
-      />
+      {/* ── Section 3: Giải pháp cho doanh nghiệp ────────── */}
+      <EnterpriseSection />
 
+      {/* ── Testimonials ─────────────────────────────────── */}
       <section className="landing-section">
         <SectionHeading
           eyebrow="Bạn đồng hành"
@@ -309,6 +312,7 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
         </div>
       </section>
 
+      {/* ── Overview ─────────────────────────────────────── */}
       <section className="landing-section landing-overview" id="overview">
         <SectionHeading
           eyebrow="Tổng quan EdSkill"
@@ -342,6 +346,7 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
         </div>
       </section>
 
+      {/* ── TopUni Promo ─────────────────────────────────── */}
       <section className="landing-section landing-topuni-promo" id="topuni-promo">
         <span className="eyebrow">
           <Sparkles size={15} />
@@ -382,6 +387,246 @@ export function LearningHero({ isSignedIn }: { isSignedIn: boolean }) {
   )
 }
 
+/* ══════════════════════════════════════════════════════════ */
+/*  Section 1 – Bento Spotlight Grid                         */
+/* ══════════════════════════════════════════════════════════ */
+function SkillsBento() {
+  const [hovered, setHovered] = useState<number | null>(null)
+  const reduceMotion = useReducedMotion()
+
+  const glowMap: Record<string, string> = {
+    gold: 'rgba(245,185,36,0.35)',
+    blue: 'rgba(30,136,229,0.3)',
+    sky: 'rgba(16,185,129,0.28)',
+  }
+
+  const borderMap: Record<string, string> = {
+    gold: 'rgba(245,185,36,0.4)',
+    blue: 'rgba(30,136,229,0.35)',
+    sky: 'rgba(16,185,129,0.32)',
+  }
+
+  return (
+    <section className="landing-section landing-skills" id="skills">
+      <SectionHeading
+        eyebrow="Nhóm kỹ năng nổi bật"
+        title="Kỹ năng được chia thành 3 nhóm phù hợp cho nhiều mục tiêu phát triển."
+        copy="Từ sở thích cá nhân, năng lực học thuật đến kỹ năng hỗ trợ công việc, EdSkill giúp người học bắt đầu dễ dàng và tiến bộ bền vững."
+      />
+
+      <motion.div
+        className="skills-bento"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.1 }}
+        variants={staggerContainer}
+        onMouseLeave={() => setHovered(null)}
+      >
+        {skillCards.map(({ title, tag, copy, Icon, tone }, i) => (
+          <motion.article
+            key={title}
+            className={`skills-bento__card skills-bento__card--${tone}`}
+            variants={cardVariant}
+            onMouseEnter={() => setHovered(i)}
+            animate={
+              reduceMotion
+                ? {}
+                : {
+                    opacity: hovered !== null && hovered !== i ? 0.45 : 1,
+                    scale: hovered === i ? 1.02 : 1,
+                    boxShadow:
+                      hovered === i
+                        ? `0 16px 48px ${glowMap[tone]}, 0 0 0 1.5px ${borderMap[tone]}`
+                        : '0 2px 12px rgba(0,45,114,0.07)',
+                  }
+            }
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+          >
+            <div className="bento-card__header">
+              <span className={`landing-skill-icon ${tone}`}>
+                <Icon size={18} />
+              </span>
+              <span className="landing-tag">{tag}</span>
+            </div>
+            <h3 className="bento-card__title">{title}</h3>
+            <p className="bento-card__copy">{copy}</p>
+          </motion.article>
+        ))}
+      </motion.div>
+    </section>
+  )
+}
+
+
+/* ══════════════════════════════════════════════════════════ */
+/*  Section 2 – Mô hình học đổi mới                          */
+/*  Horizontal Step Flow + Background Immersion              */
+/* ══════════════════════════════════════════════════════════ */
+function ModelSection() {
+  const glowMap: Record<string, string> = {
+    gold: 'rgba(245,185,36,0.5)',
+    blue: 'rgba(30,136,229,0.45)',
+    sky: 'rgba(16,185,129,0.42)',
+  }
+
+  return (
+    <section className="model-section" id="model">
+      {/* Content */}
+      <div className="model-section__inner">
+        <motion.div
+          className="landing-section-heading model-section__heading"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          variants={fadeUp}
+        >
+          <span className="eyebrow">
+            <Sparkles size={15} />
+            Mô hình học đổi mới
+          </span>
+          <h2>Nội dung thực tế, lộ trình linh hoạt và đầu ra rõ ràng.</h2>
+          <p>
+            Các bài học được thiết kế để người học hiểu nhanh, thực hành sớm và nhìn thấy tiến bộ
+            sau từng chặng.
+          </p>
+        </motion.div>
+
+        {/* Step flow */}
+        <div className="model-step-flow">
+          {modelCards.map((card, i) => (
+            <div key={card.title} className="model-step-flow__item">
+              {/* Step card */}
+              <motion.article
+                className={`model-step-card model-step-card--${card.tone}`}
+                initial={{ opacity: 0, y: 28 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.5, delay: i * 0.12, ease: [0.22, 1, 0.36, 1] }}
+                whileHover={{
+                  scale: 1.04,
+                  boxShadow: `0 20px 56px ${glowMap[card.tone]}`,
+                }}
+              >
+                {/* Step number */}
+                <div className="model-step-card__num">0{i + 1}</div>
+
+                {/* Icon bubble */}
+                <span className={`info-card-icon-bubble ${card.tone} model-step-card__icon`}>
+                  <card.Icon size={22} />
+                </span>
+
+                <h3>{card.title}</h3>
+                <p>{card.copy}</p>
+              </motion.article>
+
+              {/* Connector arrow (between cards) */}
+              {i < modelCards.length - 1 && (
+                <div className="model-connector" aria-hidden="true">
+                  <div className="model-connector__line" />
+                  <div className="model-connector__dot" />
+                  <ArrowRight size={16} className="model-connector__arrow" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ══════════════════════════════════════════════════════════ */
+/*  Section 3 – Giải pháp cho doanh nghiệp                   */
+/*  Enterprise Dark Panel                                    */
+/* ══════════════════════════════════════════════════════════ */
+function EnterpriseSection() {
+  return (
+    <motion.section
+      className="enterprise-section"
+      id="enterprise"
+      initial={{ opacity: 0, y: 32 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.12 }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <div className="enterprise-grid">
+        {/* ── Left: copy + solution cards ──────────────── */}
+        <div className="enterprise-copy">
+          <motion.div
+            initial={{ opacity: 0, x: -24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <span className="eyebrow">
+              <Sparkles size={15} />
+              Giải pháp cho doanh nghiệp
+            </span>
+            <h2 className="enterprise-copy__heading">
+              Đồng hành với doanh nghiệp phát triển đội ngũ bằng kỹ năng thực chiến.
+            </h2>
+            <p className="enterprise-copy__sub">
+              EdSkill hỗ trợ chương trình đào tạo theo nhu cầu cụ thể, ưu tiên khả năng ứng dụng
+              và đo lường.
+            </p>
+          </motion.div>
+
+          {/* Solution cards */}
+          <div className="enterprise-solutions">
+            {enterpriseCards.map((card, i) => (
+              <motion.article
+                key={card.title}
+                className="enterprise-solution-card"
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.4, delay: 0.15 + i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                whileHover={{ x: 5 }}
+              >
+                <span className={`info-card-icon-bubble ${card.tone} enterprise-solution-card__icon`}>
+                  <card.Icon size={20} />
+                </span>
+                <div>
+                  <h3>{card.title}</h3>
+                  <p>{card.copy}</p>
+                </div>
+              </motion.article>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Right: visual panel ──────────────────────── */}
+        <motion.div
+          className="enterprise-visual"
+          initial={{ opacity: 0, scale: 0.94 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {/* Metric chips */}
+          <div className="enterprise-metrics">
+            {trustStats.slice(0, 2).map((stat) => (
+              <div key={stat.label} className="enterprise-metric-chip">
+                <strong>{stat.value}</strong>
+                <span>{stat.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Image */}
+          <div className="enterprise-image-wrap">
+            <img src="/hero-3.jpg" alt="Hoạt động trải nghiệm và phát triển kỹ năng" />
+            <div className="enterprise-image-glow" aria-hidden="true" />
+          </div>
+        </motion.div>
+      </div>
+    </motion.section>
+  )
+}
+
+/* ══════════════════════════════════════════════════════════ */
+/*  Shared sub-components                                    */
+/* ══════════════════════════════════════════════════════════ */
 function SectionHeading({
   eyebrow,
   title,
@@ -392,52 +637,20 @@ function SectionHeading({
   copy?: string
 }) {
   return (
-    <div className="landing-section-heading">
+    <motion.div
+      className="landing-section-heading"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.3 }}
+      variants={fadeUp}
+    >
       <span className="eyebrow">
         <Sparkles size={15} />
         {eyebrow}
       </span>
       <h2>{title}</h2>
       {copy && <p>{copy}</p>}
-    </div>
-  )
-}
-
-function FeatureSection({
-  eyebrow,
-  title,
-  copy,
-  image,
-  imageAlt,
-  cards,
-  reverse = false,
-}: {
-  eyebrow: string
-  title: string
-  copy: string
-  image: string
-  imageAlt: string
-  cards: Array<{ title: string; copy: string }>
-  reverse?: boolean
-}) {
-  return (
-    <section className={`landing-section landing-feature ${reverse ? 'reverse' : ''}`}>
-      <SectionHeading eyebrow={eyebrow} title={title} copy={copy} />
-      <div className="landing-feature-grid">
-        <div className="landing-feature-list">
-          {cards.map((card, index) => (
-            <article className="landing-info-card" key={card.title}>
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <h3>{card.title}</h3>
-              <p>{card.copy}</p>
-            </article>
-          ))}
-        </div>
-        <div className="landing-feature-image">
-          <img src={image} alt={imageAlt} />
-        </div>
-      </div>
-    </section>
+    </motion.div>
   )
 }
 

@@ -15,9 +15,8 @@ export function LogoImage({ size = 'default' }: { size?: 'default' | 'large' }) 
 }
 
 export function LogoLink() {
-  const session = useAppStore((state) => state.session)
   return (
-    <Link className="brand-link" to={session ? '/dashboard' : '/'}>
+    <Link className="brand-link" to="/">
       <LogoImage />
     </Link>
   )
@@ -163,6 +162,12 @@ export function SiteHeader() {
     >
       <LogoLink />
       <nav>
+        <a className="nav-link" href="#" onClick={(e) => { e.preventDefault(); showToast({ kind: 'info', message: 'Tính năng đang phát triển.' }) }}>
+          Giải pháp doanh nghiệp
+        </a>
+        <a className="nav-link" href="#" onClick={(e) => { e.preventDefault(); showToast({ kind: 'info', message: 'Tính năng đang phát triển.' }) }}>
+          Challenge street
+        </a>
         <Link className="nav-link" to="/policies">
           Chính sách
         </Link>

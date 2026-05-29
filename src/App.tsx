@@ -1086,7 +1086,7 @@ function buildIntentSearch(intent: SignupIntent) {
 }
 
 function getPostAuthRoute() {
-  return '/dashboard'
+  return '/'
 }
 
 function getAuthCopy() {
