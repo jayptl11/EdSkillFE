@@ -66,8 +66,13 @@ export function SessionDetailPage() {
   })
   const roomAccessData = roomAccessQuery.data
   const roomAccessRefetch = roomAccessQuery.refetch
+  const isCheckingRoomAccess = roomAccessQuery.isLoading || roomAccessQuery.isFetching
   const canOpenRoomPage = canOpenSessionRoomPage(roomAccessData)
-  const showRoomEntryAction = sessionData?.deliveryMode === 'Online' && viewerRole !== 'viewer' && (roomAccessData || roomAccessQuery.isLoading)
+  const canAttemptOnlineRoomEntry =
+    sessionData?.deliveryMode === 'Online'
+    && viewerRole !== 'viewer'
+    && (sessionData.status === 'Confirmed' || sessionData.status === 'InProgress')
+  const showRoomEntryAction = canAttemptOnlineRoomEntry && (roomAccessData || isCheckingRoomAccess || roomAccessQuery.isError)
   const shouldUseRealtimeSubscription =
     Boolean(sessionId)
     && sessionData?.deliveryMode === 'Online'
@@ -383,7 +388,7 @@ export function SessionDetailPage() {
                   ) : (
                     <button className="button primary" disabled type="button">
                       <Video size={18} />
-                      {getSessionRoomEntryLabel(roomAccessQuery.data, roomAccessQuery.isLoading)}
+                      {getSessionRoomEntryLabel(roomAccessQuery.data, isCheckingRoomAccess)}
                     </button>
                   )
                 ) : null}
@@ -417,7 +422,7 @@ export function SessionDetailPage() {
                   </Link>
                 ) : (
                   <button className="button secondary" disabled type="button">
-                    {getSessionRoomEntryLabel(roomAccessQuery.data, roomAccessQuery.isLoading)}
+                    {getSessionRoomEntryLabel(roomAccessQuery.data, isCheckingRoomAccess)}
                   </button>
                 )}
               </section>

@@ -6,6 +6,11 @@ interface MySpaceSessionPatchResult {
   nextData: MySpaceDto | undefined
 }
 
+function canOpenRoomFromRoomState(roomState: SessionRoomStateDto, role: 'companion' | 'learner') {
+  const isJoinableStatus = roomState.status === 'Confirmed' || roomState.status === 'InProgress'
+  return isJoinableStatus && (role === 'companion' || roomState.hasCompanionJoined)
+}
+
 function patchMySpaceSessionCollection(items: MySpaceSessionDto[], session: SessionDto) {
   let found = false
   let changed = false
@@ -24,7 +29,10 @@ function patchMySpaceSessionCollection(items: MySpaceSessionDto[], session: Sess
     changed = true
     return {
       ...item,
-      session,
+      session: {
+        ...item.session,
+        ...session,
+      },
     }
   })
 
@@ -35,16 +43,29 @@ function patchMySpaceSessionCollection(items: MySpaceSessionDto[], session: Sess
   }
 }
 
-function patchMySpaceRoomAccess(roomAccess: MySpaceRoomAccessDto | undefined, roomState: SessionRoomStateDto) {
+function patchMySpaceRoomAccess(
+  roomAccess: MySpaceRoomAccessDto | undefined,
+  roomState: SessionRoomStateDto,
+  role: 'companion' | 'learner',
+) {
   if (!roomAccess) {
     return roomAccess
   }
 
   const nextHostReady = roomState.hasCompanionJoined
+  const nextCanOpenRoomPage = canOpenRoomFromRoomState(roomState, role)
+  const nextDenyCode = nextCanOpenRoomPage
+    ? null
+    : role === 'learner' && !nextHostReady && (roomState.status === 'Confirmed' || roomState.status === 'InProgress')
+      ? 'SESSION_HOST_NOT_READY'
+      : roomAccess.denyCode
 
   if (
     roomAccess.hostReady === nextHostReady
     && roomAccess.hasCompanionJoined === roomState.hasCompanionJoined
+    && roomAccess.canJoin === nextCanOpenRoomPage
+    && roomAccess.canOpenRoomPage === nextCanOpenRoomPage
+    && roomAccess.denyCode === nextDenyCode
     && roomAccess.joinOpenAt === roomState.joinOpenAt
     && roomAccess.joinCloseAt === roomState.joinCloseAt
   ) {
@@ -53,6 +74,10 @@ function patchMySpaceRoomAccess(roomAccess: MySpaceRoomAccessDto | undefined, ro
 
   return {
     ...roomAccess,
+    canJoin: nextCanOpenRoomPage,
+    canOpenRoomPage: nextCanOpenRoomPage,
+    denyCode: nextDenyCode,
+    denyMessage: nextCanOpenRoomPage ? null : roomAccess.denyMessage,
     hostReady: nextHostReady,
     hasCompanionJoined: roomState.hasCompanionJoined,
     joinOpenAt: roomState.joinOpenAt,
@@ -60,7 +85,11 @@ function patchMySpaceRoomAccess(roomAccess: MySpaceRoomAccessDto | undefined, ro
   }
 }
 
-function patchMySpaceRoomStateCollection(items: MySpaceSessionDto[], roomState: SessionRoomStateDto) {
+function patchMySpaceRoomStateCollection(
+  items: MySpaceSessionDto[],
+  roomState: SessionRoomStateDto,
+  role: 'companion' | 'learner',
+) {
   let changed = false
 
   const nextItems = items.map((item) => {
@@ -68,7 +97,7 @@ function patchMySpaceRoomStateCollection(items: MySpaceSessionDto[], roomState: 
       return item
     }
 
-    const nextRoomAccess = patchMySpaceRoomAccess(item.roomAccess, roomState)
+    const nextRoomAccess = patchMySpaceRoomAccess(item.roomAccess, roomState, role)
     if (nextRoomAccess === item.roomAccess) {
       return item
     }
@@ -116,8 +145,8 @@ export function patchMySpaceRoomStateData(current: MySpaceDto | undefined, roomS
     return current
   }
 
-  const companion = patchMySpaceRoomStateCollection(current.companionSessions, roomState)
-  const learner = patchMySpaceRoomStateCollection(current.learnerSessions, roomState)
+  const companion = patchMySpaceRoomStateCollection(current.companionSessions, roomState, 'companion')
+  const learner = patchMySpaceRoomStateCollection(current.learnerSessions, roomState, 'learner')
 
   if (!companion.changed && !learner.changed) {
     return current
@@ -139,11 +168,20 @@ export function patchSessionRoomAccessData(
   }
 
   const nextHostReady = roomState.hasCompanionJoined
+  const nextCanOpenRoomPage = canOpenRoomFromRoomState(roomState, current.role)
+  const nextDenyCode = nextCanOpenRoomPage
+    ? null
+    : current.role === 'learner' && !nextHostReady && (roomState.status === 'Confirmed' || roomState.status === 'InProgress')
+      ? 'SESSION_HOST_NOT_READY'
+      : current.denyCode
 
   if (
     current.status === roomState.status
     && current.hostReady === nextHostReady
     && current.hasCompanionJoined === roomState.hasCompanionJoined
+    && current.canJoin === nextCanOpenRoomPage
+    && current.canOpenRoomPage === nextCanOpenRoomPage
+    && current.denyCode === nextDenyCode
     && current.joinOpenAt === roomState.joinOpenAt
     && current.joinCloseAt === roomState.joinCloseAt
   ) {
@@ -152,6 +190,10 @@ export function patchSessionRoomAccessData(
 
   return {
     ...current,
+    canJoin: nextCanOpenRoomPage,
+    canOpenRoomPage: nextCanOpenRoomPage,
+    denyCode: nextDenyCode,
+    denyMessage: nextCanOpenRoomPage ? null : current.denyMessage,
     status: roomState.status,
     hostReady: nextHostReady,
     hasCompanionJoined: roomState.hasCompanionJoined,

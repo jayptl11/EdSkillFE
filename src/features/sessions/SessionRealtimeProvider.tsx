@@ -174,7 +174,10 @@ export function SessionRealtimeProvider({ children }: { children: ReactNode }) {
     connection.on(SESSION_UPDATED_EVENT, (rawPayload: SessionDto) => {
       const payload = normalizeSessionDto(rawPayload)
 
-      queryClient.setQueryData(sessionKeys.detail(payload.sessionId), payload)
+      queryClient.setQueryData(sessionKeys.detail(payload.sessionId), (current: unknown) => {
+        if (!current) return payload
+        return { ...(current as SessionDto), ...payload }
+      })
 
       let foundInMySpace = false
       const hasMySpaceCache = Boolean(queryClient.getQueryState(mySpaceKeys.me()))

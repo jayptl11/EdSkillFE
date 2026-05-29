@@ -1,5 +1,13 @@
 import type { PaginatedResponse } from '../../api/types'
-import type { SessionDto, SessionRoomAccessDto, SessionRoomStateDto, SessionStatus, SessionStatusDto } from './types'
+import type {
+  SessionDeliveryMode,
+  SessionDto,
+  SessionPricingModel,
+  SessionRoomAccessDto,
+  SessionRoomStateDto,
+  SessionStatus,
+  SessionStatusDto,
+} from './types'
 
 const sessionStatuses: SessionStatus[] = [
   'Available',
@@ -35,10 +43,28 @@ export function getSessionStatusClassName(status: unknown) {
   return `status-${normalizeSessionStatus(status).toLowerCase()}`
 }
 
+export function normalizeSessionDeliveryMode(mode: unknown): SessionDeliveryMode | undefined {
+  if (mode === undefined) return undefined
+  if (mode === 'Online' || mode === 'Offline') return mode
+  if (mode === 0 || mode === '0') return 'Online'
+  if (mode === 1 || mode === '1') return 'Offline'
+  return 'Online'
+}
+
+export function normalizeSessionPricingModel(model: unknown): SessionPricingModel | undefined {
+  if (model === undefined) return undefined
+  if (model === 'FormulaV1' || model === 'LegacyManual') return model
+  if (model === 0 || model === '0') return 'FormulaV1'
+  if (model === 1 || model === '1') return 'LegacyManual'
+  return 'LegacyManual'
+}
+
 export function normalizeSessionDto(session: SessionDto): SessionDto {
   return {
     ...session,
     status: normalizeSessionStatus(session.status),
+    ...(session.deliveryMode !== undefined ? { deliveryMode: normalizeSessionDeliveryMode(session.deliveryMode) as SessionDeliveryMode } : {}),
+    ...(session.pricingModel !== undefined ? { pricingModel: normalizeSessionPricingModel(session.pricingModel) as SessionPricingModel } : {}),
   }
 }
 
